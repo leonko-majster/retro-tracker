@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="app-version" content="2026-11-14-v3-onescreen">
+<meta name="app-version" content="2026-11-14-v4-fullscreen-faces">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,11 +15,11 @@
 <style>
 :root{
   --fg:#33ff66; --fg-rgb:51,255,102;
-  --dim:rgba(51,255,102,.45);
-  --faint:rgba(51,255,102,.18);
+  --dim:rgba(51,255,102,.55);
+  --faint:rgba(51,255,102,.2);
   --glow:0 0 6px rgba(51,255,102,.8), 0 0 14px rgba(51,255,102,.35);
   --font:'VT323','Courier New',monospace;
-  --pl:230px; --pr:270px;
+  --bar:92px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;
@@ -27,84 +27,113 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscro
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 body{text-shadow:var(--glow);-webkit-tap-highlight-color:transparent}
 .touch body{text-shadow:none}
-button{font-family:var(--font);font-size:20px;color:var(--fg);background:#000;border:1px solid var(--fg);padding:5px 9px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;touch-action:manipulation;white-space:nowrap;border-radius:0;-webkit-appearance:none;appearance:none}
+button{font-family:var(--font);font-size:20px;color:var(--fg);background:rgba(0,0,0,.72);border:1px solid var(--fg);padding:6px 10px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;touch-action:manipulation;white-space:nowrap;border-radius:0;-webkit-appearance:none;appearance:none}
 button:hover,button:focus-visible{background:var(--fg);color:#000;outline:none}
-button.on{background:rgba(var(--fg-rgb),.22)}
+button.on{background:rgba(var(--fg-rgb),.28)}
 button:disabled{opacity:.35;cursor:not-allowed}
+input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;border:1px solid var(--fg);padding:6px 8px;width:100%;border-radius:0;-webkit-appearance:none;appearance:none;-webkit-user-select:text;user-select:text;text-shadow:none}
+.btns{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 
-/* the whole UI lives in #app: it is sized/rotated from JS so it always fits one screen */
-#app{position:fixed;left:0;top:0;width:100%;height:100%;transform-origin:0 0;display:flex;flex-direction:column;gap:5px;overflow:hidden;
-  padding:6px 8px;background:#000}
-#app.rot0{padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
-
-header{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--fg);padding:2px 10px;font-size:24px;flex:none;min-width:0}
-header .title{letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-header .right{display:flex;gap:14px;align-items:center;white-space:nowrap;flex:none}
-#fpsH{color:var(--dim)}
-.rec{display:inline-flex;align-items:center;gap:6px}
-.rec i{width:11px;height:11px;border-radius:50%;background:#ff3030;box-shadow:0 0 8px #ff3030;animation:blink 1s infinite steps(1)}
-.rec.idle i{background:var(--dim);box-shadow:none;animation:none}
+/* the whole UI lives in #app: sized/rotated from JS so it always fits one screen */
+#app{position:fixed;left:0;top:0;width:100%;height:100%;transform-origin:0 0;overflow:hidden;background:#000}
+#stage{position:absolute;inset:0;background:#000;cursor:pointer;overflow:hidden}
+#stage video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;pointer-events:none}
+#stage canvas{position:absolute;left:0;top:0;width:100%;height:100%}
+#vcanvas{z-index:1;background:#000}
+#hud{z-index:2}
+.vig{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.55) 100%)}
+.flash{position:absolute;inset:0;background:var(--fg);opacity:0;z-index:30;pointer-events:none}
+.flash.go{animation:flash .35s ease-out}
+@keyframes flash{0%{opacity:.85}100%{opacity:0}}
 @keyframes blink{0%{opacity:1}50%{opacity:0}}
 .blink{animation:blink 1s infinite steps(1)}
 
-.grid{flex:1;min-height:0;display:grid;gap:6px}
-.panel{display:flex;flex-direction:column;gap:6px;min-height:0;min-width:0;overflow:hidden}
-.box{border:1px solid var(--fg);padding:5px 7px;position:relative;min-width:0}
-.box>h3{font-weight:normal;font-size:20px;background:var(--fg);color:#000;text-shadow:none;margin:-5px -7px 5px;padding:0 7px;letter-spacing:2px;white-space:nowrap;overflow:hidden}
-.row{display:flex;justify-content:space-between;font-size:21px}
-.row b{font-weight:normal}
-.counters{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px}
-.counters div span{display:block;font-size:15px;color:var(--dim);text-shadow:none;white-space:nowrap}
-.counters div b{font-weight:normal;font-size:38px;line-height:.9}
-.sys{font-size:18px;color:var(--dim);text-shadow:none;line-height:1.15}
-.sys b{font-weight:normal;color:var(--fg)}
-#radar{width:100%;aspect-ratio:1/.82;display:block;background:#000}
-.radarbox{min-height:0}
-#targets{font-size:18px;min-height:30px;overflow:hidden}
-#targets div{display:flex;justify-content:space-between;gap:6px;white-space:nowrap}
-#targets .none{color:var(--dim);text-shadow:none}
-.logbox{flex:1;display:flex;flex-direction:column;min-height:0}
-#log{flex:1;min-height:0;overflow:hidden;font-size:18px;line-height:1.15;display:flex;flex-direction:column;justify-content:flex-end}
-#log div{white-space:pre-wrap;word-break:break-word;flex:none}
-#log .sys-l{color:var(--dim);text-shadow:none}
-#log .warn{animation:blink .6s 3 steps(1)}
+/* top bar: real counts only */
+#top{position:absolute;left:0;right:0;top:0;z-index:10;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:8px 10px;pointer-events:none;
+  background:linear-gradient(to bottom,rgba(0,0,0,.6),transparent)}
+.rot0 #top{padding-top:max(8px,env(safe-area-inset-top));padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+.counts{display:flex;gap:12px;font-size:24px;white-space:nowrap;text-shadow:0 0 4px #000,var(--glow)}
+.counts span{color:var(--dim);font-size:16px;margin-right:3px}
+.recind{display:none;align-items:center;gap:6px;font-size:24px;white-space:nowrap}
+.recind.on{display:flex}
+.recind i{width:12px;height:12px;border-radius:50%;background:#ff3030;box-shadow:0 0 8px #ff3030;animation:blink 1s infinite steps(1)}
+#radar{position:absolute;right:8px;top:40px;z-index:9;width:120px;height:78px;pointer-events:none;background:rgba(0,0,0,.5);border:1px solid var(--faint)}
+.rot0 #radar{top:calc(40px + env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right))}
+#radar.off{display:none}
+#log{position:absolute;left:10px;top:44px;right:140px;z-index:9;pointer-events:none;font-size:18px;line-height:1.15;display:flex;flex-direction:column;gap:1px;text-shadow:0 0 3px #000,0 0 3px #000}
+.rot0 #log{top:calc(44px + env(safe-area-inset-top))}
+#log div{white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,.45);align-self:flex-start;padding:0 4px;transition:opacity .8s}
+#log .sys-l{color:var(--dim)}
+#log .warn{color:var(--fg)}
+#log .gone{opacity:0}
 
-.stage{position:relative;min-width:0;min-height:0;background:#000;border:2px solid var(--fg);
-  border-radius:16px / 20px;overflow:hidden;isolation:isolate;box-shadow:0 0 14px rgba(var(--fg-rgb),.3)}
-.stage video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none}
-.stage canvas{position:absolute;left:0;top:0;width:100%;height:100%}
-.stage canvas#vcanvas{z-index:1;background:#000}
-.stage canvas#hud{z-index:2}
-.stage .vig{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.7) 100%)}
-.flash{position:absolute;inset:0;background:var(--fg);opacity:0;z-index:4;pointer-events:none}
-.flash.go{animation:flash .35s ease-out}
-@keyframes flash{0%{opacity:.85}100%{opacity:0}}
-.threat{position:absolute;left:10px;right:10px;bottom:8px;z-index:3;display:flex;align-items:center;gap:10px;border:1px solid var(--fg);background:rgba(0,0,0,.7);padding:1px 8px;font-size:21px}
-.threat .segs{flex:1;display:flex;gap:3px;height:14px}
-.threat .segs i{flex:1;border:1px solid var(--dim)}
-.threat .segs i.on{background:var(--fg)}
-.threat .lvl{white-space:nowrap}
-.threat.crit .lvl{animation:blink .5s infinite steps(1)}
-#toast{position:absolute;z-index:7;left:8px;right:8px;top:8px;display:none;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--fg);background:rgba(0,0,0,.85);padding:4px 8px;font-size:18px}
+/* toast + info card */
+#toast{position:absolute;z-index:22;left:10px;right:10px;bottom:calc(var(--bar) + 10px);display:none;justify-content:center;pointer-events:none}
 #toast.show{display:flex}
+#toast span{border:1px solid var(--fg);background:rgba(0,0,0,.85);padding:5px 10px;font-size:20px;text-align:center;white-space:pre-line;max-width:100%}
+#toast.hasbtn{pointer-events:auto}
+.card{position:absolute;z-index:15;left:8px;right:8px;bottom:calc(var(--bar) + 8px);display:none;border:1px solid var(--fg);background:rgba(0,0,0,.72);padding:6px 9px;gap:4px;flex-direction:column;max-width:560px;margin:0 auto}
+.card.show{display:flex}
+.card .t{font-size:26px;letter-spacing:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .s{white-space:pre-line;font-size:19px;color:var(--dim);text-shadow:none}
+.card .n{font-size:16px;color:var(--dim);text-shadow:none;line-height:1.1}
+.card .btns{justify-content:flex-start}
+.card .x{position:absolute;right:4px;top:3px;padding:0 8px;font-size:24px;border:0;background:transparent}
 
-footer{display:flex;flex-direction:column;gap:3px;flex:none}
-.btns{display:flex;flex-wrap:wrap;gap:4px}
-.btns button{flex:1 1 auto}
-.help{font-size:17px;color:var(--dim);text-shadow:none;border-top:1px dashed var(--faint);padding-top:3px}
+/* bottom control bar (camera-app style) */
+#bar{position:absolute;left:0;right:0;bottom:0;z-index:20;height:var(--bar);display:flex;align-items:center;justify-content:space-around;gap:2px;padding:6px 6px;
+  background:linear-gradient(to top,rgba(0,0,0,.82) 55%,rgba(0,0,0,.35) 100%)}
+.rot0 #bar{padding-bottom:max(6px,env(safe-area-inset-bottom));height:calc(var(--bar) + env(safe-area-inset-bottom) * 0.6);padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right))}
+#bar button.cb{flex:1 1 0;min-width:0;max-width:74px;height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;border:0;background:transparent;font-size:15px;letter-spacing:0}
+#bar button.cb:active{background:rgba(var(--fg-rgb),.3)}
+#bar button.cb .g{font-size:30px;line-height:1;height:30px;display:flex;align-items:center;justify-content:center}
+#bar button.cb.on .g,#bar button.cb.on{color:var(--fg);background:transparent}
+#bar button.cb.off .g{opacity:.45;text-decoration:line-through}
+#bar button.cb:disabled{opacity:.3}
+#bar .big{flex:none}
+#bShot{width:76px;height:76px;max-width:none;border-radius:50%;border:3px solid var(--fg);padding:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);flex:none}
+#bShot i{display:block;width:56px;height:56px;border-radius:50%;background:var(--fg);transition:transform .08s}
+#bShot:active i{transform:scale(.88)}
+#bRec{width:60px;height:60px;border-radius:50%;border:2px solid #ff3030;padding:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);flex:none}
+#bRec i{display:block;width:30px;height:30px;border-radius:50%;background:#ff3030;transition:all .15s}
+#bRec.on i{border-radius:5px;width:24px;height:24px;animation:blink 1s infinite steps(1)}
+#bRec:hover,#bShot:hover{background:rgba(0,0,0,.5)}
+
+/* sheets / modals */
+.screen{position:absolute;inset:0;background:#000;z-index:40;display:flex;flex-direction:column;overflow:auto;gap:10px;padding:14px 18px}
+.rot0 .screen{padding-top:max(14px,env(safe-area-inset-top));padding-bottom:max(14px,env(safe-area-inset-bottom))}
+.sheet{position:absolute;inset:0;z-index:35;background:rgba(0,0,0,.9);display:none;flex-direction:column;overflow:auto;padding:12px 16px;gap:10px}
+.rot0 .sheet{padding-top:max(12px,env(safe-area-inset-top));padding-bottom:max(12px,env(safe-area-inset-bottom))}
+.sheet.show{display:flex}
+.sheet h2{font-weight:normal;font-size:28px;letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--fg);color:#000;padding:0 8px;text-shadow:none}
+.sheet h2 button{border-color:#000;color:#000;background:transparent;padding:0 10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid2 button{padding:10px 8px;font-size:21px}
+.statbox{border:1px dashed var(--faint);padding:6px 8px;font-size:18px;color:var(--dim);text-shadow:none;line-height:1.2;white-space:pre-line}
+.statbox b{font-weight:normal;color:var(--fg)}
+.modal{position:absolute;inset:0;z-index:60;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:14px}
+.modal.show{display:flex}
+.mbox{border:2px solid var(--fg);background:#000;padding:12px 14px;display:flex;flex-direction:column;gap:10px;max-width:460px;width:100%;max-height:100%;overflow:auto}
+.mbox h3{font-weight:normal;font-size:26px;letter-spacing:1px}
+.mbox .x{font-size:19px;color:var(--dim);text-shadow:none;white-space:pre-line}
+#mediaPrev{display:flex;justify-content:center;max-height:55vh}
+#mediaPrev img,#mediaPrev video{max-width:100%;max-height:50vh;border:1px solid var(--fg);background:#000;object-fit:contain}
+.plist{display:flex;flex-direction:column;gap:6px}
+.prow{display:flex;gap:8px;align-items:center;border:1px solid var(--faint);padding:4px;min-width:0}
+.prow img,.prow .ph{width:56px;height:56px;object-fit:cover;border:1px solid var(--fg);flex:none;background:#0a1a0e;filter:grayscale(1) sepia(1) hue-rotate(60deg) saturate(3)}
+.prow .info{flex:1;min-width:0}
+.prow .nm{font-size:23px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow .sub{font-size:16px;color:var(--dim);text-shadow:none;line-height:1.1}
+.prow button{padding:4px 8px;font-size:18px}
+.tabs{display:flex;gap:6px}
+.tabs button{flex:1}
 
 /* CRT effects (outside #app) */
-.fx{position:fixed;inset:0;pointer-events:none;z-index:50}
-.scan{background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.25) 3px,rgba(0,0,0,0) 4px)}
-.fxvig{background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.5) 100%)}
-.touch .fxvig,.touch .rollbar,.touch #noise{display:none}
-#noise{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;opacity:.06;pointer-events:none;z-index:52}
-.rollbar{position:fixed;left:0;right:0;height:120px;top:-120px;z-index:51;pointer-events:none;background:linear-gradient(to bottom,transparent,rgba(var(--fg-rgb),.05),transparent);animation:roll 7s linear infinite}
-@keyframes roll{to{transform:translateY(130vh)}}
+.fx{position:fixed;inset:0;pointer-events:none;z-index:70}
+.scan{background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.18) 3px,rgba(0,0,0,0) 4px)}
 
-/* full-screen messages inside #app (rotate with it) */
-.screen{position:absolute;inset:0;background:#000;z-index:40;display:flex;flex-direction:column;overflow:auto;gap:10px;padding:14px 18px}
-#boot{transition:opacity .6s}
+/* start / error screens */
+#boot{transition:opacity .35s;z-index:50}
 #boot.hide{opacity:0;pointer-events:none}
 #bootText{white-space:pre-wrap;font-size:22px;line-height:1.1}
 #inapp{display:none;border:2px solid var(--fg);padding:6px 9px;font-size:19px;line-height:1.15;white-space:pre-line}
@@ -112,60 +141,32 @@ footer{display:flex;flex-direction:column;gap:3px;flex:none}
 #rotHint{font-size:19px;color:var(--fg)}
 .bigbtn{font-size:28px;padding:10px 20px;border-width:2px}
 .bootbtns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-#errBox{z-index:45;display:none;align-items:center;justify-content:center;text-align:center;background:rgba(0,0,0,.94);font-size:21px}
+#errBox{z-index:55;display:none;align-items:center;justify-content:center;text-align:center;background:rgba(0,0,0,.94);font-size:21px}
 #errBox.show{display:flex}
 #errBox h2{font-weight:normal;font-size:30px}
 #errBox .inner{max-width:640px;display:flex;flex-direction:column;gap:8px;align-items:center}
 #errTxt{white-space:pre-line}
 #errHint{border:1px dashed var(--fg);padding:6px 9px;font-size:18px;text-align:left;display:none;white-space:pre-line}
-#errBox .btns{justify-content:center}
 .urlbox{font-size:16px;word-break:break-all;color:var(--dim);text-shadow:none}
 
-/* ---------- LANDSCAPE: panels left | video | panels right ---------- */
-.lay-land .grid{grid-template-columns:var(--pl) minmax(0,1fr) var(--pr)}
-.lay-land .panel.left .sysbox .row.r-fps{display:none}
-
-/* ---------- PORTRAIT: video fills the screen, panels = compact overlays ---------- */
-.lay-port .grid{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
-.lay-port .panel{display:contents}
-.lay-port .cbox{grid-area:1/1;padding:3px 6px}
-.lay-port .cbox h3{display:none}
-.lay-port .counters{grid-template-columns:repeat(4,1fr);gap:0 4px}
-.lay-port .counters div span{font-size:11px}
-.lay-port .counters div b{font-size:26px}
-.lay-port .sysbox,.lay-port .tbox{display:none}
-.lay-port .stage{grid-area:2/1}
-.lay-port .radarbox{grid-area:2/1;align-self:end;justify-self:end;width:104px;margin:0 6px 6px 0;padding:2px;z-index:6;background:rgba(0,0,0,.6)}
-.lay-port .radarbox h3{display:none}
-.lay-port .logbox{grid-area:2/1;align-self:end;justify-self:start;width:calc(100% - 128px);height:58px;overflow:hidden;margin:0 0 6px 6px;padding:2px 5px;z-index:6;background:rgba(0,0,0,.6);flex:none}
-.lay-port .logbox h3{display:none}
-.lay-port #log{font-size:14px;line-height:16px}
-.lay-port .threat{top:8px;bottom:auto}
-.lay-port header .title .full{display:none}
-.lay-port #toast{top:42px}
-.lay-port .btns .lbl{display:none}
-.lay-port .btns button.keep .lbl{display:inline}
-
-/* ---------- COMPACT (phones) ---------- */
-.compact{font-size:16px}
-.compact{--pl:136px;--pr:172px}
-.compact header{font-size:17px;padding:1px 8px}
-.compact header .title{letter-spacing:1px}
-.compact .rec i{width:9px;height:9px}
-.compact .grid,.compact .panel{gap:4px}
-.compact .box{padding:3px 5px}
-.compact .box>h3{font-size:14px;margin:-3px -5px 3px;padding:0 5px;letter-spacing:1px}
-.compact .row{font-size:15px}
-.compact .counters div span{font-size:11px}
-.compact .counters div b{font-size:25px}
-.compact .sys{display:none}
-.compact #targets{font-size:14px;min-height:0;max-height:58px}
-.compact #log{font-size:14px}
-.compact .threat{font-size:15px;padding:0 6px}
-.compact .threat .segs{height:9px}
-.compact button{font-size:14px;padding:3px 5px;letter-spacing:0}
-.compact .help{display:none}
-.compact .stage{border-radius:12px / 14px;border-width:1px}
+/* ---------- sizes: phones / short screens ---------- */
+.compact{font-size:16px;--bar:80px}
+.compact .counts{font-size:21px;gap:9px}
+.compact .counts span{font-size:13px}
+.compact #log{font-size:15px;top:38px;right:122px}
+.compact #radar{width:104px;height:68px;top:36px}
+.rot0.compact #radar{top:calc(36px + env(safe-area-inset-top))}
+.compact #bar button.cb{height:54px;font-size:13px;max-width:62px}
+.compact #bar button.cb .g{font-size:26px;height:26px}
+.compact #bShot{width:66px;height:66px}
+.compact #bShot i{width:48px;height:48px}
+.compact #bRec{width:52px;height:52px}
+.compact #bRec i{width:26px;height:26px}
+.compact button{font-size:17px}
+.compact .card .t{font-size:22px}
+.compact .card .s{font-size:16px}
+.compact .card .n{font-size:14px}
+.compact #toast span{font-size:17px}
 .compact #bootText{font-size:17px}
 .compact .bigbtn{font-size:22px;padding:7px 14px}
 .compact #errBox{font-size:17px}
@@ -173,94 +174,109 @@ footer{display:flex;flex-direction:column;gap:3px;flex:none}
 .compact #errHint{font-size:15px}
 .compact .screen{padding:8px 12px}
 .compact #inapp,.compact #rotHint{font-size:15px}
-.touch .help{display:none}
+.lay-land{--bar:70px}
+.lay-land.compact{--bar:62px}
+.lay-land #bar button.cb{height:46px}
+.lay-land.compact #bar button.cb{height:44px}
+.lay-land.compact #bar button.cb .g{font-size:22px;height:22px}
+.lay-land #bShot{width:56px;height:56px}
+.lay-land #bShot i{width:40px;height:40px}
+.lay-land #bRec{width:46px;height:46px}
+.lay-land #bRec i{width:22px;height:22px}
+.lay-land #log{max-width:60%}
+.lay-land .card{left:auto;right:8px;width:min(52%,440px);bottom:calc(var(--bar) + 6px)}
 </style>
 </head>
 <body>
 <noscript>Wymagany JavaScript.</noscript>
 
 <div id="app" class="rot0">
-  <header>
-    <div class="title">▓▒░ MAJSTERMAN<span class="full"> // TARGETING SYS v1.986 ░▒▓</span></div>
-    <div class="right">
-      <span id="fpsH"></span>
-      <span class="rec idle" id="rec"><i></i><span id="recTxt">STBY</span> <span id="recTime">00:00:00</span></span>
-      <span id="clock">--:--:--</span>
+  <section id="stage">
+    <video id="video" autoplay muted playsinline webkit-playsinline></video>
+    <canvas id="vcanvas"></canvas>
+    <canvas id="hud"></canvas>
+    <div class="vig"></div>
+    <div class="flash" id="flash"></div>
+  </section>
+
+  <div id="top">
+    <div class="counts"><div><span>LUDZIE</span><b id="cH">0</b></div><div><span>ZWIERZĘTA</span><b id="cA">0</b></div><div id="cOw" style="display:none"><span>OBIEKTY</span><b id="cO">0</b></div></div>
+    <div class="recind" id="recind"><i></i><span id="recTime">00:00</span></div>
+  </div>
+  <canvas id="radar" width="240" height="156"></canvas>
+  <div id="log"></div>
+
+  <div id="toast"><span id="toastTxt"></span></div>
+
+  <div class="card" id="card">
+    <button class="x" id="cdX" aria-label="Zamknij">×</button>
+    <div class="t" id="cdT"></div>
+    <div class="s" id="cdS"></div>
+    <div class="btns">
+      <button id="cdScan">[ Skanuj twarz ]</button>
+      <button id="cdAdd" style="display:none">[ + Skan ]</button>
     </div>
-  </header>
-
-  <div class="grid" id="grid">
-    <aside class="panel left">
-      <div class="box cbox">
-        <h3>&gt; LICZNIK / COUNT</h3>
-        <div class="counters">
-          <div><span>LUDZIE/HUMANS</span><b id="cH">00</b></div>
-          <div><span>FAUNA</span><b id="cA">00</b></div>
-          <div><span>OBIEKTY/OBJ</span><b id="cO">00</b></div>
-          <div><span>ZAMKNIĘTE/LOCK</span><b id="cL">00</b></div>
-        </div>
-      </div>
-      <div class="box sysbox">
-        <h3>&gt; SYSTEM</h3>
-        <div class="row"><span>CAM FPS</span><b id="fCam">--</b></div>
-        <div class="row"><span>NN FPS</span><b id="fNN">--</b></div>
-        <div class="row"><span>INFER</span><b id="inf">-- ms</b></div>
-        <div class="sys" style="margin-top:3px">
-          CAM : <b id="sCam">OFFLINE</b><br>
-          RES : <b id="sRes">----</b><br>
-          NN&nbsp; : <b id="sBk">----</b><br>
-          PAL : <b id="sPal">GREEN</b>
-        </div>
-      </div>
-      <div class="box radarbox">
-        <h3>&gt; RADAR / SONAR</h3>
-        <canvas id="radar" width="320" height="262"></canvas>
-      </div>
-    </aside>
-
-    <section class="stage" id="stage">
-      <video id="video" autoplay muted playsinline webkit-playsinline></video>
-      <canvas id="vcanvas"></canvas>
-      <canvas id="hud"></canvas>
-      <div class="vig"></div>
-      <div class="flash" id="flash"></div>
-      <div class="threat" id="threat">
-        <span>STATUS:</span>
-        <div class="segs" id="segs"></div>
-        <span class="lvl" id="lvl">ALL CLEAR</span>
-      </div>
-      <div id="toast"><span>Masz blokadę obrotu? Użyj tego →</span><button id="toastBtn">[ Obróć HUD ]</button></div>
-    </section>
-
-    <aside class="panel right">
-      <div class="box tbox">
-        <h3>&gt; CELE / TARGETS</h3>
-        <div id="targets"><div class="none">-- BRAK CELÓW --</div></div>
-      </div>
-      <div class="box logbox">
-        <h3>&gt; DZIENNIK / EVENT LOG</h3>
-        <div id="log"></div>
-      </div>
-    </aside>
+    <div class="n" id="cdN"></div>
   </div>
 
-  <footer>
-    <div class="btns">
-      <button id="bMute" class="on"><b>[M]</b><span class="lbl"> Dźwięk</span></button>
-      <button id="bObj"><b>[O]</b><span class="lbl"> Obiekty</span></button>
-      <button id="bPal"><b>[T]</b><span class="lbl"> Paleta</span></button>
-      <button id="bSnap"><b>[S]</b><span class="lbl"> Zdjęcie</span></button>
-      <button id="bCam"><b>[C]</b><span class="lbl"> Kamera</span></button>
-      <button id="bGrid" class="on"><b>[G]</b><span class="lbl"> Siatka</span></button>
-      <button id="bTrail" class="on"><b>[L]</b><span class="lbl"> Ślady</span></button>
-      <button id="bFull"><b>[F]</b><span class="lbl"> Ekran</span></button>
-      <button id="bRot" class="keep"><b>[H]</b><span class="lbl"> Obróć HUD</span></button>
-      <button id="bVrot" class="keep" style="display:none"><b>[V]</b><span class="lbl"> Obróć obraz</span></button>
-    </div>
-    <div class="help kb"><b>KLAWISZE:</b> M dźwięk · O obiekty · T paleta zielona/bursztyn · S zrzut PNG · C przód/tył · G siatka · L ślady · F pełny ekran · H obróć HUD · V obróć obraz</div>
-  </footer>
+  <div id="bar">
+    <button class="cb" id="bBase"><span class="g">☺</span><span>BAZA</span></button>
+    <button class="cb" id="bPal"><span class="g">◐</span><span>PALETA</span></button>
+    <button id="bShot" aria-label="Zdjęcie"><i></i></button>
+    <button id="bRec" aria-label="Nagrywaj"><i></i></button>
+    <button class="cb" id="bCam"><span class="g">⟲</span><span>KAMERA</span></button>
+    <button class="cb on" id="bMute"><span class="g">♪</span><span>DŹWIĘK</span></button>
+    <button class="cb" id="bSet"><span class="g">≡</span><span>MENU</span></button>
+  </div>
 
-  <!-- start / boot -->
+  <!-- settings drawer -->
+  <div class="sheet" id="settings">
+    <h2><span>USTAWIENIA</span><button id="setX">[ Zamknij ]</button></h2>
+    <div class="grid2">
+      <button id="bObj"><b>[O]</b> Obiekty</button>
+      <button id="bTrail" class="on"><b>[L]</b> Ślady</button>
+      <button id="bGrid" class="on"><b>[G]</b> Siatka</button>
+      <button id="bRot"><b>[H]</b> Obróć HUD</button>
+      <button id="bRadar" class="on"><b>[D]</b> Radar</button>
+      <button id="bVrot" style="display:none"><b>[V]</b> Obróć obraz</button>
+      <button id="bFull"><b>[F]</b> Pełny ekran</button>
+      <button id="bBase2"><b>[B]</b> Baza twarzy</button>
+    </div>
+    <div class="statbox" id="stats"></div>
+    <div class="statbox">Rozpoznawanie twarzy to porównanie wektorów twarzy (może się mylić: podobne osoby, słabe światło, profil). Dane twarzy zostają w tej przeglądarce (IndexedDB) i nigdy nie są wysyłane. Radar i odległość to SZACUNEK: kierunek wynika z położenia celu w kadrze i przybliżonego kąta widzenia kamery (~65°), a odległość z wysokości ramki (człowiek ≈ 1,7 m; zwierzęta wg typowych rozmiarów) – błąd może sięgać kilkudziesięciu procent. Zwierząt nie rozpoznaję po wyglądzie: skan tylko zapisuje zdjęcie i nazwę.</div>
+    <div class="statbox kb">KLAWISZE: S zdjęcie · R nagrywanie · C kamera · T paleta · M dźwięk · O obiekty · G siatka · L ślady · D radar · B baza twarzy · F pełny ekran · H obróć HUD · V obróć obraz · Esc zamknij</div>
+  </div>
+
+  <!-- face / animal database -->
+  <div class="sheet" id="dbp">
+    <h2><span>BAZA</span><button id="dbX">[ Zamknij ]</button></h2>
+    <div class="tabs"><button id="tabF" class="on">Twarze</button><button id="tabA">Zwierzęta</button></div>
+    <div class="statbox" id="dbNote"></div>
+    <div class="plist" id="plist"></div>
+    <div class="btns"><button id="dbClear">[ Wyczyść wszystko ]</button></div>
+  </div>
+
+  <!-- photo / video result -->
+  <div class="modal" id="media">
+    <div class="mbox">
+      <h3 id="mediaT">GOTOWE</h3>
+      <div id="mediaPrev"></div>
+      <div class="x" id="mediaX"></div>
+      <div class="btns"><button id="mediaSave" class="bigbtn" style="font-size:22px">[ Zapisz / Udostępnij ]</button><button id="mediaClose">[ Zamknij ]</button></div>
+    </div>
+  </div>
+
+  <!-- text / confirm dialog -->
+  <div class="modal" id="dlg">
+    <div class="mbox">
+      <h3 id="dlgT"></h3>
+      <div class="x" id="dlgX"></div>
+      <input id="dlgI" type="text" maxlength="30" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <div class="btns"><button id="dlgOk">OK</button><button id="dlgNo">Anuluj</button></div>
+    </div>
+  </div>
+
+  <!-- start screen -->
   <div id="boot" class="screen">
     <div id="bootText"></div>
     <div class="bootbtns">
@@ -275,7 +291,7 @@ footer{display:flex;flex-direction:column;gap:3px;flex:none}
   <!-- error -->
   <div id="errBox" class="screen">
     <div class="inner">
-      <h2 class="blink">!! BŁĄD SYSTEMU !!</h2>
+      <h2 class="blink">!! BŁĄD !!</h2>
       <div id="errTxt"></div>
       <div id="errHint"></div>
       <div class="urlbox" id="errUrl"></div>
@@ -290,11 +306,8 @@ footer{display:flex;flex-direction:column;gap:3px;flex:none}
 </div>
 
 <div class="fx scan"></div>
-<div class="fx fxvig"></div>
-<div class="rollbar"></div>
-<canvas id="noise" width="96" height="96"></canvas>
 
-<!-- inference worker (runs TF.js + COCO-SSD off the main thread, so video/HUD never stutter) -->
+<!-- detection worker (TF.js + COCO-SSD off the main thread, so video/HUD never stutter) -->
 <script id="wsrc" type="text/plain">
 'use strict';
 let model = null;
@@ -360,6 +373,73 @@ self.onmessage = async e => {
   }
 };
 </script>
+
+<!-- face worker (face-api.js: detector + landmarks + descriptor, lazy; runs only on this device) -->
+<script id="fsrc" type="text/plain">
+'use strict';
+const post = m => self.postMessage(m);
+let ready = false, cfg = null;
+const wt = (p, ms, msg) => { let t; const to = new Promise((_, rej) => { t = setTimeout(() => rej(new Error(msg)), ms); }); return Promise.race([p, to]).finally(() => clearTimeout(t)); };
+async function init(m) {
+  cfg = m;
+  post({ type: 'status', msg: 'FACE: LOADING LIBRARY' });
+  // face-api checks for a browser environment: give it minimal stand-ins (we only ever pass tensors)
+  self.window = self; self.document = { createElement: () => new OffscreenCanvas(1, 1) };
+  for (const k of ['HTMLImageElement', 'HTMLCanvasElement', 'HTMLVideoElement']) if (!self[k]) self[k] = class {};
+  if (!self.CanvasRenderingContext2D) self.CanvasRenderingContext2D = self.OffscreenCanvasRenderingContext2D || class {};
+  importScripts(m.lib);
+  const fa = self.faceapi;
+  const tf = fa.tf;
+  let be = 'cpu';
+  try {
+    tf.setWasmPaths(m.wasmPath);
+    const ok = await wt(tf.setBackend('wasm'), 20000, 'wasm init timeout'); await tf.ready();
+    if (ok !== false && tf.getBackend() === 'wasm') be = 'wasm';
+  } catch (e) { post({ type: 'status', msg: 'FACE WASM FAIL: ' + e.message }); }
+  if (be !== 'wasm') { await tf.setBackend('cpu'); await tf.ready(); }
+  post({ type: 'status', msg: 'FACE: MODELS (' + be.toUpperCase() + ')' });
+  const loadNet = async (net, name) => {
+    const man = await (await fetch(m.base + name + '_model-weights_manifest.json')).json();
+    const specs = man.flatMap(g => g.weights);
+    const bufs = [];
+    for (const g of man) for (const p of g.paths) { const r = await fetch(m.base + p); if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + p); bufs.push(await r.arrayBuffer()); }
+    const all = new Uint8Array(bufs.reduce((n, b) => n + b.byteLength, 0)); let o = 0;
+    for (const b of bufs) { all.set(new Uint8Array(b), o); o += b.byteLength; done += b.byteLength; post({ type: 'progress', loaded: done, total: m.totalBytes }); }
+    net.loadFromWeightMap(tf.io.decodeWeights(all.buffer, specs));
+  };
+  let done = 0;
+  await wt(Promise.all([loadNet(fa.nets.tinyFaceDetector, 'tiny_face_detector'), loadNet(fa.nets.faceLandmark68Net, 'face_landmark_68'), loadNet(fa.nets.faceRecognitionNet, 'face_recognition')]), 120000, 'face models download timeout');
+  // warm-up
+  await detect(new ImageData(128, 128), 0.5);
+  ready = true;
+  post({ type: 'ready', backend: be });
+}
+async function detect(img, minScore) {
+  const fa = self.faceapi, tf = fa.tf;
+  const opts = new fa.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: minScore });
+  const t = tf.tidy(() => tf.browser.fromPixels(img));
+  try {
+    const res = await fa.detectAllFaces(t, opts).withFaceLandmarks().withFaceDescriptors();
+    return res.map(r => ({ box: [r.detection.box.x, r.detection.box.y, r.detection.box.width, r.detection.box.height], score: r.detection.score, desc: Array.from(r.descriptor) }));
+  } finally { t.dispose(); }
+}
+self.onmessage = async e => {
+  const m = e.data;
+  try {
+    if (m.type === 'init') await init(m);
+    else if (m.type === 'faces') {
+      if (!ready) return post({ type: 'faces', id: m.id, error: 'not ready' });
+      const t0 = performance.now();
+      const img = new ImageData(new Uint8ClampedArray(m.buf), m.w, m.h);
+      const faces = await detect(img, m.min || 0.3);
+      post({ type: 'faces', id: m.id, ms: performance.now() - t0, faces, w: m.w, h: m.h });
+    }
+  } catch (err) {
+    if (m.type === 'init') post({ type: 'fail', msg: String(err && err.message || err) });
+    else post({ type: 'faces', id: m.id, error: String(err && err.message || err) });
+  }
+};
+</script>
 <script>
 (() => {
 'use strict';
@@ -368,16 +448,22 @@ const pad = (n, l = 2) => String(n).padStart(l, '0');
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ANIMALS = new Set(['cat','dog','bird','horse','sheep','cow','elephant','bear','zebra','giraffe']);
+const PL = { cat: 'KOT', dog: 'PIES', bird: 'PTAK', horse: 'KOŃ', sheep: 'OWCA', cow: 'KROWA', elephant: 'SŁOŃ', bear: 'NIEDŹWIEDŹ', zebra: 'ZEBRA', giraffe: 'ŻYRAFA' };
 const PALETTES = {
-  green: { name: 'ZIELONA', en: 'GREEN', fg: '#33ff66', rgb: '51,255,102' },
-  amber: { name: 'BURSZTYN', en: 'AMBER', fg: '#ffb000', rgb: '255,176,0' }
+  green: { name: 'ZIELONA', fg: '#33ff66', rgb: '51,255,102' },
+  amber: { name: 'BURSZTYN', fg: '#ffb000', rgb: '255,176,0' }
 };
-const TF_URL = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js';
-const WASM_JS = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.22.0/dist/tf-backend-wasm.min.js';
-const WASM_PATH = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.22.0/dist/';
-const COCO_URL = 'https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js';
-const MODEL_URL = new URL('model/model.json', location.href).href;   // self-hosted (same origin)
+const CDN = 'https://cdn.jsdelivr.net/npm/';
+const TF_URL = CDN + '@tensorflow/tfjs@4.22.0/dist/tf.min.js';
+const WASM_JS = CDN + '@tensorflow/tfjs-backend-wasm@4.22.0/dist/tf-backend-wasm.min.js';
+const WASM_PATH = CDN + '@tensorflow/tfjs-backend-wasm@4.22.0/dist/';
+const COCO_URL = CDN + '@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js';
+const MODEL_URL = new URL('model/model.json', location.href).href;          // self-hosted (same origin)
 const MODEL_BYTES = 9290000;
+const FACE_LIB = new URL('lib/face-api.js', location.href).href;            // self-hosted
+const FACE_BASE = new URL('facemodel/', location.href).href;                // self-hosted
+const FACE_BYTES = 7000000;
+const KNOWN_D = 0.48, MAYBE_D = 0.58;                                       // face-descriptor distance thresholds
 const UA = navigator.userAgent || '';
 const IS_IOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const IS_TOUCH = (navigator.maxTouchPoints || 0) > 0 && matchMedia('(pointer:coarse)').matches;
@@ -386,22 +472,26 @@ const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Twitter|TikTok|musical_ly|M
 const GLOW = !(IS_IOS || IS_TOUCH);          // canvas shadowBlur is very slow on phones
 const sb = (c, n) => { c.shadowBlur = GLOW ? n : 0; };
 if (IS_TOUCH) document.documentElement.classList.add('touch');
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, String(v)); } catch (e) {} };
 
 const app = $('#app'), video = $('#video'), vcanvas = $('#vcanvas'), stage = $('#stage'), hud = $('#hud');
 const vctx = vcanvas.getContext('2d'), hctx = hud.getContext('2d');
-const radar = $('#radar'), rctx = radar.getContext('2d');
 video.muted = true; video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', '');
 
-let savedRot = 0; try { savedRot = parseInt(localStorage.getItem('rt_rot') || '0', 10) || 0; } catch (e) {}
+const savedRot = parseInt(lsGet('rt_rot', '0'), 10) || 0;
 const S = {
-  palette: 'green', mute: false, objects: false, grid: true, trails: true,
-  facing: 'environment', mirrored: false, started: false, running: false, booted: false, ready: false,
+  palette: lsGet('rt_pal', 'green') === 'amber' ? 'amber' : 'green', mute: lsGet('rt_mute', '0') === '1',
+  objects: lsGet('rt_obj', '0') === '1', radar: lsGet('rt_radar', '1') === '1', grid: lsGet('rt_grid', '1') === '1', trails: lsGet('rt_trail', '1') === '1',
+  facing: 'environment', mirrored: false, started: false, running: false, ready: false,
   mode: '', worker: null, model: null, modelP: null, stream: null, busy: false, busyAt: 0, reqId: 0, nextInfer: 0,
-  infMs: 0, nnFps: 0, camFps: 0, fps: 0, backend: '', progress: 0, status: '', t0: 0, lastRes: 0,
+  infMs: 0, nnFps: 0, camFps: 0, fps: 0, backend: '', progress: 0, status: '', t0: 0, camRes: '',
   rot: [0, 90, -90].includes(savedRot) ? savedRot : 0, vrot: 0, cw: 640, ch: 480, port: false,
-  tracks: [], next: { H: 1, A: 1, O: 1 }, locks: 0, recStart: 0,
-  W: 640, H: 480, dpr: 1, ox: 0, oy: 0, fg: '#33ff66', rgb: '51,255,102', nCams: 1,
-  az: 12.4, el: 3.1, lastBeepLost: 0, newFrame: true
+  tracks: [], next: { H: 1, A: 1, O: 1 }, uid: 1,
+  W: 640, H: 480, dpr: 1, ox: 0, oy: 0, dw: 640, dh: 480, fg: '#33ff66', rgb: '51,255,102', nCams: 1, lastBeepLost: 0, newFrame: true,
+  sel: null, profiles: [], animals: [], dbOk: false,
+  face: { worker: null, ready: false, p: null, prog: 0, backend: '', ms: 0, cbs: {}, req: 0 },
+  scanBusy: false, matchBusy: false, nextMatch: 0, rec: null, lastCapture: null, logLines: [], panel: ''
 };
 S.vrot = S.rot === 90 ? 270 : S.rot === -90 ? 90 : 0;
 
@@ -429,35 +519,43 @@ const sfx = {
   animal() { beep(440, .12, 'sine', .06); },
   lost() { beep(300, .1, 'sawtooth', .03); beep(200, .14, 'sawtooth', .03, .1); },
   snap() { beep(1800, .04, 'square', .04); beep(1200, .06, 'square', .04, .05); },
+  ok() { beep(1000, .06); beep(1500, .1, 'square', .05, .08); },
   tick() { beep(1000, .02, 'square', .015); }
 };
 
-/* ---------- log ---------- */
+/* ---------- log (real events only; shown as fading overlay) ---------- */
 const logEl = $('#log');
 function stamp(d = new Date()) { return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
 function log(msg, cls = '') {
+  const line = `[${stamp()}] ${msg}`;
+  S.logLines.push(line); if (S.logLines.length > 200) S.logLines.shift();
   const d = document.createElement('div');
   if (cls) d.className = cls;
-  d.textContent = `[${stamp()}] ${msg}`;
+  d.textContent = line; d.dataset.t = performance.now();
   logEl.appendChild(d);
-  while (logEl.children.length > 40) logEl.removeChild(logEl.firstChild);
+  while (logEl.children.length > 4) logEl.removeChild(logEl.firstChild);
 }
-function setStatus(msg) { S.status = msg; log(msg, 'sys-l'); }
-window.addEventListener('error', e => { try { log('JS ERROR: ' + (e.message || '?'), 'warn'); } catch (_) {} });
-window.addEventListener('unhandledrejection', e => { try { log('ERR: ' + ((e.reason && (e.reason.message || e.reason.name)) || e.reason), 'warn'); } catch (_) {} });
+function setStatus(msg) { S.status = msg; S.logLines.push(`[${stamp()}] ${msg}`); }
+window.addEventListener('error', e => { try { log('BŁĄD JS: ' + (e.message || '?'), 'warn'); } catch (_) {} });
+window.addEventListener('unhandledrejection', e => { try { log('BŁĄD: ' + ((e.reason && (e.reason.message || e.reason.name)) || e.reason), 'warn'); } catch (_) {} });
+let toastT = 0;
+function toast(msg, ms = 3500) {
+  $('#toastTxt').textContent = msg; $('#toast').classList.add('show');
+  clearTimeout(toastT); if (ms) toastT = setTimeout(hideToast, ms);
+}
+function hideToast() { $('#toast').classList.remove('show'); }
 
 /* ---------- palette ---------- */
 function applyPalette() {
   const p = PALETTES[S.palette];
   const r = document.documentElement.style;
   r.setProperty('--fg', p.fg); r.setProperty('--fg-rgb', p.rgb);
-  r.setProperty('--dim', `rgba(${p.rgb},.45)`); r.setProperty('--faint', `rgba(${p.rgb},.18)`);
+  r.setProperty('--dim', `rgba(${p.rgb},.55)`); r.setProperty('--faint', `rgba(${p.rgb},.2)`);
   r.setProperty('--glow', `0 0 6px rgba(${p.rgb},.8), 0 0 14px rgba(${p.rgb},.35)`);
   S.fg = p.fg; S.rgb = p.rgb; S.newFrame = true;
-  $('#sPal').textContent = p.en;
 }
 
-/* ---------- layout: everything on ONE screen, any orientation ---------- */
+/* ---------- layout: camera fills the whole screen, any orientation ---------- */
 function layout() {
   const iw = window.innerWidth, ih = window.innerHeight;
   let cw = iw, ch = ih, tf = 'none';
@@ -493,19 +591,19 @@ window.addEventListener('resize', rz);
 window.addEventListener('orientationchange', () => { rz(); setTimeout(resize, 700); });
 if (window.visualViewport) window.visualViewport.addEventListener('resize', rz);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && video.srcObject) video.play().catch(() => {}); });
-// never scroll / rubber-band / pinch-zoom
-document.addEventListener('touchmove', e => { if (!(e.target.closest && e.target.closest('.screen'))) e.preventDefault(); }, { passive: false });
+// never scroll / rubber-band / pinch-zoom (except inside sheets)
+document.addEventListener('touchmove', e => { if (!(e.target.closest && e.target.closest('.screen,.sheet,.mbox'))) e.preventDefault(); }, { passive: false });
 ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault()));
 window.addEventListener('scroll', () => window.scrollTo(0, 0));
 
 function setRot(r) {
   S.rot = r; S.vrot = r === 90 ? 270 : r === -90 ? 90 : 0;
-  try { localStorage.setItem('rt_rot', String(r)); } catch (e) {}
-  S.tracks = []; resize(); setTimeout(resize, 150);
+  lsSet('rt_rot', r);
+  S.tracks = []; S.sel = null; resize(); setTimeout(resize, 150);
   log(r === 0 ? 'HUD: NORMALNIE' : `HUD: OBRÓCONY ${r > 0 ? 'W PRAWO' : 'W LEWO'} (${r}°)`, 'warn');
 }
 function cycleRot() { setRot(S.rot === 0 ? -90 : S.rot === -90 ? 90 : 0); }
-function cycleVrot() { S.vrot = (S.vrot + 90) % 360; S.tracks = []; S.newFrame = true; log(`OBRAZ: ${S.vrot}°`, 'sys-l'); }
+function cycleVrot() { S.vrot = (S.vrot + 90) % 360; S.tracks = []; S.sel = null; S.newFrame = true; log(`OBRAZ: ${S.vrot}°`, 'sys-l'); }
 
 /* ---------- link helpers ---------- */
 async function copyLink(btn) {
@@ -554,7 +652,7 @@ function camErrInfo(e) {
   return { msg: 'Nie można uruchomić kamery: ' + ((e && (e.message || e.name)) || '?') + inapp, hint: IN_APP ? INAPP_HINT : '' };
 }
 
-/* ---------- inference engine: Web Worker (wasm) with main-thread fallback ---------- */
+/* ---------- detection engine: Web Worker (wasm) with main-thread fallback ---------- */
 function withTimeout(p, ms, msg) {
   let t; const to = new Promise((_, rej) => { t = setTimeout(() => { const e = new Error(msg); e.code = 'TIMEOUT'; rej(e); }, ms); });
   return Promise.race([p, to]).finally(() => clearTimeout(t));
@@ -566,12 +664,14 @@ function loadScript(src) {
     document.head.appendChild(s);
   });
 }
+function mkWorker(id) {
+  if (!window.Worker || !window.Blob || !window.URL) throw new Error('Brak obsługi Web Worker');
+  return new Worker(URL.createObjectURL(new Blob([document.getElementById(id).textContent], { type: 'text/javascript' })));
+}
 function initWorker() {
   return new Promise((resolve, reject) => {
-    if (!window.Worker || !window.Blob || !window.URL) return reject(new Error('Brak obsługi Web Worker'));
     let w;
-    try { w = new Worker(URL.createObjectURL(new Blob([$('#wsrc').textContent], { type: 'text/javascript' }))); }
-    catch (e) { return reject(e); }
+    try { w = mkWorker('wsrc'); } catch (e) { return reject(e); }
     S.worker = w;
     const dog = setTimeout(() => reject(new Error('Worker: przekroczono czas wczytywania')), 150000);
     w.onerror = e => { clearTimeout(dog); reject(new Error('Worker error: ' + (e.message || 'script'))); };
@@ -613,7 +713,6 @@ async function loadEngine() {
     try { if (S.worker) S.worker.terminate(); } catch (_) {} S.worker = null;
     await loadMainThread(); S.mode = 'main';
   }
-  $('#sBk').textContent = S.backend.toUpperCase() + (S.mode === 'worker' ? '/WRK' : '');
   S.ready = true;
 }
 function ensureModel() {
@@ -623,6 +722,30 @@ function ensureModel() {
 }
 function modelErrMsg(e) {
   return 'Nie udało się wczytać modelu wykrywania.\n' + ((e && e.message) || '?') + '\n\nKamera nadal działa. Dotknij „Ponów”, żeby spróbować jeszcze raz.';
+}
+
+/* ---------- face module (lazy, own worker, own wasm) ---------- */
+function ensureFace() {
+  const F = S.face;
+  if (F.ready) return Promise.resolve();
+  if (F.p) return F.p;
+  F.p = new Promise((resolve, reject) => {
+    let w;
+    try { w = mkWorker('fsrc'); } catch (e) { return reject(new Error('Brak obsługi Web Worker')); }
+    F.worker = w; F.prog = 0;
+    const dog = setTimeout(() => reject(new Error('przekroczono czas wczytywania modułu twarzy')), 150000);
+    w.onerror = e => { clearTimeout(dog); reject(new Error('worker: ' + (e.message || 'script'))); };
+    w.onmessage = e => {
+      const m = e.data;
+      if (m.type === 'status') setStatus(m.msg);
+      else if (m.type === 'progress') F.prog = clamp(m.loaded / m.total, 0, 1);
+      else if (m.type === 'ready') { clearTimeout(dog); F.ready = true; F.backend = m.backend; resolve(); }
+      else if (m.type === 'fail') { clearTimeout(dog); reject(new Error(m.msg)); }
+      else if (m.type === 'faces') { const cb = F.cbs[m.id]; if (cb) { delete F.cbs[m.id]; cb(m); } }
+    };
+    w.postMessage({ type: 'init', lib: FACE_LIB, base: FACE_BASE, wasmPath: WASM_PATH, totalBytes: FACE_BYTES });
+  }).catch(e => { try { if (F.worker) F.worker.terminate(); } catch (_) {} F.worker = null; F.p = null; throw e; });
+  return F.p;
 }
 
 /* ---------- camera ---------- */
@@ -647,29 +770,23 @@ async function startCamera() {
     if (!stream) throw lastErr || new Error('getUserMedia');
     S.stream = stream;
     const tr = stream.getVideoTracks()[0];
-    tr.addEventListener('ended', () => { if (S.stream === stream) { showErr('Kamera została odłączona lub przerwana przez system.\nDotknij „Ponów”.', ''); $('#rec').classList.add('idle'); } });
+    tr.addEventListener('ended', () => { if (S.stream === stream) showErr('Kamera została odłączona lub przerwana przez system.\nDotknij „Ponów”.', ''); });
     video.srcObject = stream; video.muted = true;
     await new Promise(res => { if (video.readyState >= 1) res(); else { video.onloadedmetadata = () => res(); setTimeout(res, 4000); } });
     await video.play().catch(() => {});
     const st = tr.getSettings ? tr.getSettings() : {};
     S.mirrored = st.facingMode ? st.facingMode === 'user' : !/back|rear|environment|tył/i.test(tr.label || '');
-    S.lastRes = 0;
-    $('#sRes').textContent = `${video.videoWidth || st.width || '?'}x${video.videoHeight || st.height || '?'}`;
-    $('#sCam').textContent = S.mirrored ? 'FRONT' : 'REAR';
+    S.camRes = `${video.videoWidth || st.width || '?'}x${video.videoHeight || st.height || '?'}`;
     resize();
     try { const devs = await navigator.mediaDevices.enumerateDevices(); S.nCams = devs.filter(d => d.kind === 'videoinput').length; } catch (e) {}
     $('#bCam').disabled = S.nCams < 2;
-    if (!S.recStart) S.recStart = performance.now();
-    $('#rec').classList.remove('idle'); $('#recTxt').textContent = 'REC';
     return stream;
   } catch (e) {
-    $('#sCam').textContent = 'OFFLINE';
     const i = camErrInfo(e); showErr(i.msg, i.hint);
-    log('CAM-01 FAILURE: ' + ((e && e.name) || 'ERR'), 'warn');
+    log('BŁĄD KAMERY: ' + ((e && e.name) || 'ERR'), 'warn');
     throw e;
   }
 }
-// camera frame counter (real camera fps, independent of render + inference)
 let camFrames = 0, haveRVFC = false;
 if (video.requestVideoFrameCallback) {
   haveRVFC = true;
@@ -680,20 +797,31 @@ let lastCT = -1;
 
 /* ---------- tracking ---------- */
 const groupOf = c => c === 'person' ? 'H' : ANIMALS.has(c) ? 'A' : 'O';
+const getProfile = id => S.profiles.find(p => p.id === id);
+const pctOf = d => Math.round(clamp((0.7 - d) / 0.5, 0, 1) * 100);
 function iou(a, b) {
   const x1 = Math.max(a.x, b.x), y1 = Math.max(a.y, b.y);
   const x2 = Math.min(a.x + a.w, b.x + b.w), y2 = Math.min(a.y + a.h, b.y + b.h);
   const i = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
   return i / (a.w * a.h + b.w * b.h - i + 1e-9);
 }
+function baseName(t) {
+  return t.g === 'H' ? `HUMAN #${t.id}` : t.g === 'A' ? `${PL[t.cls] || t.cls.toUpperCase()} #${t.id}` : `${t.cls.toUpperCase()} #${t.id}`;
+}
 function label(t) {
-  return t.g === 'H' ? `HUMAN #${t.id}` : t.g === 'A' ? `FAUNA/${t.cls.toUpperCase()} #${t.id}` : `OBJ/${t.cls.toUpperCase()} #${t.id}`;
+  if (t.g === 'H') {
+    const p = t.person, pr = p.pid != null ? getProfile(p.pid) : null;
+    if (p.state === 'known' && pr) return `ZNANY: ${pr.name} (${pctOf(p.d)}%)`;
+    if (p.state === 'maybe' && pr) return `PODOBNY DO: ${pr.name}? (${pctOf(p.d)}%)`;
+    if (p.state === 'new') return `NOWA OSOBA #${t.id}`;
+  }
+  return baseName(t);
 }
 function confirm(t, now) {
   t.confirmed = true; t.id = S.next[t.g]++; t.born = now;
-  if (t.g === 'H') { S.locks++; sfx.human(); log(`${label(t)} ACQUIRED`, 'warn'); }
-  else if (t.g === 'A') { sfx.animal(); log(`${label(t)} DETECTED - NON-HOSTILE`); }
-  else if (S.objects) log(`${label(t)} NOTED`, 'sys-l');
+  if (t.g === 'H') { sfx.human(); log(`${baseName(t)} WYKRYTY`, 'warn'); }
+  else if (t.g === 'A') { sfx.animal(); log(`${baseName(t)} WYKRYTY`); }
+  else if (S.objects) log(`${baseName(t)} WYKRYTY`, 'sys-l');
 }
 function fmtDur(ms) { const s = Math.floor(ms / 1000); return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`; }
 function updateTracks(dets, now) {
@@ -718,7 +846,8 @@ function updateTracks(dets, now) {
   }
   dets.forEach((d, di) => {
     if (usedD.has(di)) return;
-    tr.push({ ...d, hits: 1, last: now, missed: 0, confirmed: false, id: 0, born: now, trail: [], dx: d.x, dy: d.y, dw: d.w, dh: d.h });
+    tr.push({ ...d, uid: S.uid++, hits: 1, last: now, missed: 0, confirmed: false, id: 0, born: now, trail: [], dx: d.x, dy: d.y, dw: d.w, dh: d.h,
+      person: { state: 'unk', pid: null, d: 9, tried: 0, nof: 0, nnew: 0, logged: false } });
   });
   S.tracks = tr.filter((t, i) => {
     if (usedT.has(i) || t.last === now) return true;
@@ -726,17 +855,18 @@ function updateTracks(dets, now) {
     const ttl = t.g === 'H' ? 1500 : 1100;      // inference is slower on phones: keep targets a bit longer
     if (!t.confirmed) return now - t.last < 600;
     if (now - t.last > ttl) {
-      if (t.g === 'H') { log(`${label(t)} LOST - T+${fmtDur(t.last - t.born)}`, 'warn'); const n = performance.now(); if (n - S.lastBeepLost > 500) { sfx.lost(); S.lastBeepLost = n; } }
-      else if (t.g === 'A') log(`${label(t)} LEFT SECTOR`);
-      else if (S.objects) log(`${label(t)} GONE`, 'sys-l');
+      if (t.g === 'H') { log(`${baseName(t)} UTRACONY - T+${fmtDur(t.last - t.born)}`, 'warn'); const n = performance.now(); if (n - S.lastBeepLost > 500) { sfx.lost(); S.lastBeepLost = n; } }
+      else if (t.g === 'A') log(`${baseName(t)} ODSZEDŁ`);
+      else if (S.objects) log(`${baseName(t)} ZNIKNĄŁ`, 'sys-l');
       return false;
     }
     return true;
   });
+  if (S.sel && !S.tracks.includes(S.sel)) { S.sel = null; if (!S.scanBusy) hideCard(); }
 }
 
 /* ---------- inference scheduling (downscaled frame, one in flight, adaptive) ---------- */
-const fitScale = (w, h, fw, fh) => IS_TOUCH ? Math.max(w / fw, h / fh) : Math.min(w / fw, h / fh);  // phones: fill (cover), desktop: whole picture (contain)
+const fitScale = (w, h, fw, fh) => Math.max(w / fw, h / fh);   // camera always fills the whole screen (cover)
 const viewDims = () => {
   const vw = video.videoWidth || 16, vh = video.videoHeight || 9;
   return (S.vrot === 90 || S.vrot === 270) ? [vh, vw] : [vw, vh];
@@ -756,6 +886,22 @@ function captureFrame() {
   ictx.restore();
   return ictx.getImageData(0, 0, tw, th);
 }
+// crop of the (unmirrored) view at native camera resolution; nx/ny/nw/nh are fractions of the view
+function captureRegion(nx, ny, nw, nh, maxSide, maxUp) {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  if (!vw || !vh || video.readyState < 2) return null;
+  const [fw, fh] = viewDims();
+  const rw = nw * fw, rh = nh * fh;
+  if (rw < 8 || rh < 8) return null;
+  const sc = Math.min(maxUp || 2, maxSide / Math.max(rw, rh));
+  const cw = Math.max(16, Math.round(rw * sc)), ch = Math.max(16, Math.round(rh * sc));
+  const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+  const c = cv.getContext('2d', { willReadFrequently: true });
+  c.translate(-nx * fw * sc, -ny * fh * sc);
+  c.translate(fw * sc / 2, fh * sc / 2); c.rotate(S.vrot * Math.PI / 180);
+  c.drawImage(video, -vw * sc / 2, -vh * sc / 2, vw * sc, vh * sc);
+  return cv;
+}
 function handlePreds(preds, w, h, ms) {
   const dets = preds.map(p => {
     let [x, y, bw, bh] = p.bbox;
@@ -773,7 +919,7 @@ function handlePreds(preds, w, h, ms) {
 }
 function onWorkerResult(m) {
   if (m.id !== S.reqId) { return; }
-  if (m.error) { S.busy = false; S.nextInfer = performance.now() + 500; log('NN ERR: ' + m.error, 'warn'); return; }
+  if (m.error) { S.busy = false; S.nextInfer = performance.now() + 500; log('BŁĄD SIECI: ' + m.error, 'warn'); return; }
   handlePreds(m.preds, m.w, m.h, m.ms);
 }
 function infer(now) {
@@ -785,7 +931,7 @@ function infer(now) {
   } else {
     const t0 = performance.now();
     S.model.detect(img, 20, 0.45).then(p => { if (id === S.reqId) handlePreds(p, img.width, img.height, performance.now() - t0); })
-      .catch(e => { S.busy = false; S.nextInfer = performance.now() + 500; log('NN ERR: ' + (e && e.message), 'warn'); });
+      .catch(e => { S.busy = false; S.nextInfer = performance.now() + 500; log('BŁĄD SIECI: ' + (e && e.message), 'warn'); });
   }
 }
 
@@ -808,13 +954,14 @@ function paintVideo(c, w, h) {
   c.globalCompositeOperation = 'multiply'; c.globalAlpha = 1; c.fillStyle = S.fg; c.fillRect(0, 0, w, h);    // phosphor tint
   c.globalCompositeOperation = 'source-over';
 }
-const uiSize = base => Math.max(12, Math.round(base * clamp(Math.min(S.W / 760, S.H / 480), .62, 1)));
+const uiSize = base => Math.max(13, Math.round(base * clamp(Math.min(S.W / 760, S.H / 480), .7, 1)));
 function tag(c, text, x, y, filled = true, size = 20, alpha = 1) {
   c.font = `${size}px VT323, "Courier New", monospace`;
   const w = c.measureText(text).width + 8, h = size * .85 + 4;
+  const minX = 2 - S.ox, maxX = S.W - S.ox - w - 2; if (x > maxX) x = maxX; if (x < minX) x = minX;
   c.save(); c.globalAlpha = alpha; sb(c, 0);
   if (filled) { c.fillStyle = S.fg; c.fillRect(x, y, w, h); c.fillStyle = '#000'; c.fillText(text, x + 4, y + h - 5); }
-  else { c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 6); c.fillText(text, x + 4, y + h - 5); }
+  else { c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(x, y, w, h); c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 6); c.fillText(text, x + 4, y + h - 5); }
   c.restore();
   return { w, h };
 }
@@ -841,59 +988,57 @@ function drawTrail(c, t, now, W, H) {
   }
   c.restore();
 }
+/* ---------- distance & bearing ESTIMATES (pinhole model, assumed camera FOV and typical target sizes) ---------- */
+const REAL_H = { person: 1.7, cat: .25, dog: .5, bird: .15, horse: 1.6, sheep: .8, cow: 1.4, elephant: 3, bear: 1.2, zebra: 1.4, giraffe: 4.5 };
+const HFOV = () => (S.mirrored ? 70 : 65) * Math.PI / 180;      // horizontal FOV along the sensor's long side (typical phone, approximate)
+function viewFov() {                                              // horizontal FOV of the current view (it may be the sensor's short side)
+  const vw = video.videoWidth || 16, vh = video.videoHeight || 9, [fw] = viewDims();
+  return 2 * Math.atan(Math.tan(HFOV() / 2) * fw / Math.max(vw, vh));
+}
+function estDist(t) {                                             // meters, or null (objects)
+  const rh = REAL_H[t.cls]; if (!rh) return null;
+  const [fw, fh] = viewDims(), f = (fw / 2) / Math.tan(viewFov() / 2);   // focal length in view pixels
+  const d = rh * f / Math.max(8, t.h * fh);
+  t.dist = t.dist ? t.dist * .8 + d * .2 : d;
+  return t.dist;
+}
+const fmtDist = d => d == null ? '' : d > 30 ? '~30+ m' : d >= 10 ? `~${Math.round(d)} m` : `~${d.toFixed(1)} m`;
+function labelRows(c, t, x, y, w, h, now, size, sel) {
+  const lh = size * .85 + 4;
+  let ty = y - (lh + 2);
+  if (ty < 2 - S.oy) ty = y + 3;
+  tag(c, label(t) + (sel ? ' ◄' : ''), x, ty, true, size);
+  const by = y + h + 3 + lh > S.H - S.oy ? y + h - lh - 3 : y + h + 3;
+  tag(c, `PEWNOŚĆ ${Math.round(t.score * 100)}%  T+${fmtDur(now - t.born)}` + (t.dist ? `  ${fmtDist(t.dist)}` : ''), x, by, false, size - 3);
+}
 function drawHuman(c, t, now, W, H) {
   let x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H;
-  const age = (now - t.born) / 1000, stale = now - t.last > 400;
-  if (age < .6) { const k = 1 + (1 - age / .6) * .7; const cx = x + w / 2, cy = y + h / 2; w *= k; h *= k; x = cx - w / 2; y = cy - h / 2; }
-  const cx = x + w / 2, cy = y + h / 2;
+  const age = (now - t.born) / 1000, stale = now - t.last > 400, sel = S.sel === t;
+  if (age < .5) { const k = 1 + (1 - age / .5) * .5; const cx = x + w / 2, cy = y + h / 2; w *= k; h *= k; x = cx - w / 2; y = cy - h / 2; }
   c.save();
   c.globalAlpha = stale ? .5 : 1;
   c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 8);
   const len = clamp(Math.min(w, h) * .22, 12, 46);
-  corners(c, x, y, w, h, len, 3);
-  c.globalAlpha *= .25; c.lineWidth = 1; c.strokeRect(x, y, w, h); c.globalAlpha = stale ? .5 : 1;
-  const r = clamp(Math.min(w, h) * .09, 7, 16), g = r + 4, e = r + 14;
-  c.lineWidth = 1.5;
-  c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
-  c.beginPath();
-  c.moveTo(cx - e, cy); c.lineTo(cx - g, cy); c.moveTo(cx + g, cy); c.lineTo(cx + e, cy);
-  c.moveTo(cx, cy - e); c.lineTo(cx, cy - g); c.moveTo(cx, cy + g); c.lineTo(cx, cy + e);
-  c.stroke();
-  c.fillRect(cx - 1, cy - 1, 2, 2);
-  const size = uiSize(20), lh = size * .85 + 4;
-  let ty = y - (lh + 2);
-  if (ty < 2 - S.oy) ty = y + 3;
-  const a = tag(c, label(t), x, ty, true, size);
-  if (Math.floor(now / 400) % 2 === 0) tag(c, '■ TARGET LOCKED', x + a.w + 4, ty, false, size);
-  const sbt = S.H - S.oy;
-  const by = y + h + 3 + lh > sbt ? y + h - lh * 2 - 3 : y + h + 3;
-  tag(c, `CONF ${Math.round(t.score * 100)}%  T+${fmtDur(now - t.born)}`, x, by, false, size - 2);
-  tag(c, `X${(cx / W > .5 ? '+' : '-')}${pad(Math.round(Math.abs(cx / W - .5) * 200), 2)} RNG ${(1.2 / Math.max(.08, t.dh)).toFixed(1)}M`, x, by + lh, false, size - 4, .75);
+  corners(c, x, y, w, h, len, sel ? 4 : 3);
+  c.globalAlpha *= sel ? (.55 + .35 * Math.sin(now / 160)) : .22; c.lineWidth = sel ? 2 : 1; c.strokeRect(x, y, w, h); c.globalAlpha = stale ? .5 : 1;
+  labelRows(c, t, x, y, w, h, now, uiSize(20), sel);
   c.restore();
 }
 function drawAnimal(c, t, now, W, H) {
   const x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H;
-  const stale = now - t.last > 400;
+  const stale = now - t.last > 400, sel = S.sel === t;
   c.save(); c.globalAlpha = stale ? .45 : .9;
   c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 5);
-  c.lineWidth = 2; c.setLineDash([8, 5]); c.lineDashOffset = -(now / 60) % 13;
+  c.lineWidth = sel ? 3 : 2; c.setLineDash([8, 5]); c.lineDashOffset = -(now / 60) % 13;
   c.strokeRect(x, y, w, h); c.setLineDash([]);
-  const cx = x + w / 2, cy = y + h / 2;
-  c.beginPath(); c.moveTo(cx, cy - 7); c.lineTo(cx + 7, cy); c.lineTo(cx, cy + 7); c.lineTo(cx - 7, cy); c.closePath(); c.stroke();
-  const size = uiSize(19), lh = size * .85 + 4;
-  let ty = y - (lh + 2); if (ty < 2 - S.oy) ty = y + 3;
-  const a = tag(c, label(t), x, ty, true, size);
-  tag(c, 'FAUNA // NON-HOSTILE', x + a.w + 4, ty, false, size - 2);
-  const sbt = S.H - S.oy;
-  const by = y + h + 3 + lh > sbt ? y + h - lh - 3 : y + h + 3;
-  tag(c, `CONF ${Math.round(t.score * 100)}%  T+${fmtDur(now - t.born)}`, x, by, false, size - 3);
+  labelRows(c, t, x, y, w, h, now, uiSize(19), sel);
   c.restore();
 }
 function drawObject(c, t, now, W, H) {
-  const x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H;
-  c.save(); c.globalAlpha = .38; c.strokeStyle = S.fg; c.lineWidth = 1; sb(c, 0);
+  const x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H, sel = S.sel === t;
+  c.save(); c.globalAlpha = sel ? .9 : .45; c.strokeStyle = S.fg; c.lineWidth = sel ? 2 : 1; sb(c, 0);
   c.strokeRect(x, y, w, h);
-  const ty = y > 16 - S.oy ? y - 14 : y + 2;
+  const ty = y > 16 ? y - 14 : y + 2;
   tag(c, `${t.cls.toUpperCase()} ${Math.round(t.score * 100)}%`, x, ty, false, uiSize(15), 1);
   c.restore();
 }
@@ -903,36 +1048,22 @@ function drawHud(now, dt) {
   c.clearRect(0, 0, W, H);
   c.lineCap = 'butt'; c.textBaseline = 'alphabetic'; c.textAlign = 'left';
   c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 4);
-  const small = Math.min(W, H) < 420;
 
   if (S.grid) {
     c.save(); c.globalAlpha = .22; c.lineWidth = 1; c.setLineDash([2, 6]); c.beginPath();
     for (let i = 1; i < 3; i++) { c.moveTo(W * i / 3, 0); c.lineTo(W * i / 3, H); c.moveTo(0, H * i / 3); c.lineTo(W, H * i / 3); }
     c.stroke(); c.restore();
-    c.save(); c.globalAlpha = .55; c.lineWidth = 1;
-    const cx = W / 2, cy = H / 2, s = small ? 14 : 22;
-    c.beginPath();
-    c.moveTo(cx - s * 2, cy); c.lineTo(cx - s, cy); c.moveTo(cx + s, cy); c.lineTo(cx + s * 2, cy);
-    c.moveTo(cx, cy - s * 2); c.lineTo(cx, cy - s); c.moveTo(cx, cy + s); c.lineTo(cx, cy + s * 2);
-    c.stroke(); c.restore();
   }
-  c.save(); c.globalAlpha = .6; c.lineWidth = 1; c.beginPath();
-  for (let i = 0; i <= 40; i++) { const x = W * i / 40, l = i % 10 === 0 ? 12 : i % 5 === 0 ? 8 : 4; c.moveTo(x, 0); c.lineTo(x, l); c.moveTo(x, H); c.lineTo(x, H - l); }
-  for (let i = 0; i <= 30; i++) { const y = H * i / 30, l = i % 10 === 0 ? 12 : i % 5 === 0 ? 8 : 4; c.moveTo(0, y); c.lineTo(l, y); c.moveTo(W, y); c.lineTo(W - l, y); }
-  c.stroke(); c.restore();
-  c.save(); corners(c, 6, 6, W - 12, H - 12, 24, 2); c.restore();
+  c.save(); c.globalAlpha = .7; corners(c, 6, 6, W - 12, H - 12, 22, 2); c.restore();
 
-  const sy = ((now / 12) % (H + 80)) - 40;
-  const grd = c.createLinearGradient(0, sy - 30, 0, sy + 30);
-  grd.addColorStop(0, `rgba(${S.rgb},0)`); grd.addColorStop(.5, `rgba(${S.rgb},.08)`); grd.addColorStop(1, `rgba(${S.rgb},0)`);
-  c.save(); sb(c, 0); c.fillStyle = grd; c.fillRect(0, sy - 30, W, 60); c.restore();
-
+  // the view is drawn "cover": it is larger than the screen; ox/oy are <= 0
   const [fw, fh] = viewDims();
   const sc = fitScale(W, H, fw, fh), dw = fw * sc, dh = fh * sc;
-  S.ox = (W - dw) / 2; S.oy = (H - dh) / 2;
+  S.ox = (W - dw) / 2; S.oy = (H - dh) / 2; S.dw = dw; S.dh = dh;
 
   const k = 1 - Math.exp(-dt * 14);
   for (const t of S.tracks) { t.dx += (t.x - t.dx) * k; t.dy += (t.y - t.dy) * k; t.dw += (t.w - t.dw) * k; t.dh += (t.h - t.dh) * k; }
+  for (const t of S.tracks) if (t.confirmed) estDist(t);
   const vis = S.tracks.filter(t => t.confirmed);
   c.save(); c.translate(S.ox, S.oy);
   for (const t of vis) if (t.g !== 'O' || S.objects) drawTrail(c, t, now, dw, dh);
@@ -941,138 +1072,488 @@ function drawHud(now, dt) {
   for (const t of vis) if (t.g === 'H') drawHuman(c, t, now, dw, dh);
   c.restore();
 
-  const size = uiSize(20), bb = small ? 30 : 46;
+  const size = uiSize(20);
   c.font = `${size}px VT323, "Courier New", monospace`; sb(c, 6);
-  const topY = S.port ? 62 : size + 8;     // portrait: threat bar sits at the top of the video
-  c.fillText(`CAM-01 ${S.mirrored ? 'FRONT' : 'REAR'}  ${$('#sRes').textContent}`, 14, topY);
-  c.textAlign = 'right';
-  c.fillText(S.running ? 'AUTO-TRACK' : 'STANDBY', W - 14, topY);
-  if (!S.port) {
-    S.az += (Math.random() - .5) * .08; S.el += (Math.random() - .5) * .04;
-    c.fillText(`ZOOM 1.0X  ${S.palette === 'green' ? 'PHOS-G' : 'PHOS-A'}`, W - 14, H - bb);
-    c.textAlign = 'left';
-    c.fillText(`AZ ${S.az.toFixed(1).padStart(5, '0')}°  EL ${S.el >= 0 ? '+' : ''}${S.el.toFixed(1)}°`, 14, H - bb);
-  }
   c.textAlign = 'center';
-  if (!S.stream) c.fillText('OCZEKIWANIE NA KAMERĘ...', W / 2, H / 2 + 50);
+  const cy = H * 0.42;
+  if (!S.stream) c.fillText('OCZEKIWANIE NA KAMERĘ...', W / 2, cy);
   else if (!S.ready) {
     const pct = S.progress > 0 && S.progress < 1 ? ` ${Math.round(S.progress * 100)}%` : '';
-    c.fillText('ŁADOWANIE SIECI NEURONOWEJ...' + pct, W / 2, H / 2 + 50);
-    c.fillText(((S.status || '').slice(0, 44)) + ' ' + Math.floor((performance.now() - (S.t0 || performance.now())) / 1000) + 's', W / 2, H / 2 + 50 + size + 2);
-    // progress bar
-    const bw = Math.min(W * .6, 300), bx = (W - bw) / 2, by = H / 2 + 50 + size * 2 + 8;
+    c.fillText('ŁADOWANIE SIECI NEURONOWEJ...' + pct, W / 2, cy);
+    c.fillText(((S.status || '').slice(0, 44)) + ' ' + Math.floor((performance.now() - (S.t0 || performance.now())) / 1000) + 's', W / 2, cy + size + 2);
+    const bw = Math.min(W * .6, 300), bx = (W - bw) / 2, by = cy + size * 2 + 8;
     c.lineWidth = 1; c.strokeRect(bx, by, bw, 10); c.fillRect(bx + 2, by + 2, Math.max(0, (bw - 4) * S.progress), 6);
   }
   c.textAlign = 'left';
 }
-function drawRadar(now) {
-  const c = rctx, W = radar.width, H = radar.height;
-  c.setTransform(1, 0, 0, 1, 0, 0);
-  c.clearRect(0, 0, W, H);
-  const ox = W / 2, oy = H - 18, R = H - 40;
-  const FOV = 56 * Math.PI / 180;
-  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 4); c.lineWidth = 1.5;
+
+const radarEl = $('#radar'), rctx = radarEl.getContext('2d');
+function drawRadar() {
+  if (!S.radar) return;
+  const c = rctx, W = radarEl.width, H = radarEl.height;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, H);
+  const MAXD = 10, fov = viewFov(), half = Math.min(fov / 2, 80 * Math.PI / 180);
+  const ox = W / 2, oy = H - 14, R = Math.min(H - 30, (W / 2 - 6) / Math.sin(Math.max(half, .5)));
   const ang = th => -Math.PI / 2 + th;
-  c.globalAlpha = .45;
-  for (let i = 1; i <= 4; i++) { c.beginPath(); c.arc(ox, oy, R * i / 4, ang(-FOV), ang(FOV)); c.stroke(); }
-  c.beginPath(); c.moveTo(ox, oy); c.lineTo(ox + Math.cos(ang(-FOV)) * R, oy + Math.sin(ang(-FOV)) * R);
-  c.moveTo(ox, oy); c.lineTo(ox + Math.cos(ang(FOV)) * R, oy + Math.sin(ang(FOV)) * R);
-  c.moveTo(ox, oy); c.lineTo(ox, oy - R); c.stroke();
-  c.globalAlpha = 1;
-  const ph = (now % 3200) / 3200, sw = -FOV + ph * 2 * FOV;
-  sb(c, 0);
-  for (let i = 0; i < 14; i++) {
-    const a0 = sw - i * .04, a1 = sw - (i + 1) * .04;
-    if (a1 < -FOV) break;
-    c.globalAlpha = .22 * (1 - i / 14);
-    c.beginPath(); c.moveTo(ox, oy); c.arc(ox, oy, R, ang(a1), ang(a0)); c.closePath(); c.fill();
+  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.lineWidth = 1.5; c.font = '20px VT323, monospace'; c.textAlign = 'center';
+  c.globalAlpha = .4;
+  for (let i = 1; i <= 4; i++) { c.beginPath(); c.arc(ox, oy, R * i / 4, ang(-half), ang(half)); c.stroke(); }
+  c.beginPath(); c.moveTo(ox, oy); c.lineTo(ox + Math.cos(ang(-half)) * R, oy + Math.sin(ang(-half)) * R);
+  c.moveTo(ox, oy); c.lineTo(ox + Math.cos(ang(half)) * R, oy + Math.sin(ang(half)) * R); c.moveTo(ox, oy); c.lineTo(ox, oy - R); c.stroke();
+  c.globalAlpha = .8; c.fillText('5m', ox + 10, oy - R / 2 + 5); c.fillText('10m', ox + 14, oy - R + 5);
+  c.fillText('RADAR (SZAC.)', ox, H - 2);
+  for (const t of S.tracks) {
+    if (!t.confirmed || t.g === 'O' || !t.dist) continue;
+    const cx = t.dx + t.dw / 2, th = Math.atan((cx - .5) * 2 * Math.tan(fov / 2));   // bearing from x position (pinhole)
+    const rr = Math.min(1, t.dist / MAXD) * R;
+    const px = ox + Math.cos(ang(th)) * rr, py = oy + Math.sin(ang(th)) * rr;
+    c.globalAlpha = performance.now() - t.last > 400 ? .45 : 1;
+    if (t.g === 'H') c.fillRect(px - 6, py - 6, 12, 12);
+    else { c.beginPath(); c.moveTo(px, py - 8); c.lineTo(px + 8, py); c.lineTo(px, py + 8); c.lineTo(px - 8, py); c.closePath(); c.stroke(); }
+    if (S.sel === t) { c.globalAlpha = 1; c.beginPath(); c.arc(px, py, 13, 0, Math.PI * 2); c.stroke(); }
+    if (t.dist > MAXD) { c.globalAlpha = .9; c.fillText('›', px, py - 10); }
   }
-  sb(c, 6); c.globalAlpha = 1; c.lineWidth = 2;
-  c.beginPath(); c.moveTo(ox, oy); c.lineTo(ox + Math.cos(ang(sw)) * R, oy + Math.sin(ang(sw)) * R); c.stroke();
+  c.globalAlpha = 1; c.textAlign = 'left';
+}
+
+/* ---------- local database (IndexedDB; faces never leave this device) ---------- */
+const DB = { db: null, mem: { faces: [], animals: [] } };
+function idbOpen() {
+  return new Promise(res => {
+    try {
+      const rq = indexedDB.open('majsterman-tracker', 1);
+      rq.onupgradeneeded = () => { const d = rq.result; d.createObjectStore('faces', { keyPath: 'id', autoIncrement: true }); d.createObjectStore('animals', { keyPath: 'id', autoIncrement: true }); };
+      rq.onsuccess = () => { DB.db = rq.result; res(true); };
+      rq.onerror = () => res(false); rq.onblocked = () => res(false);
+    } catch (e) { res(false); }
+  });
+}
+function dbAll(store) {
+  return new Promise(res => {
+    if (!DB.db) return res(DB.mem[store].slice());
+    try { const rq = DB.db.transaction(store).objectStore(store).getAll(); rq.onsuccess = () => res(rq.result || []); rq.onerror = () => res([]); } catch (e) { res([]); }
+  });
+}
+function dbPut(store, obj) {
+  return new Promise(res => {
+    if (!DB.db) {
+      if (obj.id == null) obj.id = Date.now() + Math.random();
+      const i = DB.mem[store].findIndex(o => o.id === obj.id); if (i < 0) DB.mem[store].push(obj); else DB.mem[store][i] = obj;
+      return res(obj);
+    }
+    try { const rq = DB.db.transaction(store, 'readwrite').objectStore(store).put(obj); rq.onsuccess = () => { obj.id = rq.result; res(obj); }; rq.onerror = () => res(null); } catch (e) { res(null); }
+  });
+}
+function dbDel(store, id) {
+  return new Promise(res => {
+    if (!DB.db) { DB.mem[store] = DB.mem[store].filter(o => o.id !== id); return res(); }
+    try { const rq = DB.db.transaction(store, 'readwrite').objectStore(store).delete(id); rq.onsuccess = rq.onerror = () => res(); } catch (e) { res(); }
+  });
+}
+function dbClear(store) {
+  return new Promise(res => {
+    if (!DB.db) { DB.mem[store] = []; return res(); }
+    try { const rq = DB.db.transaction(store, 'readwrite').objectStore(store).clear(); rq.onsuccess = rq.onerror = () => res(); } catch (e) { res(); }
+  });
+}
+async function loadDb() {
+  S.dbOk = await idbOpen();
+  if (!S.dbOk) log('Brak IndexedDB (tryb prywatny?) - baza tylko do zamknięcia karty', 'warn');
+  else { try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {} }
+  S.profiles = (await dbAll('faces')).sort((a, b) => a.id - b.id);
+  S.animals = (await dbAll('animals')).sort((a, b) => a.id - b.id);
+  if (S.profiles.length) log(`BAZA TWARZY: ${S.profiles.length} zapisanych`, 'sys-l');
+}
+
+/* ---------- dialogs ---------- */
+let dlgResolve = null;
+function ask({ title, text = '', input = false, def = '', ok = 'OK', cancel = 'Anuluj', noCancel = false }) {
+  return new Promise(res => {
+    if (dlgResolve) dlgResolve(null);
+    dlgResolve = res;
+    $('#dlgT').textContent = title; $('#dlgX').textContent = text; $('#dlgX').style.display = text ? '' : 'none';
+    const i = $('#dlgI'); i.style.display = input ? '' : 'none'; i.value = def;
+    $('#dlgOk').textContent = ok; $('#dlgNo').textContent = cancel; $('#dlgNo').style.display = noCancel ? 'none' : '';
+    $('#dlg').classList.add('show');
+    if (input) setTimeout(() => { i.focus(); i.select(); }, 60);
+  });
+}
+function dlgDone(val) { $('#dlg').classList.remove('show'); const r = dlgResolve; dlgResolve = null; if (r) r(val); }
+$('#dlgOk').onclick = () => dlgDone($('#dlgI').style.display === 'none' ? true : ($('#dlgI').value.trim() || ''));
+$('#dlgNo').onclick = () => dlgDone(null);
+$('#dlgI').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#dlgOk').click(); } else if (e.key === 'Escape') dlgDone(null); });
+
+/* ---------- face scanning & recognition ---------- */
+const fdist = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; s += d * d; } return Math.sqrt(s); };
+function matchProfile(desc) {
+  let best = null, bd = 9;
+  for (const p of S.profiles) for (const e of p.embs) { const d = fdist(desc, e); if (d < bd) { bd = d; best = p; } }
+  return { p: best, d: bd };
+}
+// detect the face inside a person's box (upper part, native camera resolution) and compute its descriptor
+function faceAt(t, wantThumb) {
+  const F = S.face;
+  return new Promise(resolve => {
+    if (!F.ready || !F.worker) return resolve(null);
+    const ux = S.mirrored ? 1 - (t.x + t.w) : t.x;
+    const rx = clamp(ux - t.w * .05, 0, 1), ry = clamp(t.y, 0, 1);
+    const rw = Math.min(1 - rx, t.w * 1.1), rh = Math.min(1 - ry, t.h * .55);
+    const cv = captureRegion(rx, ry, rw, rh, 480, 2);
+    if (!cv) return resolve(null);
+    const img = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, cv.width, cv.height);
+    const id = ++F.req; let done = false;
+    const to = setTimeout(() => { if (!done) { done = true; delete F.cbs[id]; resolve(null); } }, 9000);
+    F.cbs[id] = m => {
+      if (done) return; done = true; clearTimeout(to);
+      if (m.error || !m.faces || !m.faces.length) return resolve(null);
+      F.ms = F.ms ? F.ms * .7 + m.ms * .3 : m.ms;
+      const f = m.faces.filter(q => q.score >= .4).sort((a, b) => b.score * b.box[2] * b.box[3] - a.score * a.box[2] * a.box[3])[0];
+      if (!f) return resolve(null);
+      const out = { desc: f.desc, score: f.score, thumb: null };
+      if (wantThumb) {
+        try {
+          const [bx, by, bw, bh] = f.box, m2 = Math.max(bw, bh) * .3, side = Math.max(bw, bh) + 2 * m2;
+          const th = document.createElement('canvas'); th.width = th.height = 96;
+          th.getContext('2d').drawImage(cv, bx + bw / 2 - side / 2, by + bh / 2 - side / 2, side, side, 0, 0, 96, 96);
+          out.thumb = th.toDataURL('image/jpeg', .7);
+        } catch (e) {}
+      }
+      resolve(out);
+    };
+    F.worker.postMessage({ type: 'faces', id, w: img.width, h: img.height, buf: img.data.buffer, min: .3 }, [img.data.buffer]);
+  });
+}
+function applyMatch(t, f) {
+  const p = t.person, now = performance.now();
+  if (!f) { p.nof++; if (p.state === 'unk' && p.nof >= 2) p.state = 'noface'; return; }
+  p.nof = 0;
+  const m = matchProfile(f.desc);
+  if (m.p && m.d < KNOWN_D) { p.state = 'known'; p.pid = m.p.id; p.d = m.d; p.nnew = 0; announce(t, m.p); }
+  else if (m.p && m.d < MAYBE_D) { if (p.state !== 'known') { p.state = 'maybe'; p.pid = m.p.id; p.d = m.d; } }
+  else {
+    p.nnew++;
+    if (p.state !== 'known' || p.nnew >= 2) {
+      if (p.state !== 'new') { log(`NOWA OSOBA: ${baseName(t)}`, 'warn'); }
+      p.state = 'new'; p.pid = null; p.d = m.d;
+    }
+  }
+}
+function announce(t, prof) {
+  const p = t.person; if (p.logged === prof.id) return;
+  p.logged = prof.id;
+  log(`ROZPOZNANO: ${prof.name}`, 'warn'); sfx.ok();
+  prof.seen = (prof.seen || 0) + 1; prof.last = Date.now(); dbPut('faces', prof);
+}
+async function matchTick(now) {
+  if (S.matchBusy || S.scanBusy || !S.face.ready || !S.profiles.length || now < S.nextMatch || S.rec && false) return;
+  const c = S.tracks.filter(t => t.confirmed && t.g === 'H' && now - t.last < 600 && t.h > .18);
+  if (!c.length) return;
+  c.sort((a, b) => a.person.tried - b.person.tried);
+  const t = c[0];
+  S.matchBusy = true; t.person.tried = now; S.nextMatch = now + 1000;
+  try { applyMatch(t, await faceAt(t, false)); } catch (e) {} finally { S.matchBusy = false; }
+}
+async function faceReady(label) {
+  if (S.face.ready) return true;
+  toast(label || 'Ładowanie modułu twarzy…', 0);
+  const iv = setInterval(() => { toast((label || 'Ładowanie modułu twarzy…') + ' ' + Math.round(S.face.prog * 100) + '%', 0); }, 300);
+  try { await ensureFace(); hideToast(); return true; }
+  catch (e) { toast('Nie udało się wczytać modułu twarzy: ' + ((e && e.message) || '?') + '\nSprawdź internet i spróbuj ponownie.', 7000); return false; }
+  finally { clearInterval(iv); }
+}
+async function scanHuman(t, addToId) {
+  if (S.scanBusy || !t) return;
+  S.scanBusy = true; $('#cdScan').disabled = $('#cdAdd').disabled = true;
+  try {
+    if (!(await faceReady())) return;
+    toast('Skanuję twarz… patrz w kamerę', 0);
+    const samples = [];
+    for (let i = 0; i < 5 && samples.length < 2; i++) {
+      if (!S.tracks.includes(t)) break;
+      const f = await faceAt(t, samples.length === 0);
+      if (f && f.score >= .5) samples.push(f);
+      else if (f && !samples.length && i >= 3) samples.push(f);
+      await sleep(180);
+    }
+    hideToast();
+    if (!samples.length) { toast(S.tracks.includes(t) ? 'Nie widzę wyraźnej twarzy.\nPodejdź bliżej, zwróć twarz do kamery i dotknij jeszcze raz.' : 'Cel zniknął z kadru.', 5000); return; }
+    let target = addToId != null ? getProfile(addToId) : null;
+    if (!target) {
+      const m = matchProfile(samples[0].desc);
+      if (m.p && m.d < .42) {
+        const yes = await ask({ title: 'TA OSOBA JEST JUŻ W BAZIE?', text: `Twarz wygląda na „${m.p.name}” (${pctOf(m.d)}%).\nDodać skan do tego profilu, czy zapisać jako nową osobę?`, ok: 'Dodaj do ' + m.p.name.slice(0, 14), cancel: 'Nowa osoba' });
+        if (yes) target = m.p;
+      }
+    }
+    if (target) {
+      for (const s of samples) target.embs.push(Array.from(s.desc));
+      while (target.embs.length > 12) target.embs.splice(1, 1);
+      target.scans = (target.scans || 1) + samples.length; target.last = Date.now();
+      await dbPut('faces', target);
+      Object.assign(t.person, { state: 'known', pid: target.id, d: 0, logged: target.id });
+      log(`DODANO SKAN: ${target.name} (${target.embs.length})`, 'warn'); sfx.ok();
+      toast(`Dodano skan do profilu „${target.name}”.\nSkanów: ${target.embs.length}`, 3500);
+    } else {
+      const name = await ask({ title: 'NOWA OSOBA - NAZWA', text: 'Zapisuję tylko w tej przeglądarce. Możesz zmienić nazwę później w BAZIE.', input: true, def: `OSOBA #${nextPersonNo()}`, ok: 'Zapisz', cancel: 'Anuluj' });
+      if (name === null) return;
+      const prof = { name: name || `OSOBA #${nextPersonNo()}`, embs: samples.map(s => Array.from(s.desc)), thumb: samples[0].thumb, first: Date.now(), last: Date.now(), seen: 1, scans: samples.length };
+      await dbPut('faces', prof); S.profiles.push(prof);
+      Object.assign(t.person, { state: 'known', pid: prof.id, d: 0, logged: prof.id });
+      log(`ZAPISANO TWARZ: ${prof.name}`, 'warn'); sfx.ok();
+      toast(`Zapisano „${prof.name}”. Od teraz będę ją rozpoznawać.`, 3500);
+    }
+  } finally { S.scanBusy = false; $('#cdScan').disabled = $('#cdAdd').disabled = false; cardSig = ''; }
+}
+const nextPersonNo = () => { let n = S.profiles.length + 1; while (S.profiles.some(p => p.name === `OSOBA #${n}`)) n++; return n; };
+async function scanAnimal(t) {
+  if (S.scanBusy || !t) return;
+  S.scanBusy = true;
+  try {
+    const ux = S.mirrored ? 1 - (t.x + t.w) : t.x;
+    const rx = clamp(ux, 0, 1), ry = clamp(t.y, 0, 1);
+    const cv = captureRegion(rx, ry, Math.min(1 - rx, t.w), Math.min(1 - ry, t.h), 220, 1);
+    if (!cv) { toast('Nie mogę pobrać obrazu z kamery.', 3000); return; }
+    // grayscale + green tint thumbnail
+    const c = cv.getContext('2d'); c.globalCompositeOperation = 'saturation'; c.fillStyle = '#000'; c.fillRect(0, 0, cv.width, cv.height);
+    c.globalCompositeOperation = 'multiply'; c.fillStyle = S.fg; c.fillRect(0, 0, cv.width, cv.height);
+    const n = S.animals.filter(a => a.cls === t.cls).length + 1;
+    const name = await ask({ title: 'ZWIERZĘ - NAZWA', text: 'Zapisuję zdjęcie i nazwę lokalnie. Nie rozpoznaję zwierząt po wyglądzie.', input: true, def: `${PL[t.cls] || t.cls.toUpperCase()} #${n}`, ok: 'Zapisz', cancel: 'Anuluj' });
+    if (name === null) return;
+    const a = { name: name || `${PL[t.cls] || t.cls} #${n}`, cls: t.cls, thumb: cv.toDataURL('image/jpeg', .75), time: Date.now(), conf: Math.round(t.score * 100) };
+    await dbPut('animals', a); S.animals.push(a);
+    log(`ZAPISANO ZWIERZĘ: ${a.name}`, 'warn'); sfx.ok();
+    toast(`Zapisano „${a.name}” na liście zwierząt.`, 3000);
+  } finally { S.scanBusy = false; }
+}
+
+/* ---------- tap-to-select + info card ---------- */
+function clientToLocal(cx, cy) {
+  const iw = window.innerWidth, ih = window.innerHeight;
+  if (S.rot === 90) return [cy, iw - cx];
+  if (S.rot === -90) return [ih - cy, cx];
+  return [cx, cy];
+}
+function localToClient(lx, ly) {
+  const iw = window.innerWidth, ih = window.innerHeight;
+  if (S.rot === 90) return [iw - ly, lx];
+  if (S.rot === -90) return [ly, ih - lx];
+  return [lx, ly];
+}
+function hitTest(cx, cy) {
+  const [lx, ly] = clientToLocal(cx, cy);
+  const px = (lx - S.ox) / S.dw, py = (ly - S.oy) / S.dh;
+  const slack = 0.02;
+  let best = null, ba = 9;
   for (const t of S.tracks) {
     if (!t.confirmed || (t.g === 'O' && !S.objects)) continue;
-    const th = ((t.dx + t.dw / 2) - .5) * 2 * FOV;
-    const rr = (.2 + .75 * (1 - clamp(t.dh * 1.15, 0, 1))) * R;
-    const px = ox + Math.cos(ang(th)) * rr, py = oy + Math.sin(ang(th)) * rr;
-    let d = sw - th; if (d < 0) d += 2 * FOV;
-    const b = .4 + .6 * Math.max(0, 1 - d / (FOV * .9));
-    c.globalAlpha = (t.g === 'O' ? .4 : 1) * b; sb(c, 8);
-    if (t.g === 'H') c.fillRect(px - 7, py - 7, 14, 14);
-    else if (t.g === 'A') { c.beginPath(); c.moveTo(px, py - 9); c.lineTo(px + 9, py); c.lineTo(px, py + 9); c.lineTo(px - 9, py); c.closePath(); c.stroke(); }
-    else c.fillRect(px - 2, py - 2, 4, 4);
-    if (d < .15) { c.globalAlpha = .6; c.beginPath(); c.arc(px, py, 16, 0, Math.PI * 2); c.stroke(); }
+    if (px >= t.dx - slack && px <= t.dx + t.dw + slack && py >= t.dy - slack && py <= t.dy + t.dh + slack) {
+      const a = t.dw * t.dh; if (a < ba) { ba = a; best = t; }
+    }
   }
-  c.globalAlpha = 1; sb(c, 0);
-  c.font = '26px VT323, monospace'; c.fillStyle = S.fg;
-  c.fillText('■ HUMAN  ◇ FAUNA', 6, H - 3);
+  return best;
+}
+function onTap(cx, cy) {
+  if (S.panel || !S.started) return;
+  const t = hitTest(cx, cy);
+  if (t) { S.sel = t; cardSig = ''; renderCard(); sfx.tick(); }
+  else { S.sel = null; hideCard(); }
+}
+let cardSig = '';
+function hideCard() { $('#card').classList.remove('show'); cardSig = ''; }
+function renderCard() {
+  const t = S.sel, card = $('#card');
+  if (!t) { if (!S.scanBusy) hideCard(); return; }
+  const now = performance.now(), p = t.person;
+  const pr = t.g === 'H' && p.pid != null ? getProfile(p.pid) : null;
+  const sig = [t.uid, label(t), Math.round(t.score * 100), t.dist ? Math.round(t.dist * 5) : 0, Math.floor((now - t.born) / 1000), p && p.state, S.face.ready, S.profiles.length].join('|');
+  if (sig === cardSig) return; cardSig = sig;
+  $('#cdT').textContent = label(t);
+  const dur = fmtDur(now - t.born);
+  let sub = `${t.g === 'H' ? 'CZŁOWIEK' : t.g === 'A' ? 'ZWIERZĘ' : 'OBIEKT'} · PEWNOŚĆ ${Math.round(t.score * 100)}% · ${dur}` + (t.dist ? `\nODLEGŁOŚĆ ${fmtDist(t.dist)} (szacunek)` : '');
+  let note = '';
+  const scan = $('#cdScan'), add = $('#cdAdd');
+  scan.style.display = ''; add.style.display = 'none';
+  if (t.g === 'H') {
+    scan.textContent = '[ Skanuj twarz ]';
+    if (p.state === 'known' && pr) { sub += `\nPodobieństwo twarzy do „${pr.name}”: ${pctOf(p.d)}% · widziano ${pr.seen || 1}×`; add.style.display = ''; add.textContent = `[ + Skan: ${pr.name.slice(0, 12)} ]`; }
+    else if (p.state === 'maybe' && pr) { sub += `\nNIEPEWNE: podobna do „${pr.name}” (${pctOf(p.d)}%)`; add.style.display = ''; add.textContent = `[ + Skan: ${pr.name.slice(0, 12)} ]`; }
+    else if (p.state === 'new') sub += '\nTwarz nie pasuje do nikogo z bazy.';
+    else if (p.state === 'noface') sub += '\nNie widać twarzy.';
+    note = 'Rozpoznawanie to porównanie twarzy – może się mylić. Dane tylko w tej przeglądarce.' + (S.face.ready ? '' : ' Pierwszy skan pobiera moduł twarzy (~7 MB).');
+  } else if (t.g === 'A') {
+    scan.textContent = '[ Skanuj ]';
+    note = 'Zapisuje zdjęcie i nazwę na liście zwierząt (lokalnie). Nie rozpoznaję zwierząt po wyglądzie.';
+  } else { scan.style.display = 'none'; note = 'Obiekt – brak akcji.'; }
+  $('#cdS').textContent = sub; $('#cdN').textContent = note;
+  card.classList.add('show');
+}
+$('#cdX').onclick = () => { S.sel = null; hideCard(); };
+$('#cdScan').onclick = () => { const t = S.sel; if (!t) return; if (t.g === 'H') scanHuman(t); else if (t.g === 'A') scanAnimal(t); };
+$('#cdAdd').onclick = () => { const t = S.sel; if (t && t.g === 'H' && t.person.pid != null) scanHuman(t, t.person.pid); };
+stage.addEventListener('click', e => onTap(e.clientX, e.clientY));
+
+/* ---------- sheets: settings, database ---------- */
+function openPanel(id) {
+  closePanels(true);
+  S.panel = id; $('#' + id).classList.add('show');
+  if (id === 'dbp') renderDb(); else renderStats();
+}
+function closePanels(silent) { S.panel = ''; document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show')); }
+let dbTab = 'F';
+const fmtDate = ms => { const d = new Date(ms); return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+function mkBtn(txt, fn) { const b = document.createElement('button'); b.textContent = txt; b.onclick = fn; return b; }
+function renderDb() {
+  $('#tabF').classList.toggle('on', dbTab === 'F'); $('#tabA').classList.toggle('on', dbTab === 'A');
+  $('#dbNote').textContent = dbTab === 'F'
+    ? `Zapisane twarze: ${S.profiles.length}. Dane (wektory twarzy i miniatury) są tylko w tej przeglądarce – nigdzie nie są wysyłane. Rozpoznawanie może się mylić.`
+    : `Zapisane zwierzęta: ${S.animals.length}. Tylko zdjęcie i nazwa, bez rozpoznawania.`;
+  const list = $('#plist'); list.textContent = '';
+  const arr = dbTab === 'F' ? S.profiles : S.animals;
+  if (!arr.length) { const d = document.createElement('div'); d.className = 'statbox'; d.textContent = dbTab === 'F' ? 'Brak zapisanych twarzy. Dotknij osobę na ekranie i wybierz „Skanuj twarz”.' : 'Brak zapisanych zwierząt. Dotknij zwierzę na ekranie i wybierz „Skanuj”.'; list.appendChild(d); }
+  for (const it of arr.slice().reverse()) {
+    const row = document.createElement('div'); row.className = 'prow';
+    if (it.thumb) { const im = document.createElement('img'); im.src = it.thumb; row.appendChild(im); } else { const ph = document.createElement('div'); ph.className = 'ph'; row.appendChild(ph); }
+    const info = document.createElement('div'); info.className = 'info';
+    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = it.name;
+    const sub = document.createElement('div'); sub.className = 'sub';
+    sub.textContent = dbTab === 'F' ? `skanów ${it.embs.length} · widziano ${it.seen || 1}×\nostatnio ${fmtDate(it.last)}` : `${PL[it.cls] || it.cls} · ${fmtDate(it.time)}`;
+    sub.style.whiteSpace = 'pre-line';
+    info.append(nm, sub);
+    const bs = document.createElement('div'); bs.style.cssText = 'display:flex;flex-direction:column;gap:4px';
+    bs.append(mkBtn('Nazwa', async () => {
+      const v = await ask({ title: 'ZMIEŃ NAZWĘ', input: true, def: it.name, ok: 'Zapisz' });
+      if (v) { it.name = v; await dbPut(dbTab === 'F' ? 'faces' : 'animals', it); renderDb(); }
+    }), mkBtn('Usuń', async () => {
+      const v = await ask({ title: 'USUNĄĆ?', text: `„${it.name}” zostanie trwale usunięty z tej przeglądarki.`, ok: 'Usuń' });
+      if (v) {
+        await dbDel(dbTab === 'F' ? 'faces' : 'animals', it.id);
+        if (dbTab === 'F') { S.profiles = S.profiles.filter(p => p.id !== it.id); S.tracks.forEach(t => { if (t.person.pid === it.id) Object.assign(t.person, { state: 'unk', pid: null, logged: false }); }); }
+        else S.animals = S.animals.filter(a => a.id !== it.id);
+        renderDb();
+      }
+    }));
+    row.append(info, bs); list.appendChild(row);
+  }
+  $('#dbClear').style.display = arr.length ? '' : 'none';
+}
+$('#tabF').onclick = () => { dbTab = 'F'; renderDb(); };
+$('#tabA').onclick = () => { dbTab = 'A'; renderDb(); };
+$('#dbClear').onclick = async () => {
+  const v = await ask({ title: 'WYCZYŚCIĆ WSZYSTKO?', text: dbTab === 'F' ? 'Wszystkie zapisane twarze zostaną trwale usunięte z tej przeglądarki.' : 'Cała lista zwierząt zostanie usunięta.', ok: 'Wyczyść' });
+  if (!v) return;
+  if (dbTab === 'F') { await dbClear('faces'); S.profiles = []; S.tracks.forEach(t => Object.assign(t.person, { state: 'unk', pid: null, logged: false })); }
+  else { await dbClear('animals'); S.animals = []; }
+  renderDb(); log(dbTab === 'F' ? 'BAZA TWARZY WYCZYSZCZONA' : 'LISTA ZWIERZĄT WYCZYSZCZONA', 'warn');
+};
+$('#dbX').onclick = () => closePanels();
+$('#setX').onclick = () => closePanels();
+function renderStats() {
+  const F = S.face;
+  $('#stats').textContent =
+    `KAMERA: ${S.camRes || '—'} · ${S.camFps} kl./s · ${S.mirrored ? 'przód' : 'tył'}\n` +
+    `WYKRYWANIE: ${S.backend ? S.backend.toUpperCase() + (S.mode === 'worker' ? ' (worker)' : '') : '—'} · ${S.nnFps ? S.nnFps.toFixed(1) : '—'}/s · ${S.infMs ? Math.round(S.infMs) : '—'} ms\n` +
+    `TWARZE: ${F.ready ? F.backend.toUpperCase() + ' · ' + Math.round(F.ms) + ' ms' : F.p ? 'ładowanie ' + Math.round(F.prog * 100) + '%' : 'nie wczytano (wczyta się przy 1. skanie)'}\n` +
+    `BAZA: ${S.profiles.length} twarzy · ${S.animals.length} zwierząt · ${S.dbOk ? 'IndexedDB' : 'pamięć tymczasowa'}\n` +
+    `Wersja: v4`;
 }
 
-/* ---------- panels ---------- */
-const segsEl = $('#segs');
-for (let i = 0; i < 10; i++) segsEl.appendChild(document.createElement('i'));
-function updatePanels(now) {
-  const act = S.tracks.filter(t => t.confirmed && now - t.last < 900);
-  const nH = act.filter(t => t.g === 'H').length, nA = act.filter(t => t.g === 'A').length, nO = act.filter(t => t.g === 'O').length;
-  $('#cH').textContent = pad(nH); $('#cA').textContent = pad(nA); $('#cO').textContent = pad(nO); $('#cL').textContent = pad(S.locks);
-  let lvl = 0, txt = 'ALL CLEAR / SPOKÓJ';
-  if (nH >= 4) { lvl = 10; txt = 'CRITICAL / ALARM'; }
-  else if (nH >= 2) { lvl = 6 + Math.min(2, nH - 2); txt = 'ELEVATED / PODWYŻSZONY'; }
-  else if (nH === 1) { lvl = 3; txt = 'CONTACT / KONTAKT'; }
-  else if (nA > 0) { lvl = 1; txt = 'FAUNA ONLY / ZWIERZĘTA'; }
-  [...segsEl.children].forEach((s, i) => s.classList.toggle('on', i < lvl));
-  $('#lvl').textContent = txt;
-  $('#threat').classList.toggle('crit', nH >= 4);
-  const maxRows = S.ch < 400 ? 3 : 8;
-  const list = act.filter(t => t.g !== 'O' || S.objects).sort((a, b) => (a.g === 'H' ? 0 : 1) - (b.g === 'H' ? 0 : 1)).slice(0, maxRows);
-  const tb = $('#targets'); tb.textContent = '';
-  if (!list.length) { const d = document.createElement('div'); d.className = 'none'; d.textContent = '-- BRAK CELÓW --'; tb.appendChild(d); }
-  for (const t of list) {
-    const d = document.createElement('div'), a = document.createElement('span'), b = document.createElement('span');
-    a.textContent = `${t.g === 'H' ? '■' : t.g === 'A' ? '◇' : '·'} ${label(t)}`;
-    b.textContent = `${Math.round(t.score * 100)}% ${fmtDur(now - t.born)}`;
-    d.append(a, b); tb.appendChild(d);
+/* ---------- photo & video ---------- */
+const fileStamp = () => { const d = new Date(); return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; };
+let mediaCur = null;
+function showMedia(kind, blob, name) {
+  if (mediaCur) URL.revokeObjectURL(mediaCur.url);
+  const url = URL.createObjectURL(blob);
+  mediaCur = { kind, blob, name, url };
+  S.lastCapture = { kind, size: blob.size, type: blob.type, name };
+  const pv = $('#mediaPrev'); pv.textContent = '';
+  const el = document.createElement(kind === 'photo' ? 'img' : 'video'); el.src = url;
+  if (kind === 'video') { el.controls = true; el.muted = true; el.playsInline = true; el.setAttribute('playsinline', ''); }
+  pv.appendChild(el);
+  $('#mediaT').textContent = kind === 'photo' ? 'ZDJĘCIE GOTOWE' : 'NAGRANIE GOTOWE';
+  $('#mediaX').textContent = `${name} · ${(blob.size / 1048576).toFixed(2)} MB\n` + (IS_TOUCH ? 'Dotknij „Zapisz / Udostępnij” i wybierz „Zapisz zdjęcie / wideo” (Zdjęcia) albo „Zapisz w Plikach”.' : 'Plik zostanie pobrany.');
+  $('#media').classList.add('show');
+}
+async function saveMedia() {
+  if (!mediaCur) return;
+  const { blob, name } = mediaCur;
+  try {
+    const f = new File([blob], name, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: 'Majsterman Tracker' }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = mediaCur.url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+$('#mediaSave').onclick = saveMedia;
+$('#mediaClose').onclick = () => { $('#media').classList.remove('show'); const p = $('#mediaPrev'); const v = p.querySelector('video'); if (v) v.pause(); };
+
+function drawComposite(c, w, h, stamped) {
+  paintVideo(c, w, h);
+  c.drawImage(hud, 0, 0, w, h);
+  if (S.radar) { const r = $('#radar'); c.drawImage(r, r.offsetLeft * w / S.W, r.offsetTop * h / S.H, r.offsetWidth * w / S.W, r.offsetHeight * h / S.H); }
+  if (stamped) {
+    const d = new Date(), fs = Math.round(Math.max(14, h / 38));
+    c.font = `${fs}px VT323, monospace`; c.fillStyle = S.fg; c.textBaseline = 'alphabetic';
+    c.fillText(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${stamp(d)}`, 10, h - 10);
   }
 }
-function updateClock() {
-  const d = new Date();
-  $('#clock').textContent = S.port ? stamp(d) : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${stamp(d)}`;
-  if (S.recStart) { const s = Math.floor((performance.now() - S.recStart) / 1000); $('#recTime').textContent = `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; }
+function snapshot() {
+  if (!video.videoWidth || !S.stream) { toast('Najpierw uruchom kamerę.', 2500); return; }
+  const k = Math.min(2, 1280 / Math.max(S.W, S.H));
+  const w = Math.round(S.W * k), h = Math.round(S.H * k);
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  drawComposite(cv.getContext('2d'), w, h, true);
+  const name = `majsterman-${fileStamp()}.jpg`;
+  const f = $('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+  sfx.snap();
+  cv.toBlob(blob => { if (!blob) { toast('Nie udało się zapisać zdjęcia.', 3000); return; } showMedia('photo', blob, name); log('ZDJĘCIE ZROBIONE', 'warn'); }, 'image/jpeg', .92);
 }
-setInterval(updateClock, 500); updateClock();
-
-/* ---------- noise (desktop only) ---------- */
-if (!IS_TOUCH) {
-  const nz = $('#noise'), nctx = nz.getContext('2d'), nimg = nctx.createImageData(96, 96);
-  setInterval(() => {
-    const d = nimg.data, [r, g, b] = S.rgb.split(',').map(Number);
-    for (let i = 0; i < d.length; i += 4) { const v = Math.random(); d[i] = r * v; d[i + 1] = g * v; d[i + 2] = b * v; d[i + 3] = 255; }
-    nctx.putImageData(nimg, 0, 0);
-  }, 110);
+function pickMime() {
+  if (!window.MediaRecorder) return null;
+  const c = ['video/mp4;codecs=avc1.42E01E', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+  for (const m of c) { try { if (MediaRecorder.isTypeSupported(m)) return m; } catch (e) {} }
+  return '';
 }
-
-/* ---------- main loop: render is independent of inference ---------- */
-let last = performance.now(), rN = 0, rT = last, panelT = 0, hudT = 0, radT = 0, cfN = 0, hudDt = 0;
-function frame(now) {
-  requestAnimationFrame(frame);
-  const dt = Math.min(.1, (now - last) / 1000); last = now; hudDt += dt;
-  // 1) live camera -> screen, every new camera frame (cheap, low-res canvas)
-  if (!haveRVFC && video.currentTime !== lastCT) { lastCT = video.currentTime; camFrames++; S.newFrame = true; }
-  if (S.newFrame || !S.stream) { S.newFrame = false; try { paintVideo(vctx, vcanvas.width, vcanvas.height); } catch (e) {} }
-  // 2) inference kicks off in the background (never awaited here)
-  if (S.busy && now - S.busyAt > 12000) S.busy = false;
-  if (S.ready && S.running && !S.busy && now >= S.nextInfer && video.readyState >= 2 && !document.hidden) infer(now);
-  // 3) HUD overlay (30 fps cap on phones)
-  if (!IS_TOUCH || now - hudT > 30) { hudT = now; drawHud(now, hudDt); hudDt = 0; }
-  if (!IS_TOUCH || now - radT > 66) { radT = now; drawRadar(now); }
-  rN++;
-  if (now - rT > 1000) {
-    S.fps = Math.round(rN * 1000 / (now - rT)); S.camFps = Math.round(camFrames * 1000 / (now - rT));
-    rN = 0; camFrames = 0; rT = now;
-    $('#fCam').textContent = S.camFps; $('#fNN').textContent = S.nnFps ? S.nnFps.toFixed(1) : '--';
-    $('#inf').textContent = S.infMs ? Math.round(S.infMs) + ' ms' : '-- ms';
-    $('#fpsH').textContent = `CAM ${S.camFps} · NN ${S.nnFps ? S.nnFps.toFixed(1) : '--'}` + (S.port ? '' : ` · R ${S.fps}`);
+function startRec() {
+  if (S.rec) return;
+  if (!video.videoWidth || !S.stream) { toast('Najpierw uruchom kamerę.', 2500); return; }
+  const mime = pickMime();
+  if (mime === null || !HTMLCanvasElement.prototype.captureStream) { toast('Ta przeglądarka nie obsługuje nagrywania wideo z ekranu.\nUżyj Safari (iOS 14.3+) albo Chrome.', 6000); return; }
+  const k = Math.min(1, 720 / Math.max(S.W, S.H));
+  const rw = Math.max(2, Math.round(S.W * k / 2) * 2), rh = Math.max(2, Math.round(S.H * k / 2) * 2);
+  const cv = document.createElement('canvas'); cv.width = rw; cv.height = rh;
+  const ctx = cv.getContext('2d');
+  drawComposite(ctx, rw, rh, false);
+  let mr;
+  try {
+    const stream = cv.captureStream(30);
+    mr = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 2500000 } : { videoBitsPerSecond: 2500000 });
+  } catch (e) {
+    try { mr = new MediaRecorder(cv.captureStream(30)); } catch (e2) { toast('Nie udało się rozpocząć nagrywania: ' + ((e2 && e2.message) || '?'), 5000); return; }
   }
-  if (now - panelT > 250) { panelT = now; updatePanels(now); }
+  const chunks = [];
+  mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mr.onerror = e => { toast('Błąd nagrywania: ' + ((e && e.error && e.error.message) || '?'), 5000); };
+  mr.onstop = () => {
+    const type = (mr.mimeType || mime || 'video/webm').split(';')[0];
+    const blob = new Blob(chunks, { type });
+    const ext = /mp4/.test(type) ? 'mp4' : 'webm';
+    S.rec = null; updateRecUi();
+    if (!blob.size) { toast('Nagranie jest puste.', 3000); return; }
+    showMedia('video', blob, `majsterman-${fileStamp()}.${ext}`);
+    log(`NAGRANIE ZAPISANE (${ext.toUpperCase()}, ${(blob.size / 1048576).toFixed(1)} MB)`, 'warn');
+  };
+  S.rec = { mr, cv, ctx, t0: performance.now(), last: 0 };
+  mr.start(1000);
+  updateRecUi(); log('NAGRYWANIE ●', 'warn'); sfx.snap();
+}
+function stopRec() {
+  const r = S.rec; if (!r) return;
+  try { if (r.mr.state !== 'inactive') r.mr.stop(); } catch (e) { S.rec = null; updateRecUi(); }
+}
+function toggleRec() { if (S.rec) stopRec(); else startRec(); }
+function updateRecUi() {
+  $('#bRec').classList.toggle('on', !!S.rec); $('#recind').classList.toggle('on', !!S.rec);
+  if (!S.rec) $('#recTime').textContent = '00:00';
 }
 
 /* ---------- actions ---------- */
@@ -1089,53 +1570,32 @@ function toggleFull() {
     try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (e) {}
   } else enterFullscreenLandscape();
 }
-function toggleMute() { S.mute = !S.mute; $('#bMute').classList.toggle('on', !S.mute); log(`AUDIO ${S.mute ? 'MUTED' : 'ENABLED'}`, 'sys-l'); if (!S.mute) sfx.tick(); }
-function toggleObjects() { S.objects = !S.objects; $('#bObj').classList.toggle('on', S.objects); log(`OBJECT LAYER ${S.objects ? 'ON' : 'OFF'}`, 'sys-l'); }
-function togglePalette() { S.palette = S.palette === 'green' ? 'amber' : 'green'; applyPalette(); log(`PHOSPHOR: ${PALETTES[S.palette].en}`, 'sys-l'); }
-function toggleGrid() { S.grid = !S.grid; $('#bGrid').classList.toggle('on', S.grid); }
-function toggleTrails() { S.trails = !S.trails; $('#bTrail').classList.toggle('on', S.trails); }
+function syncToggles() {
+  $('#bMute').classList.toggle('on', !S.mute); $('#bMute').classList.toggle('off', S.mute);
+  $('#bObj').classList.toggle('on', S.objects); $('#bGrid').classList.toggle('on', S.grid); $('#bTrail').classList.toggle('on', S.trails);
+  $('#cOw').style.display = S.objects ? '' : 'none';
+  $('#bRadar').classList.toggle('on', S.radar); $('#radar').classList.toggle('off', !S.radar);
+}
+function toggleMute() { S.mute = !S.mute; lsSet('rt_mute', S.mute ? 1 : 0); syncToggles(); if (!S.mute) sfx.tick(); }
+function toggleObjects() { S.objects = !S.objects; lsSet('rt_obj', S.objects ? 1 : 0); syncToggles(); }
+function togglePalette() { S.palette = S.palette === 'green' ? 'amber' : 'green'; lsSet('rt_pal', S.palette); applyPalette(); }
+function toggleRadar() { S.radar = !S.radar; lsSet('rt_radar', S.radar ? 1 : 0); syncToggles(); }
+function toggleGrid() { S.grid = !S.grid; lsSet('rt_grid', S.grid ? 1 : 0); syncToggles(); }
+function toggleTrails() { S.trails = !S.trails; lsSet('rt_trail', S.trails ? 1 : 0); syncToggles(); }
 async function switchCam() {
-  if ($('#bCam').disabled) return;
+  if ($('#bCam').disabled) { toast('To urządzenie ma tylko jedną kamerę.', 2500); return; }
+  if (S.rec) { toast('Zatrzymaj nagrywanie przed zmianą kamery.', 2500); return; }
   S.facing = S.facing === 'user' ? 'environment' : 'user';
-  log(`SWITCHING CAMERA -> ${S.facing === 'user' ? 'FRONT' : 'REAR'}`);
-  S.tracks = [];
+  log(`KAMERA: ${S.facing === 'user' ? 'PRZÓD' : 'TYŁ'}`, 'sys-l');
+  S.tracks = []; S.sel = null; hideCard();
   try { await startCamera(); } catch (e) {}
 }
-function snapshot() {
-  if (!video.videoWidth) return;
-  const k = Math.min(2, 1280 / S.W);
-  const w = Math.round(S.W * k), h = Math.round(S.H * k), bar = Math.round(h / 12);
-  const cv = document.createElement('canvas'); cv.width = w; cv.height = h + bar;
-  const c = cv.getContext('2d');
-  paintVideo(c, w, h);
-  c.fillStyle = 'rgba(0,0,0,.25)'; for (let y = 0; y < h; y += 3) c.fillRect(0, y, w, 1);
-  c.drawImage(hud, 0, 0, w, h);
-  const nowd = new Date();
-  c.fillStyle = '#000'; c.fillRect(0, h, w, bar);
-  c.strokeStyle = S.fg; c.lineWidth = 2; c.beginPath(); c.moveTo(0, h); c.lineTo(w, h); c.stroke();
-  c.font = `${Math.round(bar * .6)}px VT323, monospace`; c.fillStyle = S.fg;
-  c.fillText(`MAJSTERMAN TARGETING SYS  ${nowd.getFullYear()}-${pad(nowd.getMonth() + 1)}-${pad(nowd.getDate())} ${stamp(nowd)}  HUM:${S.tracks.filter(t => t.confirmed && t.g === 'H').length} FAU:${S.tracks.filter(t => t.confirmed && t.g === 'A').length}`, 14, h + Math.round(bar * .68));
-  const name = `majsterman-tracker-${nowd.getFullYear()}${pad(nowd.getMonth() + 1)}${pad(nowd.getDate())}-${pad(nowd.getHours())}${pad(nowd.getMinutes())}${pad(nowd.getSeconds())}.png`;
-  cv.toBlob(async blob => {
-    if (!blob) return;
-    try {
-      const f = new File([blob], name, { type: 'image/png' });
-      if (IS_TOUCH && navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: 'Retro Tracker' }); return; }
-    } catch (e) { if (e && e.name === 'AbortError') return; }
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = name;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  }, 'image/png');
-  const f = $('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
-  sfx.snap(); log('SNAPSHOT SAVED (PNG)', 'warn');
-}
-
 $('#bMute').onclick = toggleMute; $('#bObj').onclick = toggleObjects; $('#bPal').onclick = togglePalette;
-$('#bSnap').onclick = snapshot; $('#bCam').onclick = switchCam; $('#bGrid').onclick = toggleGrid;
-$('#bTrail').onclick = toggleTrails; $('#bFull').onclick = toggleFull;
+$('#bShot').onclick = snapshot; $('#bRec').onclick = toggleRec; $('#bCam').onclick = switchCam; $('#bGrid').onclick = toggleGrid;
+$('#bTrail').onclick = toggleTrails; $('#bRadar').onclick = toggleRadar; $('#bFull').onclick = toggleFull;
+$('#bSet').onclick = () => { S.panel === 'settings' ? closePanels() : openPanel('settings'); };
+$('#bBase').onclick = $('#bBase2').onclick = () => openPanel('dbp');
 $('#bRot').onclick = cycleRot; $('#bootRot').onclick = cycleRot; $('#bVrot').onclick = cycleVrot;
-$('#toastBtn').onclick = () => { $('#toast').classList.remove('show'); cycleRot(); };
 $('#errClose').onclick = hideErr;
 $('#reloadBtn').onclick = () => location.reload();
 $('#copyBtn').onclick = e => copyLink(e.currentTarget);
@@ -1144,27 +1604,63 @@ $('#retryBtn').onclick = async () => {
   hideErr(); audio();
   const camP = startCamera(); camP.catch(() => {});
   if (!S.ready) {
-    try { await ensureModel(); S.running = true; log('NEURAL CORE ONLINE', 'sys-l'); }
+    try { await ensureModel(); S.running = true; log('SIEĆ NEURONOWA GOTOWA', 'sys-l'); }
     catch (e) { showErr(modelErrMsg(e), ''); return; }
   }
-  try { await camP; log('CAM-01 ONLINE', 'sys-l'); } catch (e) {}
+  try { await camP; } catch (e) {}
 };
 document.querySelectorAll('button').forEach(b => b.addEventListener('click', () => b.blur()));
 window.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if ($('#dlg').classList.contains('show')) { if (e.key === 'Escape') dlgDone(null); return; }
+  if (e.target && e.target.tagName === 'INPUT') return;
   if (!S.started) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); start(); } else if (e.code === 'KeyH') cycleRot(); return; }
-  if (!S.booted) { skipBoot = true; return; }
+  if (e.key === 'Escape') { if ($('#media').classList.contains('show')) $('#mediaClose').click(); else if (S.panel) closePanels(); else { S.sel = null; hideCard(); } return; }
   switch (e.code) {
     case 'KeyM': toggleMute(); break; case 'KeyO': toggleObjects(); break; case 'KeyT': togglePalette(); break;
-    case 'KeyS': snapshot(); break; case 'KeyC': switchCam(); break; case 'KeyG': toggleGrid(); break;
-    case 'KeyL': toggleTrails(); break; case 'KeyF': toggleFull(); break; case 'KeyH': cycleRot(); break; case 'KeyV': if (S.rot) cycleVrot(); break;
+    case 'KeyS': snapshot(); break; case 'KeyR': toggleRec(); break; case 'KeyC': switchCam(); break; case 'KeyG': toggleGrid(); break; case 'KeyD': toggleRadar(); break;
+    case 'KeyL': toggleTrails(); break; case 'KeyF': toggleFull(); break; case 'KeyH': cycleRot(); break;
+    case 'KeyV': if (S.rot) cycleVrot(); break; case 'KeyB': S.panel === 'dbp' ? closePanels() : openPanel('dbp'); break;
   }
 });
 
-/* ---------- boot sequence ---------- */
-const bootEl = $('#bootText');
-let skipBoot = false;
-async function typeText(txt, speed = 9) { for (const ch of txt) { bootEl.textContent += ch; if (!skipBoot) await sleep(speed); } }
+/* ---------- main loop: render is independent of inference ---------- */
+function updateTop(now) {
+  const act = S.tracks.filter(t => t.confirmed && now - t.last < 900);
+  $('#cH').textContent = act.filter(t => t.g === 'H').length;
+  $('#cA').textContent = act.filter(t => t.g === 'A').length;
+  $('#cO').textContent = act.filter(t => t.g === 'O').length;
+  // fade old log lines
+  for (const d of logEl.children) if (now - Number(d.dataset.t) > 7000) d.classList.add('gone');
+  if (S.rec) { const s = Math.floor((now - S.rec.t0) / 1000); $('#recTime').textContent = `${pad(Math.floor(s / 60))}:${pad(s % 60)}`; if (s >= 180) { toast('Limit 3 minut – zatrzymuję nagrywanie.', 3000); stopRec(); } }
+  renderCard();
+  if (S.panel === 'settings') renderStats();
+}
+let radT = 0, last = performance.now(), rN = 0, rT = last, panelT = 0, hudT = 0, hudDt = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(.1, (now - last) / 1000); last = now; hudDt += dt;
+  // 1) live camera -> screen, every new camera frame (cheap, low-res canvas)
+  if (!haveRVFC && video.currentTime !== lastCT) { lastCT = video.currentTime; camFrames++; S.newFrame = true; }
+  if (S.newFrame || !S.stream) { S.newFrame = false; try { paintVideo(vctx, vcanvas.width, vcanvas.height); } catch (e) {} }
+  // 2) detection kicks off in the background (never awaited here)
+  if (S.busy && now - S.busyAt > 12000) S.busy = false;
+  if (S.ready && S.running && !S.busy && now >= S.nextInfer && video.readyState >= 2 && !document.hidden) infer(now);
+  if (S.face.ready) matchTick(now);
+  // 3) HUD overlay (30 fps cap on phones)
+  if (!IS_TOUCH || now - hudT > 30) { hudT = now; drawHud(now, hudDt); hudDt = 0; }
+  if (!IS_TOUCH || now - radT > 66) { radT = now; drawRadar(); }
+  // 4) recording composite (only while recording)
+  if (S.rec && now - S.rec.last > 33) { S.rec.last = now; try { drawComposite(S.rec.ctx, S.rec.cv.width, S.rec.cv.height, false); } catch (e) {} }
+  rN++;
+  if (now - rT > 1000) {
+    S.fps = Math.round(rN * 1000 / (now - rT)); S.camFps = Math.round(camFrames * 1000 / (now - rT));
+    rN = 0; camFrames = 0; rT = now;
+  }
+  if (now - panelT > 250) { panelT = now; updateTop(now); }
+}
+
+/* ---------- start screen ---------- */
 const BANNER =
 `  __  __    _    _     ____ _____ _____ ____  __  __    _    _   _
  |  \\/  |  / \\  | |   / ___|_   _| ____|  _ \\|  \\/  |  / \\  | \\ | |
@@ -1174,9 +1670,9 @@ const BANNER =
 `;
 function introScreen() {
   const small = S.cw < 700 || S.ch < 420;
-  bootEl.textContent = (small ? 'MAJSTERMAN // TARGETING SYS\n' : BANNER) +
-    (small ? '' : '\nTARGETING & RECOGNITION SYSTEM  v1.986\n(C) 1986 ZAKŁADY OPTYCZNE MAJSTERMAN\n') +
-    '\nKamera wykrywa ludzi i odróżnia ich od zwierząt.\nWszystko działa lokalnie - obraz nigdzie nie jest wysyłany.\n' +
+  $('#bootText').textContent = (small ? 'MAJSTERMAN // TARGETING\n' : BANNER) +
+    '\nKamera namierza ludzi i odróżnia ich od zwierząt.\nDotknij osobę lub zwierzę, żeby wybrać cel i zapisać skan.\n' +
+    'Wszystko działa lokalnie – obraz i twarze nigdzie nie są wysyłane.\n' +
     'Po dotknięciu przycisku przeglądarka zapyta o zgodę na kamerę.\n';
   if (IN_APP) {
     const b = $('#inapp');
@@ -1184,57 +1680,31 @@ function introScreen() {
     b.classList.add('show'); $('#copyBtn0').style.display = '';
   }
 }
-async function runBoot(modelP, camP) {
-  bootEl.textContent = '';
-  const lines = [
-    ['MAJSTERMAN BIOS v1.986 ........... OK'],
-    ['CRT PHOSPHOR WARMUP .............. OK'],
-    ['OPENING OPTICAL SENSOR [CAM-01] .. ', camP],
-    ['LOADING NEURAL CORE [COCO-SSD] ... ', modelP],
-    ['\n>> SYSTEM GOTOWY. NAMIERZANIE AKTYWNE.']
-  ];
-  for (const [t, p] of lines) {
-    await typeText(t, skipBoot ? 0 : 9);
-    if (p) {
-      let state = 'wait';
-      const dots = setInterval(() => { if (!skipBoot) bootEl.textContent += '.'; }, 250);
-      p.then(() => { state = 'ok'; }, () => { state = 'fail'; });
-      await Promise.race([p.catch(() => {}), sleep(skipBoot ? 0 : 2500)]);
-      clearInterval(dots);
-      bootEl.textContent += state === 'ok' ? ' OK' : state === 'fail' ? ' FAIL' : ' (W TLE)';
-    }
-    bootEl.textContent += '\n';
-    if (!skipBoot) await sleep(50);
-  }
-  await sleep(skipBoot ? 0 : 300);
-}
 async function start() {
   if (S.started) return;
   S.started = true; S.t0 = performance.now();
-  $('#startBtn').style.display = 'none'; $('#copyBtn0').style.display = 'none'; $('#bootRot').style.display = 'none';
-  $('#inapp').classList.remove('show'); $('#rotHint').style.display = 'none';
   // 1) camera request goes out synchronously from the user's tap
   const camP = startCamera(); camP.catch(() => {});
   audio();
   if (IS_TOUCH && fsSupported && !IS_IOS) enterFullscreenLandscape();
   // 2) neural engine loads in a worker, in parallel; never blocks camera or rendering
   const modelP = ensureModel(); modelP.catch(() => {});
-  try { await Promise.race([document.fonts.load('20px VT323'), sleep(1200)]); } catch (e) {}
-  $('#boot').addEventListener('click', () => { if (!S.booted) skipBoot = true; });
-  await runBoot(modelP, camP);
-  S.booted = true;
+  // 3) start screen goes away right after the camera answers (never longer than 1.2 s)
+  await Promise.race([camP.catch(() => {}), sleep(1200)]);
   $('#boot').classList.add('hide');
-  log('SYSTEM BOOT COMPLETE', 'sys-l');
-  if (S.port && S.rot === 0 && IS_TOUCH) { $('#toast').classList.add('show'); setTimeout(() => $('#toast').classList.remove('show'), 9000); }
-  try { await modelP; log(`NEURAL CORE ONLINE (${S.backend.toUpperCase()}${S.mode === 'worker' ? ', WORKER' : ''})`, 'sys-l'); S.running = true; }
-  catch (e) { showErr(modelErrMsg(e), ''); log('NEURAL CORE FAILURE', 'warn'); }
-  try { await camP; log('CAM-01 ONLINE - SCANNING SECTOR', 'sys-l'); } catch (e) {}
+  try { await modelP; log(`SIEĆ NEURONOWA GOTOWA (${S.backend.toUpperCase()}${S.mode === 'worker' ? ', worker' : ''})`, 'sys-l'); S.running = true; }
+  catch (e) { showErr(modelErrMsg(e), ''); log('BŁĄD SIECI NEURONOWEJ', 'warn'); }
+  try { await camP; } catch (e) {}
+  if (S.profiles.length) ensureFace().catch(() => {});    // known faces exist: warm the face module in the background
+  if (S.port && S.rot === 0 && IS_TOUCH) toast('Masz blokadę obrotu? Menu → „Obróć HUD”', 6000);
   window.__ready = true;
 }
 $('#startBtn').onclick = start;
-applyPalette(); resize(); introScreen();
+$('#boot').addEventListener('click', e => { /* tap anywhere does nothing: camera needs the explicit button */ });
+applyPalette(); syncToggles(); resize(); introScreen(); loadDb();
 requestAnimationFrame(frame);
 window.__S = S;
+window.__T = { hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, scanHuman, scanAnimal, matchProfile, ensureFace, faceAt, openPanel, closePanels };
 if (new URLSearchParams(location.search).has('auto')) start();
 })();
 </script>
