@@ -27,3 +27,11 @@ Model COCO-SSD (lite_mobilenet_v2, wagi float16) jest w katalogu `model/` - dzia
 - Radar i odległość to **szacunek** (kierunek z położenia w kadrze i przybliżonego FOV ~65°, dystans z wysokości ramki: człowiek ≈ 1,7 m, zwierzęta wg typowych rozmiarów).
 - Nagrywanie: MediaRecorder z kompozytu obraz + HUD (mp4 jeśli przeglądarka je wspiera, inaczej webm), maks. 3 min, bez dźwięku. Zapis przez arkusz udostępniania lub pobranie.
 - Usunięto: sztuczne AZ/EL, CPU/MEM, BIOS, pasek „zagrożenia”, losowe animacje.
+
+## v5
+
+- Tożsamość celu jest trzymana na śladzie i przenoszona po krótkiej utracie celu (ten sam numer i imię).
+- Etykiety osoby: `SKANUJĘ TWARZ…`, `BRAK TWARZY (odwróć się)`, `ZNANY: Imię (xx%)`, `PODOBNY DO: Imię? (xx%)`, `NOWA OSOBA`. Próg twarzy 0.52; pewne dopasowania dodają kolejne wektory do profilu.
+- Moduł twarzy ładuje się sam, gdy są zapisane twarze; jeśli worker zawiedzie, wraca na główny wątek (wasm/cpu) z widocznym błędem po polsku i ponawianiem.
+- Zwierzęta (oraz ubranie człowieka, gdy nie widać twarzy) rozpoznawane po wyglądzie: MobileNetV2 (`emodel/`, f16, ~4 MB, ładowany leniwie) + podobieństwo kosinusowe. To podobieństwo wyglądu, nie pewna identyfikacja.
+- Menu → „Diagnostyka”: status silników, ostatni dystans/podobieństwo, liczba prób, stan pamięci (`navigator.storage.persist()`).

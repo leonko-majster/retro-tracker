@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="app-version" content="2026-11-14-v4-fullscreen-faces">
+<meta name="app-version" content="2026-11-14-v5-names">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -243,7 +243,7 @@ input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;bor
       <button id="bBase2"><b>[B]</b> Baza twarzy</button>
     </div>
     <div class="statbox" id="stats"></div>
-    <div class="statbox">Rozpoznawanie twarzy to porównanie wektorów twarzy (może się mylić: podobne osoby, słabe światło, profil). Dane twarzy zostają w tej przeglądarce (IndexedDB) i nigdy nie są wysyłane. Radar i odległość to SZACUNEK: kierunek wynika z położenia celu w kadrze i przybliżonego kąta widzenia kamery (~65°), a odległość z wysokości ramki (człowiek ≈ 1,7 m; zwierzęta wg typowych rozmiarów) – błąd może sięgać kilkudziesięciu procent. Zwierząt nie rozpoznaję po wyglądzie: skan tylko zapisuje zdjęcie i nazwę.</div>
+    <div class="statbox">Rozpoznawanie twarzy to porównanie wektorów twarzy (może się mylić: podobne osoby, słabe światło, profil). Dane twarzy zostają w tej przeglądarce (IndexedDB) i nigdy nie są wysyłane. Radar i odległość to SZACUNEK: kierunek wynika z położenia celu w kadrze i przybliżonego kąta widzenia kamery (~65°), a odległość z wysokości ramki (człowiek ≈ 1,7 m; zwierzęta wg typowych rozmiarów) – błąd może sięgać kilkudziesięciu procent. Zwierzęta (i ubranie człowieka, gdy nie widać twarzy) rozpoznaję tylko po PODOBIEŃSTWIE WYGLĄDU – to słabsza wskazówka i może mylić podobne zwierzęta.</div>
     <div class="statbox kb">KLAWISZE: S zdjęcie · R nagrywanie · C kamera · T paleta · M dźwięk · O obiekty · G siatka · L ślady · D radar · B baza twarzy · F pełny ekran · H obróć HUD · V obróć obraz · Esc zamknij</div>
   </div>
 
@@ -355,10 +355,28 @@ async function init(m) {
   }
   post({ type: 'fail', msg: errors.join(' | ') });
 }
+let emodel = null;
+async function initEmbed(m) {
+  try {
+    post({ type: 'status', msg: 'EMB: DOWNLOADING APPEARANCE MODEL' });
+    emodel = await wt(tf.loadGraphModel(m.url), 120000, 'appearance model download timeout');
+    const z = tf.zeros([1, 224, 224, 3]), y = emodel.predict(z); await y.data(); z.dispose(); y.dispose();
+    post({ type: 'embedReady' });
+  } catch (e) { post({ type: 'embedFail', msg: String(e && e.message || e) }); }
+}
 self.onmessage = async e => {
   const m = e.data;
   try {
     if (m.type === 'init') await init(m);
+    else if (m.type === 'initEmbed') await initEmbed(m);
+    else if (m.type === 'embed') {
+      if (!emodel) { post({ type: 'embedRes', id: m.id, error: 'no model' }); return; }
+      const t0 = performance.now();
+      const img = new ImageData(new Uint8ClampedArray(m.buf), m.w, m.h);
+      const t = tf.tidy(() => { const x = tf.browser.fromPixels(img).toFloat().div(255).expandDims(0); const v = emodel.predict(x).flatten(); return v.div(v.norm()); });
+      const d = await t.data(); t.dispose();
+      post({ type: 'embedRes', id: m.id, ms: performance.now() - t0, emb: d });
+    }
     else if (m.type === 'detect') {
       if (!model) { post({ type: 'result', id: m.id, error: 'no model' }); return; }
       const img = new ImageData(new Uint8ClampedArray(m.buf), m.w, m.h);
@@ -369,6 +387,7 @@ self.onmessage = async e => {
     }
   } catch (err) {
     if (m.type === 'init') post({ type: 'fail', msg: String(err && err.message || err) });
+    else if (m.type === 'embed') post({ type: 'embedRes', id: m.id, error: String(err && err.message || err) });
     else post({ type: 'result', id: m.id, error: String(err && err.message || err) });
   }
 };
@@ -463,7 +482,9 @@ const MODEL_BYTES = 9290000;
 const FACE_LIB = new URL('lib/face-api.js', location.href).href;            // self-hosted
 const FACE_BASE = new URL('facemodel/', location.href).href;                // self-hosted
 const FACE_BYTES = 7000000;
-const KNOWN_D = 0.48, MAYBE_D = 0.58;                                       // face-descriptor distance thresholds
+const EMB_URL = new URL('emodel/model.json', location.href).href;          // self-hosted MobileNetV2 feature extractor (appearance)
+const KNOWN_D = 0.52, MAYBE_D = 0.58;                                       // face-descriptor distance thresholds (euclidean)
+const A_KNOWN = 0.74, A_MAYBE = 0.62, APP_MAYBE = 0.80;                     // appearance cosine-similarity thresholds
 const UA = navigator.userAgent || '';
 const IS_IOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const IS_TOUCH = (navigator.maxTouchPoints || 0) > 0 && matchMedia('(pointer:coarse)').matches;
@@ -490,7 +511,8 @@ const S = {
   tracks: [], next: { H: 1, A: 1, O: 1 }, uid: 1,
   W: 640, H: 480, dpr: 1, ox: 0, oy: 0, dw: 640, dh: 480, fg: '#33ff66', rgb: '51,255,102', nCams: 1, lastBeepLost: 0, newFrame: true,
   sel: null, profiles: [], animals: [], dbOk: false,
-  face: { worker: null, ready: false, p: null, prog: 0, backend: '', ms: 0, cbs: {}, req: 0 },
+  face: { worker: null, ready: false, p: null, prog: 0, backend: '', ms: 0, cbs: {}, req: 0, mode: '', err: '', fails: 0, failAt: 0, main: null },
+  diag: { ticks: 0, faceOk: 0, faceNo: 0, lastD: null, lastName: '', lastSim: null, lastSimName: '', lastErr: '', persisted: '?' }, dead: [],
   scanBusy: false, matchBusy: false, nextMatch: 0, rec: null, lastCapture: null, logLines: [], panel: ''
 };
 S.vrot = S.rot === 90 ? 270 : S.rot === -90 ? 90 : 0;
@@ -682,6 +704,7 @@ function initWorker() {
       else if (m.type === 'ready') { clearTimeout(dog); S.backend = m.backend; resolve(m.backend); }
       else if (m.type === 'fail') { clearTimeout(dog); reject(new Error(m.msg)); }
       else if (m.type === 'result') onWorkerResult(m);
+      else if (m.type === 'embedReady' || m.type === 'embedFail' || m.type === 'embedRes') onEmbedMsg(m);
     };
     w.postMessage({ type: 'init', tf: TF_URL, wasm: WASM_JS, coco: COCO_URL, wasmPath: WASM_PATH, modelUrl: MODEL_URL, totalBytes: MODEL_BYTES, order: ['wasm', 'cpu'] });
   });
@@ -724,28 +747,135 @@ function modelErrMsg(e) {
   return 'Nie udało się wczytać modelu wykrywania.\n' + ((e && e.message) || '?') + '\n\nKamera nadal działa. Dotknij „Ponów”, żeby spróbować jeszcze raz.';
 }
 
-/* ---------- face module (lazy, own worker, own wasm) ---------- */
-function ensureFace() {
+/* ---------- face module (lazy; worker first, main thread as fallback) ---------- */
+function faceViaWorker() {
   const F = S.face;
-  if (F.ready) return Promise.resolve();
-  if (F.p) return F.p;
-  F.p = new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     let w;
     try { w = mkWorker('fsrc'); } catch (e) { return reject(new Error('Brak obsługi Web Worker')); }
     F.worker = w; F.prog = 0;
-    const dog = setTimeout(() => reject(new Error('przekroczono czas wczytywania modułu twarzy')), 150000);
+    const dog = setTimeout(() => reject(new Error('przekroczono czas wczytywania modułu twarzy (worker)')), 120000);
     w.onerror = e => { clearTimeout(dog); reject(new Error('worker: ' + (e.message || 'script'))); };
     w.onmessage = e => {
       const m = e.data;
       if (m.type === 'status') setStatus(m.msg);
       else if (m.type === 'progress') F.prog = clamp(m.loaded / m.total, 0, 1);
-      else if (m.type === 'ready') { clearTimeout(dog); F.ready = true; F.backend = m.backend; resolve(); }
+      else if (m.type === 'ready') { clearTimeout(dog); F.backend = m.backend; F.mode = 'worker'; resolve(); }
       else if (m.type === 'fail') { clearTimeout(dog); reject(new Error(m.msg)); }
       else if (m.type === 'faces') { const cb = F.cbs[m.id]; if (cb) { delete F.cbs[m.id]; cb(m); } }
     };
     w.postMessage({ type: 'init', lib: FACE_LIB, base: FACE_BASE, wasmPath: WASM_PATH, totalBytes: FACE_BYTES });
-  }).catch(e => { try { if (F.worker) F.worker.terminate(); } catch (_) {} F.worker = null; F.p = null; throw e; });
+  });
+}
+async function faceViaMain() {
+  const F = S.face;
+  setStatus('FACE: FALLBACK - MAIN THREAD');
+  await loadScript(FACE_LIB);
+  const fa = window.faceapi, t2 = fa.tf; let be = 'cpu';
+  try {
+    t2.setWasmPaths(WASM_PATH);
+    const ok = await withTimeout(t2.setBackend('wasm'), 20000, 'wasm init timeout'); await t2.ready();
+    if (ok !== false && t2.getBackend() === 'wasm') be = 'wasm';
+  } catch (e) { setStatus('FACE MAIN WASM FAIL: ' + e.message); }
+  if (be !== 'wasm') { await t2.setBackend('cpu'); await t2.ready(); }
+  await withTimeout(Promise.all([fa.nets.tinyFaceDetector.loadFromUri(FACE_BASE), fa.nets.faceLandmark68Net.loadFromUri(FACE_BASE), fa.nets.faceRecognitionNet.loadFromUri(FACE_BASE)]), 120000, 'przekroczono czas pobierania modeli twarzy');
+  F.main = fa; F.backend = be; F.mode = 'main';
+}
+function ensureFace() {
+  const F = S.face;
+  if (F.ready) return Promise.resolve();
+  if (F.p) return F.p;
+  F.err = '';
+  F.p = faceViaWorker()
+    .catch(e => { setStatus('FACE WORKER FAIL: ' + ((e && e.message) || e)); try { if (F.worker) F.worker.terminate(); } catch (_) {} F.worker = null; return faceViaMain(); })
+    .then(() => { F.ready = true; F.fails = 0; log(`MODUŁ TWARZY GOTOWY (${F.backend.toUpperCase()}${F.mode === 'main' ? ', główny wątek' : ''})`, 'sys-l'); },
+      e => {
+        F.err = (e && e.message) || String(e); F.fails++; F.failAt = performance.now(); F.p = null;
+        log('BŁĄD MODUŁU TWARZY: ' + F.err, 'warn');
+        toast('Moduł rozpoznawania twarzy nie wczytał się:\n' + F.err + '\nPonawiam próbę w tle.', 7000);
+        throw e;
+      });
   return F.p;
+}
+function faceKick(now) {
+  const F = S.face;
+  if (F.ready || F.p) return;
+  if (F.fails && now - F.failAt < Math.min(60000, 8000 * F.fails)) return;
+  ensureFace().catch(() => {});
+}
+// one detect+describe pass over an ImageData (worker or main thread)
+function faceDetect(img, min) {
+  const F = S.face;
+  return new Promise(resolve => {
+    if (F.mode === 'main') {
+      (async () => {
+        const t0 = performance.now(), fa = F.main, tens = fa.tf.browser.fromPixels(img);
+        try {
+          const res = await fa.detectAllFaces(tens, new fa.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: min })).withFaceLandmarks().withFaceDescriptors();
+          resolve({ ms: performance.now() - t0, faces: res.map(r => ({ box: [r.detection.box.x, r.detection.box.y, r.detection.box.width, r.detection.box.height], score: r.detection.score, desc: Array.from(r.descriptor) })) });
+        } catch (e) { resolve({ error: String((e && e.message) || e) }); } finally { tens.dispose(); }
+      })();
+      return;
+    }
+    if (!F.worker) return resolve({ error: 'no worker' });
+    const id = ++F.req; let done = false;
+    const to = setTimeout(() => { if (!done) { done = true; delete F.cbs[id]; resolve({ error: 'timeout' }); } }, 25000);
+    F.cbs[id] = m => { if (done) return; done = true; clearTimeout(to); resolve(m); };
+    F.worker.postMessage({ type: 'faces', id, w: img.width, h: img.height, buf: img.data.buffer, min }, [img.data.buffer]);
+  });
+}
+
+/* ---------- appearance embeddings (MobileNetV2, runs in the detection worker) ---------- */
+const E = { ready: false, p: null, err: '', cbs: {}, req: 0, ms: 0, fails: 0, failAt: 0, res: null, rej: null, mode: '', model: null };
+function onEmbedMsg(m) {
+  if (m.type === 'embedReady') { E.ready = true; E.mode = 'worker'; if (E.res) E.res(); }
+  else if (m.type === 'embedFail') { if (E.rej) E.rej(new Error(m.msg)); }
+  else { const cb = E.cbs[m.id]; if (cb) { delete E.cbs[m.id]; cb(m); } }
+}
+function ensureEmbed() {
+  if (E.ready) return Promise.resolve();
+  if (E.p) return E.p;
+  E.err = '';
+  E.p = (async () => {
+    await ensureModel();
+    if (S.mode === 'worker') {
+      await withTimeout(new Promise((res, rej) => { E.res = res; E.rej = rej; S.worker.postMessage({ type: 'initEmbed', url: EMB_URL }); }), 150000, 'przekroczono czas pobierania modelu wyglądu');
+    } else {
+      E.model = await withTimeout(tf.loadGraphModel(EMB_URL), 120000, 'przekroczono czas pobierania modelu wyglądu');
+      E.mode = 'main'; E.ready = true;
+    }
+    log('MODEL WYGLĄDU GOTOWY', 'sys-l');
+  })().catch(e => { E.err = (e && e.message) || String(e); E.fails++; E.failAt = performance.now(); E.p = null; log('BŁĄD MODELU WYGLĄDU: ' + E.err, 'warn'); throw e; });
+  return E.p;
+}
+function embedKick(now) {
+  if (E.ready || E.p || !S.ready) return;
+  if (E.fails && now - E.failAt < Math.min(60000, 8000 * E.fails)) return;
+  ensureEmbed().catch(() => {});
+}
+function letterbox(cv) {
+  const c = document.createElement('canvas'); c.width = c.height = 224;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.fillStyle = '#808080'; x.fillRect(0, 0, 224, 224);
+  const s = Math.min(224 / cv.width, 224 / cv.height), w = cv.width * s, h = cv.height * s;
+  x.drawImage(cv, (224 - w) / 2, (224 - h) / 2, w, h);
+  return x.getImageData(0, 0, 224, 224);
+}
+function embedCanvas(cv) {
+  return new Promise(resolve => {
+    if (!E.ready || !cv) return resolve(null);
+    const img = letterbox(cv), t0 = performance.now();
+    if (E.mode === 'main') {
+      try {
+        const t = tf.tidy(() => { const x = tf.browser.fromPixels(img).toFloat().div(255).expandDims(0); const v = E.model.predict(x).flatten(); return v.div(v.norm()); });
+        t.data().then(d => { t.dispose(); E.ms = performance.now() - t0; resolve(Float32Array.from(d)); }).catch(() => resolve(null));
+      } catch (e) { resolve(null); }
+      return;
+    }
+    const id = ++E.req; const to = setTimeout(() => { delete E.cbs[id]; resolve(null); }, 20000);
+    E.cbs[id] = m => { clearTimeout(to); if (m.error) return resolve(null); E.ms = E.ms ? E.ms * .7 + m.ms * .3 : m.ms; resolve(new Float32Array(m.emb)); };
+    S.worker.postMessage({ type: 'embed', id, w: img.width, h: img.height, buf: img.data.buffer }, [img.data.buffer]);
+  });
 }
 
 /* ---------- camera ---------- */
@@ -808,17 +938,32 @@ function iou(a, b) {
 function baseName(t) {
   return t.g === 'H' ? `HUMAN #${t.id}` : t.g === 'A' ? `${PL[t.cls] || t.cls.toUpperCase()} #${t.id}` : `${t.cls.toUpperCase()} #${t.id}`;
 }
+const profOf = t => t.person.pid == null ? null : (t.g === 'H' ? getProfile(t.person.pid) : S.animals.find(a => a.id === t.person.pid));
 function label(t) {
-  if (t.g === 'H') {
-    const p = t.person, pr = p.pid != null ? getProfile(p.pid) : null;
-    if (p.state === 'known' && pr) return `ZNANY: ${pr.name} (${pctOf(p.d)}%)`;
-    if (p.state === 'maybe' && pr) return `PODOBNY DO: ${pr.name}? (${pctOf(p.d)}%)`;
-    if (p.state === 'new') return `NOWA OSOBA #${t.id}`;
+  if (t.g === 'O') return baseName(t);
+  const p = t.person, pr = profOf(t);
+  if (p.state === 'known' && pr) return `ZNANY: ${pr.name} (${p.pct}%)`;
+  if (p.state === 'maybe' && pr) return `PODOBNY DO: ${pr.name}? (${p.pct}%)`;
+  if (p.state === 'new') return t.g === 'H' ? `NOWA OSOBA #${t.id}` : `NOWE ZWIERZĘ #${t.id}`;
+  if (t.g === 'H' && S.profiles.length) {
+    if (p.state === 'noface') return 'BRAK TWARZY (odwróć się)';
+    if (!S.face.ready) return S.face.err ? `HUMAN #${t.id} (BŁĄD MODUŁU TWARZY)` : 'ŁADUJĘ ROZPOZNAWANIE…';
+    return 'SKANUJĘ TWARZ…';
   }
   return baseName(t);
 }
 function confirm(t, now) {
-  t.confirmed = true; t.id = S.next[t.g]++; t.born = now;
+  t.confirmed = true; t.born = now;
+  // re-associate with a recently lost track of the same kind nearby: keep number + identity (no flicker back to "HUMAN")
+  S.dead = S.dead.filter(d => now - d.t < 12000);
+  const cx = t.x + t.w / 2, cy = t.y + t.h / 2;
+  let best = null, bd = .4;
+  for (const d of S.dead) {
+    if (d.used || d.g !== t.g || (t.g !== 'H' && d.cls !== t.cls)) continue;
+    const dist = Math.hypot(d.x - cx, d.y - cy); if (dist < bd) { bd = dist; best = d; }
+  }
+  if (best) { best.used = true; t.id = best.id; t.person = best.person; t.person.busy = false; t.born = best.born; return; }
+  t.id = S.next[t.g]++;
   if (t.g === 'H') { sfx.human(); log(`${baseName(t)} WYKRYTY`, 'warn'); }
   else if (t.g === 'A') { sfx.animal(); log(`${baseName(t)} WYKRYTY`); }
   else if (S.objects) log(`${baseName(t)} WYKRYTY`, 'sys-l');
@@ -847,7 +992,7 @@ function updateTracks(dets, now) {
   dets.forEach((d, di) => {
     if (usedD.has(di)) return;
     tr.push({ ...d, uid: S.uid++, hits: 1, last: now, missed: 0, confirmed: false, id: 0, born: now, trail: [], dx: d.x, dy: d.y, dw: d.w, dh: d.h,
-      person: { state: 'unk', pid: null, d: 9, tried: 0, nof: 0, nnew: 0, logged: false } });
+      person: { state: 'unk', kind: '', pid: null, d: 9, pct: 0, tried: 0, nof: 0, nnew: 0, logged: false, busy: false } });
   });
   S.tracks = tr.filter((t, i) => {
     if (usedT.has(i) || t.last === now) return true;
@@ -855,6 +1000,7 @@ function updateTracks(dets, now) {
     const ttl = t.g === 'H' ? 1500 : 1100;      // inference is slower on phones: keep targets a bit longer
     if (!t.confirmed) return now - t.last < 600;
     if (now - t.last > ttl) {
+      S.dead.push({ g: t.g, cls: t.cls, x: t.x + t.w / 2, y: t.y + t.h / 2, id: t.id, person: t.person, born: t.born, t: now, used: false });
       if (t.g === 'H') { log(`${baseName(t)} UTRACONY - T+${fmtDur(t.last - t.born)}`, 'warn'); const n = performance.now(); if (n - S.lastBeepLost > 500) { sfx.lost(); S.lastBeepLost = n; } }
       else if (t.g === 'A') log(`${baseName(t)} ODSZEDŁ`);
       else if (S.objects) log(`${baseName(t)} ZNIKNĄŁ`, 'sys-l');
@@ -1159,10 +1305,11 @@ function dbClear(store) {
 async function loadDb() {
   S.dbOk = await idbOpen();
   if (!S.dbOk) log('Brak IndexedDB (tryb prywatny?) - baza tylko do zamknięcia karty', 'warn');
-  else { try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {} }
+  else askPersist();
   S.profiles = (await dbAll('faces')).sort((a, b) => a.id - b.id);
   S.animals = (await dbAll('animals')).sort((a, b) => a.id - b.id);
   if (S.profiles.length) log(`BAZA TWARZY: ${S.profiles.length} zapisanych`, 'sys-l');
+  if (S.animals.length) log(`BAZA ZWIERZĄT: ${S.animals.length} zapisanych`, 'sys-l');
 }
 
 /* ---------- dialogs ---------- */
@@ -1183,75 +1330,143 @@ $('#dlgOk').onclick = () => dlgDone($('#dlgI').style.display === 'none' ? true :
 $('#dlgNo').onclick = () => dlgDone(null);
 $('#dlgI').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#dlgOk').click(); } else if (e.key === 'Escape') dlgDone(null); });
 
-/* ---------- face scanning & recognition ---------- */
+/* ---------- identity: faces (face-api descriptors) + appearance (MobileNetV2 embeddings) ---------- */
+const D = S.diag;
+async function askPersist() {
+  try {
+    if (navigator.storage && navigator.storage.persist) D.persisted = (await navigator.storage.persisted()) ? 'tak' : ((await navigator.storage.persist()) ? 'tak' : 'nie (system może wyczyścić)');
+    else D.persisted = 'brak API';
+  } catch (e) { D.persisted = 'błąd'; }
+}
 const fdist = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; s += d * d; } return Math.sqrt(s); };
+const dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
+const pctA = s => Math.round(clamp((s - .45) / .5, 0, 1) * 100);
 function matchProfile(desc) {
   let best = null, bd = 9;
   for (const p of S.profiles) for (const e of p.embs) { const d = fdist(desc, e); if (d < bd) { bd = d; best = p; } }
   return { p: best, d: bd };
 }
-// detect the face inside a person's box (upper part, native camera resolution) and compute its descriptor
-function faceAt(t, wantThumb) {
-  const F = S.face;
-  return new Promise(resolve => {
-    if (!F.ready || !F.worker) return resolve(null);
-    const ux = S.mirrored ? 1 - (t.x + t.w) : t.x;
-    const rx = clamp(ux - t.w * .05, 0, 1), ry = clamp(t.y, 0, 1);
-    const rw = Math.min(1 - rx, t.w * 1.1), rh = Math.min(1 - ry, t.h * .55);
-    const cv = captureRegion(rx, ry, rw, rh, 480, 2);
-    if (!cv) return resolve(null);
-    const img = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, cv.width, cv.height);
-    const id = ++F.req; let done = false;
-    const to = setTimeout(() => { if (!done) { done = true; delete F.cbs[id]; resolve(null); } }, 9000);
-    F.cbs[id] = m => {
-      if (done) return; done = true; clearTimeout(to);
-      if (m.error || !m.faces || !m.faces.length) return resolve(null);
-      F.ms = F.ms ? F.ms * .7 + m.ms * .3 : m.ms;
-      const f = m.faces.filter(q => q.score >= .4).sort((a, b) => b.score * b.box[2] * b.box[3] - a.score * a.box[2] * a.box[3])[0];
-      if (!f) return resolve(null);
-      const out = { desc: f.desc, score: f.score, thumb: null };
-      if (wantThumb) {
-        try {
-          const [bx, by, bw, bh] = f.box, m2 = Math.max(bw, bh) * .3, side = Math.max(bw, bh) + 2 * m2;
-          const th = document.createElement('canvas'); th.width = th.height = 96;
-          th.getContext('2d').drawImage(cv, bx + bw / 2 - side / 2, by + bh / 2 - side / 2, side, side, 0, 0, 96, 96);
-          out.thumb = th.toDataURL('image/jpeg', .7);
-        } catch (e) {}
-      }
-      resolve(out);
-    };
-    F.worker.postMessage({ type: 'faces', id, w: img.width, h: img.height, buf: img.data.buffer, min: .3 }, [img.data.buffer]);
-  });
+function matchApp(emb) {
+  let best = null, bs = -1;
+  for (const p of S.profiles) for (const e of (p.app || [])) { const s = dot(emb, e); if (s > bs) { bs = s; best = p; } }
+  return { p: best, s: bs };
 }
-function applyMatch(t, f) {
-  const p = t.person, now = performance.now();
-  if (!f) { p.nof++; if (p.state === 'unk' && p.nof >= 2) p.state = 'noface'; return; }
-  p.nof = 0;
-  const m = matchProfile(f.desc);
-  if (m.p && m.d < KNOWN_D) { p.state = 'known'; p.pid = m.p.id; p.d = m.d; p.nnew = 0; announce(t, m.p); }
-  else if (m.p && m.d < MAYBE_D) { if (p.state !== 'known') { p.state = 'maybe'; p.pid = m.p.id; p.d = m.d; } }
+function matchAnimal(emb, cls) {
+  let best = null, bs = -1;
+  // class label can flicker (dog/cat/bear): compare against all saved animals
+  for (const a of S.animals) { if (!a.embs) continue; for (const e of a.embs) { const s = dot(emb, e); if (s > bs) { bs = s; best = a; } } }
+  return { a: best, s: bs };
+}
+const hasAnimalEmbs = () => S.animals.some(a => a.embs && a.embs.length);
+const hasAppEmbs = () => S.profiles.some(p => p.app && p.app.length);
+// crop of a track's box at native camera resolution (frac = top fraction of the box to keep)
+function trackCrop(t, frac, maxSide, maxUp) {
+  const ux = S.mirrored ? 1 - (t.x + t.w) : t.x;
+  const rx = clamp(ux, 0, 1), ry = clamp(t.y, 0, 1);
+  return captureRegion(rx, ry, Math.min(1 - rx, t.w), Math.min(1 - ry, t.h * (frac || 1)), maxSide, maxUp);
+}
+// detect the face inside a person's box (upper part, native camera resolution) and compute its descriptor
+async function faceAt(t, wantThumb) {
+  const F = S.face;
+  if (!F.ready) return null;
+  const ux = S.mirrored ? 1 - (t.x + t.w) : t.x;
+  const rx = clamp(ux - t.w * .05, 0, 1), ry = clamp(t.y, 0, 1);
+  const rw = Math.min(1 - rx, t.w * 1.1), rh = Math.min(1 - ry, t.h * .55);
+  const cv = captureRegion(rx, ry, rw, rh, 480, 2.5);
+  if (!cv) return null;
+  const img = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, cv.width, cv.height);
+  const m = await faceDetect(img, .3);
+  if (m.error) { D.lastErr = m.error; return null; }
+  if (!m.faces || !m.faces.length) return null;
+  F.ms = F.ms ? F.ms * .7 + m.ms * .3 : m.ms;
+  const f = m.faces.filter(q => q.score >= .4).sort((a, b) => b.score * b.box[2] * b.box[3] - a.score * a.box[2] * a.box[3])[0];
+  if (!f) return null;
+  const out = { desc: f.desc, score: f.score, thumb: null };
+  if (wantThumb) {
+    try {
+      const [bx, by, bw, bh] = f.box, m2 = Math.max(bw, bh) * .3, side = Math.max(bw, bh) + 2 * m2;
+      const th = document.createElement('canvas'); th.width = th.height = 96;
+      th.getContext('2d').drawImage(cv, bx + bw / 2 - side / 2, by + bh / 2 - side / 2, side, side, 0, 0, 96, 96);
+      out.thumb = th.toDataURL('image/jpeg', .7);
+    } catch (e) {}
+  }
+  return out;
+}
+const storeOf = t => t.g === 'A' ? 'animals' : 'faces';
+function announce(t, prof) {
+  const p = t.person, key = t.g + prof.id; if (p.logged === key) return;
+  p.logged = key;
+  log(`ROZPOZNANO: ${prof.name}`, 'warn'); sfx.ok();
+  prof.seen = (prof.seen || 0) + 1; prof.last = Date.now(); dbPut(storeOf(t), prof);
+}
+function addCapped(arr, v, max, keep) { if (arr.length < max) arr.push(v); else arr[keep + Math.floor(Math.random() * (arr.length - keep))] = v; }
+async function autoApp(t, prof) {      // remember what this person looks like today (clothes etc.)
+  if (!E.ready) return;
+  const e = await embedCanvas(trackCrop(t, 1, 320, 1)); if (!e) return;
+  prof.app = prof.app || []; addCapped(prof.app, Array.from(e), 6, 1); dbPut('faces', prof);
+}
+function applyFace(t, f, now) {
+  const p = t.person; p.kind = 'face';
+  if (!f) { D.faceNo++; p.nof++; if (p.state === 'unk' && p.nof >= 2) p.state = 'noface'; return false; }
+  D.faceOk++; p.nof = 0;
+  const m = matchProfile(f.desc); D.lastD = m.d; D.lastName = m.p ? m.p.name : '';
+  if (m.p && m.d < KNOWN_D) {
+    p.state = 'known'; p.pid = m.p.id; p.d = m.d; p.pct = pctOf(m.d); p.nnew = 0; announce(t, m.p);
+    if (m.d < .40 && now - (m.p.lastAuto || 0) > 15000) {      // confident match: learn another view of this person
+      m.p.lastAuto = now; addCapped(m.p.embs, Array.from(f.desc), 12, 3); dbPut('faces', m.p); autoApp(t, m.p);
+    }
+  } else if (m.p && m.d < MAYBE_D) { if (p.state !== 'known') { p.state = 'maybe'; p.pid = m.p.id; p.d = m.d; p.pct = pctOf(m.d); } }
   else {
     p.nnew++;
     if (p.state !== 'known' || p.nnew >= 2) {
-      if (p.state !== 'new') { log(`NOWA OSOBA: ${baseName(t)}`, 'warn'); }
+      if (p.state !== 'new') log(`NOWA OSOBA: ${baseName(t)}`, 'warn');
       p.state = 'new'; p.pid = null; p.d = m.d;
     }
   }
+  return true;
 }
-function announce(t, prof) {
-  const p = t.person; if (p.logged === prof.id) return;
-  p.logged = prof.id;
-  log(`ROZPOZNANO: ${prof.name}`, 'warn'); sfx.ok();
-  prof.seen = (prof.seen || 0) + 1; prof.last = Date.now(); dbPut('faces', prof);
+async function appearanceTry(t) {     // face not visible: clothing/shape similarity as a weak cue
+  if (!E.ready || !hasAppEmbs()) return;
+  const p = t.person; if (p.state === 'known') return;
+  const e = await embedCanvas(trackCrop(t, 1, 320, 1)); if (!e) return;
+  const m = matchApp(e); D.lastSim = m.s; D.lastSimName = m.p ? m.p.name : '';
+  if (m.p && m.s >= APP_MAYBE) { p.state = 'maybe'; p.kind = 'app'; p.pid = m.p.id; p.pct = pctA(m.s); }
+}
+async function animalTry(t) {
+  const e = await embedCanvas(trackCrop(t, 1, 320, 1)); if (!e) return;
+  const p = t.person, m = matchAnimal(e, t.cls); p.kind = 'animal'; D.lastSim = m.s; D.lastSimName = m.a ? m.a.name : '';
+  if (m.a && m.s >= A_KNOWN) { p.state = 'known'; p.pid = m.a.id; p.sim = m.s; p.pct = pctA(m.s); p.nnew = 0; announce(t, m.a); }
+  else if (m.a && m.s >= A_MAYBE) { if (p.state !== 'known') { p.state = 'maybe'; p.pid = m.a.id; p.sim = m.s; p.pct = pctA(m.s); } }
+  else {
+    p.nnew++;
+    if (p.state !== 'known' || p.nnew >= 2) { if (p.state !== 'new') log(`NOWE ZWIERZĘ: ${baseName(t)}`, 'warn'); p.state = 'new'; p.pid = null; p.sim = m.s; }
+  }
 }
 async function matchTick(now) {
-  if (S.matchBusy || S.scanBusy || !S.face.ready || !S.profiles.length || now < S.nextMatch || S.rec && false) return;
-  const c = S.tracks.filter(t => t.confirmed && t.g === 'H' && now - t.last < 600 && t.h > .18);
-  if (!c.length) return;
-  c.sort((a, b) => a.person.tried - b.person.tried);
-  const t = c[0];
-  S.matchBusy = true; t.person.tried = now; S.nextMatch = now + 1000;
-  try { applyMatch(t, await faceAt(t, false)); } catch (e) {} finally { S.matchBusy = false; }
+  if (now < S.nextMatch) return;
+  const needFace = S.profiles.length > 0, needEmb = hasAppEmbs() || S.animals.some(a => a.embs && a.embs.length);
+  if (needFace && S.ready) faceKick(now);
+  if (needEmb) embedKick(now);
+  if (S.matchBusy || S.scanBusy) return;
+  let best = null, bw = 1e12;
+  for (const t of S.tracks) {
+    if (!t.confirmed || now - t.last > 600) continue;
+    const ok = (t.g === 'H' && needFace && S.face.ready && t.h > .15) || (t.g === 'A' && E.ready && hasAnimalEmbs(t.cls) && t.h > .08);
+    if (!ok) continue;
+    const wait = t.person.state === 'known' ? 6000 : 600;
+    if (now - t.person.tried < wait) continue;
+    const w = t.person.tried + (t.person.state === 'known' ? 6000 : 0);
+    if (w < bw) { bw = w; best = t; }
+  }
+  if (!best) return;
+  const t = best, p = t.person;
+  S.matchBusy = true; p.tried = now; S.nextMatch = now + 500; D.ticks++;
+  if (p.state === 'unk') p.busy = true;
+  try {
+    if (t.g === 'H') { const got = applyFace(t, await faceAt(t, false), now); if (!got) await appearanceTry(t); }
+    else await animalTry(t);
+  } catch (e) { D.lastErr = String((e && e.message) || e); }
+  finally { S.matchBusy = false; p.busy = false; }
 }
 async function faceReady(label) {
   if (S.face.ready) return true;
@@ -1261,9 +1476,10 @@ async function faceReady(label) {
   catch (e) { toast('Nie udało się wczytać modułu twarzy: ' + ((e && e.message) || '?') + '\nSprawdź internet i spróbuj ponownie.', 7000); return false; }
   finally { clearInterval(iv); }
 }
+const nextPersonNo = () => { let n = S.profiles.length + 1; while (S.profiles.some(p => p.name === `OSOBA #${n}`)) n++; return n; };
 async function scanHuman(t, addToId) {
   if (S.scanBusy || !t) return;
-  S.scanBusy = true; $('#cdScan').disabled = $('#cdAdd').disabled = true;
+  S.scanBusy = true; $('#cdScan').disabled = $('#cdAdd').disabled = true; t.person.busy = true;
   try {
     if (!(await faceReady())) return;
     toast('Skanuję twarz… patrz w kamerę', 0);
@@ -1286,44 +1502,78 @@ async function scanHuman(t, addToId) {
       }
     }
     if (target) {
-      for (const s of samples) target.embs.push(Array.from(s.desc));
-      while (target.embs.length > 12) target.embs.splice(1, 1);
+      for (const s of samples) addCapped(target.embs, Array.from(s.desc), 12, 3);
       target.scans = (target.scans || 1) + samples.length; target.last = Date.now();
       await dbPut('faces', target);
-      Object.assign(t.person, { state: 'known', pid: target.id, d: 0, logged: target.id });
+      Object.assign(t.person, { state: 'known', kind: 'face', pid: target.id, d: 0, pct: 100, logged: 'H' + target.id });
       log(`DODANO SKAN: ${target.name} (${target.embs.length})`, 'warn'); sfx.ok();
       toast(`Dodano skan do profilu „${target.name}”.\nSkanów: ${target.embs.length}`, 3500);
+      autoApp(t, target).catch(() => {});
     } else {
       const name = await ask({ title: 'NOWA OSOBA - NAZWA', text: 'Zapisuję tylko w tej przeglądarce. Możesz zmienić nazwę później w BAZIE.', input: true, def: `OSOBA #${nextPersonNo()}`, ok: 'Zapisz', cancel: 'Anuluj' });
       if (name === null) return;
-      const prof = { name: name || `OSOBA #${nextPersonNo()}`, embs: samples.map(s => Array.from(s.desc)), thumb: samples[0].thumb, first: Date.now(), last: Date.now(), seen: 1, scans: samples.length };
+      const prof = { name: name || `OSOBA #${nextPersonNo()}`, embs: samples.map(s => Array.from(s.desc)), app: [], thumb: samples[0].thumb, first: Date.now(), last: Date.now(), seen: 1, scans: samples.length };
       await dbPut('faces', prof); S.profiles.push(prof);
-      Object.assign(t.person, { state: 'known', pid: prof.id, d: 0, logged: prof.id });
-      log(`ZAPISANO TWARZ: ${prof.name}`, 'warn'); sfx.ok();
+      Object.assign(t.person, { state: 'known', kind: 'face', pid: prof.id, d: 0, pct: 100, logged: 'H' + prof.id });
+      log(`ZAPISANO TWARZ: ${prof.name}`, 'warn'); sfx.ok(); askPersist();
       toast(`Zapisano „${prof.name}”. Od teraz będę ją rozpoznawać.`, 3500);
+      ensureEmbed().then(() => autoApp(t, prof)).catch(() => {});   // also remember appearance (background, ~4 MB model)
+    }
+  } finally { S.scanBusy = false; t.person.busy = false; $('#cdScan').disabled = $('#cdAdd').disabled = false; cardSig = ''; }
+}
+async function scanAnimal(t, addToId) {
+  if (S.scanBusy || !t) return;
+  S.scanBusy = true; $('#cdScan').disabled = $('#cdAdd').disabled = true;
+  try {
+    toast('Skanuję zwierzę…' + (E.ready ? '' : ' (pierwszy raz pobiera model wyglądu ~4 MB)'), 0);
+    let withEmb = true;
+    try { await ensureEmbed(); } catch (e) { withEmb = false; }
+    const samples = []; let thumb = null;
+    for (let i = 0; i < 3; i++) {
+      if (!S.tracks.includes(t)) break;
+      const cv = trackCrop(t, 1, 320, 1);
+      if (cv) {
+        if (!thumb) {
+          const th = document.createElement('canvas'), s = Math.min(1, 160 / Math.max(cv.width, cv.height)); th.width = Math.round(cv.width * s); th.height = Math.round(cv.height * s);
+          const c = th.getContext('2d'); c.drawImage(cv, 0, 0, th.width, th.height);
+          c.globalCompositeOperation = 'saturation'; c.fillStyle = '#000'; c.fillRect(0, 0, th.width, th.height);
+          c.globalCompositeOperation = 'multiply'; c.fillStyle = S.fg; c.fillRect(0, 0, th.width, th.height);
+          thumb = th.toDataURL('image/jpeg', .75);
+        }
+        if (withEmb) { const e = await embedCanvas(cv); if (e) samples.push(Array.from(e)); }
+        else samples.push(null);
+      }
+      await sleep(250);
+    }
+    hideToast();
+    if (!samples.length) { toast(S.tracks.includes(t) ? 'Nie mogę pobrać obrazu z kamery.' : 'Cel zniknął z kadru.', 3500); return; }
+    const embs = samples.filter(Boolean);
+    if (!withEmb) toast('Model wyglądu się nie wczytał (' + E.err + ').\nZapiszę samo zdjęcie i nazwę – bez rozpoznawania.', 5000);
+    let target = addToId != null ? S.animals.find(a => a.id === addToId) : null;
+    if (!target && embs.length) {
+      const m = matchAnimal(Float32Array.from(embs[0]), t.cls);
+      if (m.a && m.s >= .80) {
+        const yes = await ask({ title: 'TO ZWIERZĘ JEST JUŻ W BAZIE?', text: `Wygląda podobnie do „${m.a.name}” (${pctA(m.s)}%).\nDodać zdjęcia do tego wpisu, czy zapisać jako nowe?`, ok: 'Dodaj do ' + m.a.name.slice(0, 12), cancel: 'Nowe' });
+        if (yes) target = m.a;
+      }
+    }
+    if (target) {
+      target.embs = target.embs || []; for (const e of embs) addCapped(target.embs, e, 12, 3);
+      target.last = Date.now(); await dbPut('animals', target);
+      Object.assign(t.person, { state: 'known', kind: 'animal', pid: target.id, sim: 1, pct: 100, logged: 'A' + target.id });
+      log(`DODANO SKAN: ${target.name} (${target.embs.length})`, 'warn'); sfx.ok();
+      toast(`Dodano skan do „${target.name}”.`, 3000);
+    } else {
+      const n = S.animals.filter(a => a.cls === t.cls).length + 1;
+      const name = await ask({ title: 'ZWIERZĘ - NAZWA', text: 'Zapisuję zdjęcia i wygląd tylko w tej przeglądarce. Rozpoznawanie to podobieństwo wyglądu – może mylić podobne zwierzęta.', input: true, def: `${PL[t.cls] || t.cls.toUpperCase()} #${n}`, ok: 'Zapisz', cancel: 'Anuluj' });
+      if (name === null) return;
+      const a = { name: name || `${PL[t.cls] || t.cls} #${n}`, cls: t.cls, thumb, embs, time: Date.now(), last: Date.now(), seen: 1, conf: Math.round(t.score * 100) };
+      await dbPut('animals', a); S.animals.push(a); askPersist();
+      Object.assign(t.person, { state: 'known', kind: 'animal', pid: a.id, sim: 1, pct: 100, logged: 'A' + a.id });
+      log(`ZAPISANO ZWIERZĘ: ${a.name}`, 'warn'); sfx.ok();
+      toast(`Zapisano „${a.name}”.` + (embs.length ? ' Od teraz będę je rozpoznawać po wyglądzie.' : ''), 3500);
     }
   } finally { S.scanBusy = false; $('#cdScan').disabled = $('#cdAdd').disabled = false; cardSig = ''; }
-}
-const nextPersonNo = () => { let n = S.profiles.length + 1; while (S.profiles.some(p => p.name === `OSOBA #${n}`)) n++; return n; };
-async function scanAnimal(t) {
-  if (S.scanBusy || !t) return;
-  S.scanBusy = true;
-  try {
-    const ux = S.mirrored ? 1 - (t.x + t.w) : t.x;
-    const rx = clamp(ux, 0, 1), ry = clamp(t.y, 0, 1);
-    const cv = captureRegion(rx, ry, Math.min(1 - rx, t.w), Math.min(1 - ry, t.h), 220, 1);
-    if (!cv) { toast('Nie mogę pobrać obrazu z kamery.', 3000); return; }
-    // grayscale + green tint thumbnail
-    const c = cv.getContext('2d'); c.globalCompositeOperation = 'saturation'; c.fillStyle = '#000'; c.fillRect(0, 0, cv.width, cv.height);
-    c.globalCompositeOperation = 'multiply'; c.fillStyle = S.fg; c.fillRect(0, 0, cv.width, cv.height);
-    const n = S.animals.filter(a => a.cls === t.cls).length + 1;
-    const name = await ask({ title: 'ZWIERZĘ - NAZWA', text: 'Zapisuję zdjęcie i nazwę lokalnie. Nie rozpoznaję zwierząt po wyglądzie.', input: true, def: `${PL[t.cls] || t.cls.toUpperCase()} #${n}`, ok: 'Zapisz', cancel: 'Anuluj' });
-    if (name === null) return;
-    const a = { name: name || `${PL[t.cls] || t.cls} #${n}`, cls: t.cls, thumb: cv.toDataURL('image/jpeg', .75), time: Date.now(), conf: Math.round(t.score * 100) };
-    await dbPut('animals', a); S.animals.push(a);
-    log(`ZAPISANO ZWIERZĘ: ${a.name}`, 'warn'); sfx.ok();
-    toast(`Zapisano „${a.name}” na liście zwierząt.`, 3000);
-  } finally { S.scanBusy = false; }
 }
 
 /* ---------- tap-to-select + info card ---------- */
@@ -1364,8 +1614,8 @@ function renderCard() {
   const t = S.sel, card = $('#card');
   if (!t) { if (!S.scanBusy) hideCard(); return; }
   const now = performance.now(), p = t.person;
-  const pr = t.g === 'H' && p.pid != null ? getProfile(p.pid) : null;
-  const sig = [t.uid, label(t), Math.round(t.score * 100), t.dist ? Math.round(t.dist * 5) : 0, Math.floor((now - t.born) / 1000), p && p.state, S.face.ready, S.profiles.length].join('|');
+  const pr = t.g !== 'O' ? profOf(t) : null;
+  const sig = [t.uid, label(t), Math.round(t.score * 100), t.dist ? Math.round(t.dist * 5) : 0, Math.floor((now - t.born) / 1000), p && p.state, p && p.kind, S.face.ready, S.profiles.length].join('|');
   if (sig === cardSig) return; cardSig = sig;
   $('#cdT').textContent = label(t);
   const dur = fmtDur(now - t.born);
@@ -1373,23 +1623,26 @@ function renderCard() {
   let note = '';
   const scan = $('#cdScan'), add = $('#cdAdd');
   scan.style.display = ''; add.style.display = 'none';
+  const addBtn = () => { add.style.display = ''; add.textContent = `[ + Skan: ${pr.name.slice(0, 12)} ]`; };
   if (t.g === 'H') {
     scan.textContent = '[ Skanuj twarz ]';
-    if (p.state === 'known' && pr) { sub += `\nPodobieństwo twarzy do „${pr.name}”: ${pctOf(p.d)}% · widziano ${pr.seen || 1}×`; add.style.display = ''; add.textContent = `[ + Skan: ${pr.name.slice(0, 12)} ]`; }
-    else if (p.state === 'maybe' && pr) { sub += `\nNIEPEWNE: podobna do „${pr.name}” (${pctOf(p.d)}%)`; add.style.display = ''; add.textContent = `[ + Skan: ${pr.name.slice(0, 12)} ]`; }
+    if (p.state === 'known' && pr) { sub += `\nPodobieństwo twarzy do „${pr.name}”: ${p.pct}% · widziano ${pr.seen || 1}×`; addBtn(); }
+    else if (p.state === 'maybe' && pr) { sub += p.kind === 'app' ? `\nTwarz niewidoczna – podobny WYGLĄD (ubranie/sylwetka) do „${pr.name}” (${p.pct}%). Słaba wskazówka.` : `\nNIEPEWNE: twarz podobna do „${pr.name}” (${p.pct}%)`; addBtn(); }
     else if (p.state === 'new') sub += '\nTwarz nie pasuje do nikogo z bazy.';
-    else if (p.state === 'noface') sub += '\nNie widać twarzy.';
+    else if (p.state === 'noface') sub += '\nNie widać twarzy – odwróć się do kamery.';
     note = 'Rozpoznawanie to porównanie twarzy – może się mylić. Dane tylko w tej przeglądarce.' + (S.face.ready ? '' : ' Pierwszy skan pobiera moduł twarzy (~7 MB).');
   } else if (t.g === 'A') {
     scan.textContent = '[ Skanuj ]';
-    note = 'Zapisuje zdjęcie i nazwę na liście zwierząt (lokalnie). Nie rozpoznaję zwierząt po wyglądzie.';
+    if ((p.state === 'known' || p.state === 'maybe') && pr) { sub += `\nPodobieństwo wyglądu do „${pr.name}”: ${p.pct}%`; addBtn(); }
+    else if (p.state === 'new') sub += '\nNie pasuje do żadnego zapisanego zwierzęcia.';
+    note = 'Zapisuje zdjęcia i „odcisk” wyglądu lokalnie. To podobieństwo wyglądu, nie pewna identyfikacja – podobne zwierzęta mogą się mylić.';
   } else { scan.style.display = 'none'; note = 'Obiekt – brak akcji.'; }
   $('#cdS').textContent = sub; $('#cdN').textContent = note;
   card.classList.add('show');
 }
 $('#cdX').onclick = () => { S.sel = null; hideCard(); };
 $('#cdScan').onclick = () => { const t = S.sel; if (!t) return; if (t.g === 'H') scanHuman(t); else if (t.g === 'A') scanAnimal(t); };
-$('#cdAdd').onclick = () => { const t = S.sel; if (t && t.g === 'H' && t.person.pid != null) scanHuman(t, t.person.pid); };
+$('#cdAdd').onclick = () => { const t = S.sel; if (!t || t.person.pid == null) return; if (t.g === 'H') scanHuman(t, t.person.pid); else if (t.g === 'A') scanAnimal(t, t.person.pid); };
 stage.addEventListener('click', e => onTap(e.clientX, e.clientY));
 
 /* ---------- sheets: settings, database ---------- */
@@ -1402,11 +1655,15 @@ function closePanels(silent) { S.panel = ''; document.querySelectorAll('.sheet')
 let dbTab = 'F';
 const fmtDate = ms => { const d = new Date(ms); return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 function mkBtn(txt, fn) { const b = document.createElement('button'); b.textContent = txt; b.onclick = fn; return b; }
+function resetIdent(g, id) {
+  const r = t => { if (t.g === g && (id == null || t.person.pid === id)) Object.assign(t.person, { state: 'unk', pid: null, logged: false, tried: 0, nof: 0 }); };
+  S.tracks.forEach(r); S.dead.forEach(d => r({ g: d.g, person: d.person }));
+}
 function renderDb() {
   $('#tabF').classList.toggle('on', dbTab === 'F'); $('#tabA').classList.toggle('on', dbTab === 'A');
   $('#dbNote').textContent = dbTab === 'F'
-    ? `Zapisane twarze: ${S.profiles.length}. Dane (wektory twarzy i miniatury) są tylko w tej przeglądarce – nigdzie nie są wysyłane. Rozpoznawanie może się mylić.`
-    : `Zapisane zwierzęta: ${S.animals.length}. Tylko zdjęcie i nazwa, bez rozpoznawania.`;
+    ? `Zapisane twarze: ${S.profiles.length}. Dane (wektory twarzy i miniatury) są tylko w tej przeglądarce – nigdzie nie są wysyłane. Rozpoznawanie może się mylić. Uwaga: Safari na iPhonie może skasować dane strony po ~7 dniach nieużywania – dodaj stronę do ekranu początkowego.`
+    : `Zapisane zwierzęta: ${S.animals.length}. Rozpoznawanie po wyglądzie (podobieństwo – może mylić podobne zwierzęta). Dane tylko w tej przeglądarce.`;
   const list = $('#plist'); list.textContent = '';
   const arr = dbTab === 'F' ? S.profiles : S.animals;
   if (!arr.length) { const d = document.createElement('div'); d.className = 'statbox'; d.textContent = dbTab === 'F' ? 'Brak zapisanych twarzy. Dotknij osobę na ekranie i wybierz „Skanuj twarz”.' : 'Brak zapisanych zwierząt. Dotknij zwierzę na ekranie i wybierz „Skanuj”.'; list.appendChild(d); }
@@ -1416,7 +1673,7 @@ function renderDb() {
     const info = document.createElement('div'); info.className = 'info';
     const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = it.name;
     const sub = document.createElement('div'); sub.className = 'sub';
-    sub.textContent = dbTab === 'F' ? `skanów ${it.embs.length} · widziano ${it.seen || 1}×\nostatnio ${fmtDate(it.last)}` : `${PL[it.cls] || it.cls} · ${fmtDate(it.time)}`;
+    sub.textContent = dbTab === 'F' ? `skanów ${it.embs.length} · widziano ${it.seen || 1}×\nostatnio ${fmtDate(it.last)}` : `${PL[it.cls] || it.cls} · ${fmtDate(it.time)}\n${it.embs && it.embs.length ? 'odcisków wyglądu ' + it.embs.length : 'tylko zdjęcie (bez rozpoznawania)'}`;
     sub.style.whiteSpace = 'pre-line';
     info.append(nm, sub);
     const bs = document.createElement('div'); bs.style.cssText = 'display:flex;flex-direction:column;gap:4px';
@@ -1427,8 +1684,8 @@ function renderDb() {
       const v = await ask({ title: 'USUNĄĆ?', text: `„${it.name}” zostanie trwale usunięty z tej przeglądarki.`, ok: 'Usuń' });
       if (v) {
         await dbDel(dbTab === 'F' ? 'faces' : 'animals', it.id);
-        if (dbTab === 'F') { S.profiles = S.profiles.filter(p => p.id !== it.id); S.tracks.forEach(t => { if (t.person.pid === it.id) Object.assign(t.person, { state: 'unk', pid: null, logged: false }); }); }
-        else S.animals = S.animals.filter(a => a.id !== it.id);
+        if (dbTab === 'F') S.profiles = S.profiles.filter(p => p.id !== it.id); else S.animals = S.animals.filter(a => a.id !== it.id);
+        resetIdent(dbTab === 'F' ? 'H' : 'A', it.id);
         renderDb();
       }
     }));
@@ -1441,20 +1698,27 @@ $('#tabA').onclick = () => { dbTab = 'A'; renderDb(); };
 $('#dbClear').onclick = async () => {
   const v = await ask({ title: 'WYCZYŚCIĆ WSZYSTKO?', text: dbTab === 'F' ? 'Wszystkie zapisane twarze zostaną trwale usunięte z tej przeglądarki.' : 'Cała lista zwierząt zostanie usunięta.', ok: 'Wyczyść' });
   if (!v) return;
-  if (dbTab === 'F') { await dbClear('faces'); S.profiles = []; S.tracks.forEach(t => Object.assign(t.person, { state: 'unk', pid: null, logged: false })); }
-  else { await dbClear('animals'); S.animals = []; }
+  if (dbTab === 'F') { await dbClear('faces'); S.profiles = []; resetIdent('H'); }
+  else { await dbClear('animals'); S.animals = []; resetIdent('A'); }
   renderDb(); log(dbTab === 'F' ? 'BAZA TWARZY WYCZYSZCZONA' : 'LISTA ZWIERZĄT WYCZYSZCZONA', 'warn');
 };
 $('#dbX').onclick = () => closePanels();
 $('#setX').onclick = () => closePanels();
 function renderStats() {
-  const F = S.face;
+  const F = S.face, fs = F.ready ? `GOTOWE · ${F.backend.toUpperCase()} · ${F.mode === 'main' ? 'główny wątek' : 'worker'} · ${Math.round(F.ms)} ms` : F.p ? `ładowanie ${Math.round(F.prog * 100)}%` : F.err ? `BŁĄD: ${F.err} (próba ${F.fails})` : 'nie wczytano (wczyta się przy 1. skanie / gdy są zapisane twarze)';
+  const es = E.ready ? `GOTOWE · ${E.mode} · ${Math.round(E.ms)} ms` : E.p ? 'ładowanie…' : E.err ? `BŁĄD: ${E.err} (próba ${E.fails})` : 'nie wczytano';
   $('#stats').textContent =
     `KAMERA: ${S.camRes || '—'} · ${S.camFps} kl./s · ${S.mirrored ? 'przód' : 'tył'}\n` +
     `WYKRYWANIE: ${S.backend ? S.backend.toUpperCase() + (S.mode === 'worker' ? ' (worker)' : '') : '—'} · ${S.nnFps ? S.nnFps.toFixed(1) : '—'}/s · ${S.infMs ? Math.round(S.infMs) : '—'} ms\n` +
-    `TWARZE: ${F.ready ? F.backend.toUpperCase() + ' · ' + Math.round(F.ms) + ' ms' : F.p ? 'ładowanie ' + Math.round(F.prog * 100) + '%' : 'nie wczytano (wczyta się przy 1. skanie)'}\n` +
-    `BAZA: ${S.profiles.length} twarzy · ${S.animals.length} zwierząt · ${S.dbOk ? 'IndexedDB' : 'pamięć tymczasowa'}\n` +
-    `Wersja: v4`;
+    `BAZA: ${S.profiles.length} twarzy · ${S.animals.length} zwierząt · ${S.dbOk ? 'IndexedDB' : 'pamięć tymczasowa'} · trwałe: ${D.persisted}\n` +
+    `Wersja: v5\n\nDIAGNOSTYKA\n` +
+    `Twarze: ${fs}\n` +
+    `Wygląd (zwierzęta/ubranie): ${es}\n` +
+    `Dopasowania: ${D.ticks} prób · twarz widziana ${D.faceOk}× / brak ${D.faceNo}×\n` +
+    `Ostatni dystans twarzy: ${D.lastD == null ? '—' : D.lastD.toFixed(2)} (${D.lastName || '—'}) · próg ZNANY < ${KNOWN_D}\n` +
+    `Ostatnie podobieństwo wyglądu: ${D.lastSim == null ? '—' : D.lastSim.toFixed(2)} (${D.lastSimName || '—'})\n` +
+    `Ostatni błąd: ${D.lastErr || '—'}\n` +
+    S.tracks.filter(t => t.confirmed && t.g !== 'O').slice(0, 4).map(t => `· ${baseName(t)}: ${t.person.state}${t.person.kind ? '/' + t.person.kind : ''}`).join('\n');
 }
 
 /* ---------- photo & video ---------- */
@@ -1646,7 +1910,7 @@ function frame(now) {
   // 2) detection kicks off in the background (never awaited here)
   if (S.busy && now - S.busyAt > 12000) S.busy = false;
   if (S.ready && S.running && !S.busy && now >= S.nextInfer && video.readyState >= 2 && !document.hidden) infer(now);
-  if (S.face.ready) matchTick(now);
+  matchTick(now);
   // 3) HUD overlay (30 fps cap on phones)
   if (!IS_TOUCH || now - hudT > 30) { hudT = now; drawHud(now, hudDt); hudDt = 0; }
   if (!IS_TOUCH || now - radT > 66) { radT = now; drawRadar(); }
@@ -1695,7 +1959,6 @@ async function start() {
   try { await modelP; log(`SIEĆ NEURONOWA GOTOWA (${S.backend.toUpperCase()}${S.mode === 'worker' ? ', worker' : ''})`, 'sys-l'); S.running = true; }
   catch (e) { showErr(modelErrMsg(e), ''); log('BŁĄD SIECI NEURONOWEJ', 'warn'); }
   try { await camP; } catch (e) {}
-  if (S.profiles.length) ensureFace().catch(() => {});    // known faces exist: warm the face module in the background
   if (S.port && S.rot === 0 && IS_TOUCH) toast('Masz blokadę obrotu? Menu → „Obróć HUD”', 6000);
   window.__ready = true;
 }
