@@ -2,9 +2,9 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="app-version" content="2026-11-14-landscape-2">
+<meta name="app-version" content="2026-11-14-v3-onescreen">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -19,188 +19,179 @@
   --faint:rgba(51,255,102,.18);
   --glow:0 0 6px rgba(51,255,102,.8), 0 0 14px rgba(51,255,102,.35);
   --font:'VT323','Courier New',monospace;
-  --vh:1vh;
-  --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
-  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  --pl:230px; --pr:270px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:#000;color:var(--fg);font-family:var(--font);font-size:20px;line-height:1.1;height:100%;overflow:hidden;
-  -webkit-text-size-adjust:100%;overscroll-behavior:none}
+html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;
+  background:#000;color:var(--fg);font-family:var(--font);font-size:20px;line-height:1.1;-webkit-text-size-adjust:100%;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 body{text-shadow:var(--glow);-webkit-tap-highlight-color:transparent}
-button{font-family:var(--font);font-size:20px;color:var(--fg);background:#000;border:1px solid var(--fg);padding:6px 10px;cursor:pointer;text-shadow:var(--glow);text-transform:uppercase;letter-spacing:1px;touch-action:manipulation;white-space:nowrap;border-radius:0;-webkit-appearance:none;appearance:none}
-button:hover,button:focus-visible{background:var(--fg);color:#000;text-shadow:none;outline:none}
-button.on{box-shadow:inset 0 0 0 2px #000, inset 0 0 0 4px var(--dim)}
+.touch body{text-shadow:none}
+button{font-family:var(--font);font-size:20px;color:var(--fg);background:#000;border:1px solid var(--fg);padding:5px 9px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;touch-action:manipulation;white-space:nowrap;border-radius:0;-webkit-appearance:none;appearance:none}
+button:hover,button:focus-visible{background:var(--fg);color:#000;outline:none}
+button.on{background:rgba(var(--fg-rgb),.22)}
 button:disabled{opacity:.35;cursor:not-allowed}
 
-#crt{position:fixed;top:0;left:0;right:0;height:calc(var(--vh) * 100);display:flex;flex-direction:column;gap:6px;
-  padding:max(8px,var(--sat)) max(12px,var(--sar)) max(8px,var(--sab)) max(12px,var(--sal));animation:flicker 4s infinite steps(1)}
-@keyframes flicker{0%{opacity:1}7%{opacity:.97}8%{opacity:1}43%{opacity:1}44%{opacity:.94}45%{opacity:1}78%{opacity:.98}79%{opacity:1}}
-@media (prefers-reduced-motion:reduce),(pointer:coarse){#crt{animation:none}.rollbar{display:none}}
+/* the whole UI lives in #app: it is sized/rotated from JS so it always fits one screen */
+#app{position:fixed;left:0;top:0;width:100%;height:100%;transform-origin:0 0;display:flex;flex-direction:column;gap:5px;overflow:hidden;
+  padding:6px 8px;background:#000}
+#app.rot0{padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
 
-header{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--fg);padding:3px 10px;font-size:24px;flex:none}
-header .title{letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-header .right{display:flex;gap:18px;align-items:center;white-space:nowrap}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--fg);padding:2px 10px;font-size:24px;flex:none;min-width:0}
+header .title{letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+header .right{display:flex;gap:14px;align-items:center;white-space:nowrap;flex:none}
+#fpsH{color:var(--dim)}
 .rec{display:inline-flex;align-items:center;gap:6px}
-.rec i{width:12px;height:12px;border-radius:50%;background:#ff3030;box-shadow:0 0 8px #ff3030;animation:blink 1s infinite steps(1)}
+.rec i{width:11px;height:11px;border-radius:50%;background:#ff3030;box-shadow:0 0 8px #ff3030;animation:blink 1s infinite steps(1)}
 .rec.idle i{background:var(--dim);box-shadow:none;animation:none}
 @keyframes blink{0%{opacity:1}50%{opacity:0}}
 .blink{animation:blink 1s infinite steps(1)}
 
-.grid{flex:1;min-height:0;display:grid;grid-template-columns:230px minmax(0,1fr) 270px;gap:8px}
-.panel{display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0;overflow:hidden}
-.box{border:1px solid var(--fg);padding:6px 8px;position:relative;min-width:0}
-.box>h3{font-weight:normal;font-size:20px;background:var(--fg);color:#000;text-shadow:none;margin:-6px -8px 6px;padding:0 8px;letter-spacing:2px;white-space:nowrap;overflow:hidden}
-.row{display:flex;justify-content:space-between;font-size:22px}
+.grid{flex:1;min-height:0;display:grid;gap:6px}
+.panel{display:flex;flex-direction:column;gap:6px;min-height:0;min-width:0;overflow:hidden}
+.box{border:1px solid var(--fg);padding:5px 7px;position:relative;min-width:0}
+.box>h3{font-weight:normal;font-size:20px;background:var(--fg);color:#000;text-shadow:none;margin:-5px -7px 5px;padding:0 7px;letter-spacing:2px;white-space:nowrap;overflow:hidden}
+.row{display:flex;justify-content:space-between;font-size:21px}
 .row b{font-weight:normal}
-.counters{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
+.counters{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px}
 .counters div span{display:block;font-size:15px;color:var(--dim);text-shadow:none;white-space:nowrap}
-.counters div b{font-weight:normal;font-size:40px;line-height:.9}
+.counters div b{font-weight:normal;font-size:38px;line-height:.9}
 .sys{font-size:18px;color:var(--dim);text-shadow:none;line-height:1.15}
-.sys b{font-weight:normal;color:var(--fg);text-shadow:var(--glow)}
+.sys b{font-weight:normal;color:var(--fg)}
 #radar{width:100%;aspect-ratio:1/.82;display:block;background:#000}
-.radarbox{flex:0 1 auto;min-height:0}
-
-.stage{position:relative;min-width:0;min-height:0;background:#000;border:2px solid var(--fg);
-  border-radius:18px / 22px;overflow:hidden;isolation:isolate;box-shadow:0 0 18px rgba(var(--fg-rgb),.35), inset 0 0 40px #000}
-.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
-.stage video.mirror{transform:scaleX(-1)}
-.stage canvas{position:absolute;left:0;top:0;width:100%;height:100%}
-.stage canvas#vcanvas{z-index:1;background:#000}
-.stage canvas#hud{z-index:2}
-.stage .vig{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.75) 100%)}
-.flash{position:absolute;inset:0;background:var(--fg);opacity:0;z-index:4;pointer-events:none}
-.flash.go{animation:flash .35s ease-out}
-@keyframes flash{0%{opacity:.85}100%{opacity:0}}
-
-.threat{position:absolute;left:12px;right:12px;bottom:10px;z-index:3;display:flex;align-items:center;gap:10px;border:1px solid var(--fg);background:rgba(0,0,0,.7);padding:2px 8px;font-size:22px}
-.threat .segs{flex:1;display:flex;gap:3px;height:16px}
-.threat .segs i{flex:1;border:1px solid var(--dim);background:transparent}
-.threat .segs i.on{background:var(--fg);box-shadow:var(--glow)}
-.threat .lvl{white-space:nowrap}
-.threat.crit .lvl{animation:blink .5s infinite steps(1)}
-
-#targets{font-size:18px;min-height:40px;overflow:hidden}
+.radarbox{min-height:0}
+#targets{font-size:18px;min-height:30px;overflow:hidden}
 #targets div{display:flex;justify-content:space-between;gap:6px;white-space:nowrap}
 #targets .none{color:var(--dim);text-shadow:none}
 .logbox{flex:1;display:flex;flex-direction:column;min-height:0}
-#log{flex:1;min-height:0;overflow-y:auto;font-size:18px;line-height:1.15;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-#log::-webkit-scrollbar{display:none}
-#log div{white-space:pre-wrap;word-break:break-word}
+#log{flex:1;min-height:0;overflow:hidden;font-size:18px;line-height:1.15;display:flex;flex-direction:column;justify-content:flex-end}
+#log div{white-space:pre-wrap;word-break:break-word;flex:none}
 #log .sys-l{color:var(--dim);text-shadow:none}
 #log .warn{animation:blink .6s 3 steps(1)}
 
-footer{display:flex;flex-direction:column;gap:4px;flex:none}
-.btns{display:flex;flex-wrap:wrap;gap:6px}
+.stage{position:relative;min-width:0;min-height:0;background:#000;border:2px solid var(--fg);
+  border-radius:16px / 20px;overflow:hidden;isolation:isolate;box-shadow:0 0 14px rgba(var(--fg-rgb),.3)}
+.stage video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;pointer-events:none}
+.stage canvas{position:absolute;left:0;top:0;width:100%;height:100%}
+.stage canvas#vcanvas{z-index:1;background:#000}
+.stage canvas#hud{z-index:2}
+.stage .vig{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.7) 100%)}
+.flash{position:absolute;inset:0;background:var(--fg);opacity:0;z-index:4;pointer-events:none}
+.flash.go{animation:flash .35s ease-out}
+@keyframes flash{0%{opacity:.85}100%{opacity:0}}
+.threat{position:absolute;left:10px;right:10px;bottom:8px;z-index:3;display:flex;align-items:center;gap:10px;border:1px solid var(--fg);background:rgba(0,0,0,.7);padding:1px 8px;font-size:21px}
+.threat .segs{flex:1;display:flex;gap:3px;height:14px}
+.threat .segs i{flex:1;border:1px solid var(--dim)}
+.threat .segs i.on{background:var(--fg)}
+.threat .lvl{white-space:nowrap}
+.threat.crit .lvl{animation:blink .5s infinite steps(1)}
+#toast{position:absolute;z-index:7;left:8px;right:8px;top:8px;display:none;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--fg);background:rgba(0,0,0,.85);padding:4px 8px;font-size:18px}
+#toast.show{display:flex}
+
+footer{display:flex;flex-direction:column;gap:3px;flex:none}
+.btns{display:flex;flex-wrap:wrap;gap:4px}
+.btns button{flex:1 1 auto}
 .help{font-size:17px;color:var(--dim);text-shadow:none;border-top:1px dashed var(--faint);padding-top:3px}
 
-/* CRT effects */
+/* CRT effects (outside #app) */
 .fx{position:fixed;inset:0;pointer-events:none;z-index:50}
-.scan{background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.28) 3px,rgba(0,0,0,0) 4px)}
-.fxvig{background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.55) 100%);box-shadow:inset 0 0 90px 20px #000;border-radius:26px / 30px}
+.scan{background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.25) 3px,rgba(0,0,0,0) 4px)}
+.fxvig{background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.5) 100%)}
+.touch .fxvig,.touch .rollbar,.touch #noise{display:none}
+#noise{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;opacity:.06;pointer-events:none;z-index:52}
 .rollbar{position:fixed;left:0;right:0;height:120px;top:-120px;z-index:51;pointer-events:none;background:linear-gradient(to bottom,transparent,rgba(var(--fg-rgb),.05),transparent);animation:roll 7s linear infinite}
-@keyframes roll{to{transform:translateY(calc(var(--vh) * 100 + 240px))}}
-#noise{position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;opacity:.07;pointer-events:none;z-index:52}
+@keyframes roll{to{transform:translateY(130vh)}}
 
-/* full-screen messages: boot, error, rotate */
-.screen{position:fixed;inset:0;background:#000;z-index:40;display:flex;flex-direction:column;overflow:auto;-webkit-overflow-scrolling:touch;
-  padding:max(18px,var(--sat)) max(22px,var(--sar)) max(18px,var(--sab)) max(22px,var(--sal));gap:12px}
+/* full-screen messages inside #app (rotate with it) */
+.screen{position:absolute;inset:0;background:#000;z-index:40;display:flex;flex-direction:column;overflow:auto;gap:10px;padding:14px 18px}
 #boot{transition:opacity .6s}
 #boot.hide{opacity:0;pointer-events:none}
-#bootText{white-space:pre-wrap;font-size:24px;line-height:1.1}
-#inapp{display:none;border:2px solid var(--fg);padding:8px 10px;font-size:22px;line-height:1.15}
+#bootText{white-space:pre-wrap;font-size:22px;line-height:1.1}
+#inapp{display:none;border:2px solid var(--fg);padding:6px 9px;font-size:19px;line-height:1.15;white-space:pre-line}
 #inapp.show{display:block}
-.bigbtn{align-self:flex-start;font-size:30px;padding:12px 22px;border-width:2px}
-.bootbtns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.cursor{display:inline-block;width:12px;height:22px;background:var(--fg);vertical-align:-3px;animation:blink 1s infinite steps(1)}
-
-#errBox{z-index:45;display:none;align-items:center;justify-content:center;text-align:center;background:rgba(0,0,0,.92);font-size:23px}
+#rotHint{font-size:19px;color:var(--fg)}
+.bigbtn{font-size:28px;padding:10px 20px;border-width:2px}
+.bootbtns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#errBox{z-index:45;display:none;align-items:center;justify-content:center;text-align:center;background:rgba(0,0,0,.94);font-size:21px}
 #errBox.show{display:flex}
-#errBox h2{font-weight:normal;font-size:34px}
-#errBox .inner{max-width:640px;display:flex;flex-direction:column;gap:10px;align-items:center}
+#errBox h2{font-weight:normal;font-size:30px}
+#errBox .inner{max-width:640px;display:flex;flex-direction:column;gap:8px;align-items:center}
 #errTxt{white-space:pre-line}
-#errHint{border:1px dashed var(--fg);padding:8px 10px;font-size:21px;text-align:left;display:none;white-space:pre-line}
+#errHint{border:1px dashed var(--fg);padding:6px 9px;font-size:18px;text-align:left;display:none;white-space:pre-line}
 #errBox .btns{justify-content:center}
-.urlbox{font-size:18px;word-break:break-all;color:var(--dim);text-shadow:none}
+.urlbox{font-size:16px;word-break:break-all;color:var(--dim);text-shadow:none}
 
-#rotate{display:none;z-index:70;align-items:center;justify-content:center;text-align:center;font-size:26px}
-#rotate .inner{display:flex;flex-direction:column;gap:10px;align-items:center}
-#rotate h2{font-weight:normal;font-size:40px;letter-spacing:3px}
-#rotate svg{width:110px;height:110px;fill:none;stroke:var(--fg);stroke-width:3;filter:drop-shadow(0 0 5px var(--fg))}
-#rotate svg .ph{transform-box:view-box;transform-origin:50px 50px;animation:rot 2.4s ease-in-out infinite}
-@keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+/* ---------- LANDSCAPE: panels left | video | panels right ---------- */
+.lay-land .grid{grid-template-columns:var(--pl) minmax(0,1fr) var(--pr)}
+.lay-land .panel.left .sysbox .row.r-fps{display:none}
 
-/* ---- compact (phone landscape) ---- */
-@media (max-height:520px){
-  html,body{font-size:16px}
-  #crt{gap:4px}
-  header{font-size:17px;padding:1px 8px}
-  header .title{letter-spacing:1px}
-  header .right{gap:12px}
-  .rec i{width:9px;height:9px}
-  .grid{grid-template-columns:136px minmax(0,1fr) 172px;gap:5px}
-  .panel{gap:5px}
-  .box{padding:4px 6px}
-  .box>h3{font-size:14px;margin:-4px -6px 4px;padding:0 6px;letter-spacing:1px}
-  .row{font-size:16px}
-  .counters{gap:2px 6px}
-  .counters div span{font-size:11px}
-  .counters div b{font-size:26px}
-  .sys{display:none}
-  #targets{font-size:14px;min-height:0;max-height:62px}
-  #log{font-size:14px}
-  .threat{font-size:15px;bottom:6px;left:8px;right:8px;padding:1px 6px}
-  .threat .segs{height:10px}
-  .btns{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:4px}
-  .btns::-webkit-scrollbar{display:none}
-  button{font-size:14px;padding:2px 5px;letter-spacing:0}
-  .help{display:none}
-  .stage{border-radius:12px / 14px;border-width:1px}
-  #bootText{font-size:18px}
-  .bigbtn{font-size:24px;padding:8px 16px}
-  #errBox{font-size:18px}
-  #errBox h2{font-size:26px}
-  #errHint{font-size:16px}
-  #rotate h2{font-size:30px}
-}
-@media (max-width:760px) and (min-width:0) and (orientation:landscape){
-  .grid{grid-template-columns:116px minmax(0,1fr) 140px}
-  header .hide-m{display:none}
-}
+/* ---------- PORTRAIT: video fills the screen, panels = compact overlays ---------- */
+.lay-port .grid{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+.lay-port .panel{display:contents}
+.lay-port .cbox{grid-area:1/1;padding:3px 6px}
+.lay-port .cbox h3{display:none}
+.lay-port .counters{grid-template-columns:repeat(4,1fr);gap:0 4px}
+.lay-port .counters div span{font-size:11px}
+.lay-port .counters div b{font-size:26px}
+.lay-port .sysbox,.lay-port .tbox{display:none}
+.lay-port .stage{grid-area:2/1}
+.lay-port .radarbox{grid-area:2/1;align-self:end;justify-self:end;width:104px;margin:0 6px 6px 0;padding:2px;z-index:6;background:rgba(0,0,0,.6)}
+.lay-port .radarbox h3{display:none}
+.lay-port .logbox{grid-area:2/1;align-self:end;justify-self:start;width:calc(100% - 128px);height:58px;overflow:hidden;margin:0 0 6px 6px;padding:2px 5px;z-index:6;background:rgba(0,0,0,.6);flex:none}
+.lay-port .logbox h3{display:none}
+.lay-port #log{font-size:14px;line-height:16px}
+.lay-port .threat{top:8px;bottom:auto}
+.lay-port header .title .full{display:none}
+.lay-port #toast{top:42px}
+.lay-port .btns .lbl{display:none}
+.lay-port .btns button.keep .lbl{display:inline}
+
+/* ---------- COMPACT (phones) ---------- */
+.compact{font-size:16px}
+.compact{--pl:136px;--pr:172px}
+.compact header{font-size:17px;padding:1px 8px}
+.compact header .title{letter-spacing:1px}
+.compact .rec i{width:9px;height:9px}
+.compact .grid,.compact .panel{gap:4px}
+.compact .box{padding:3px 5px}
+.compact .box>h3{font-size:14px;margin:-3px -5px 3px;padding:0 5px;letter-spacing:1px}
+.compact .row{font-size:15px}
+.compact .counters div span{font-size:11px}
+.compact .counters div b{font-size:25px}
+.compact .sys{display:none}
+.compact #targets{font-size:14px;min-height:0;max-height:58px}
+.compact #log{font-size:14px}
+.compact .threat{font-size:15px;padding:0 6px}
+.compact .threat .segs{height:9px}
+.compact button{font-size:14px;padding:3px 5px;letter-spacing:0}
+.compact .help{display:none}
+.compact .stage{border-radius:12px / 14px;border-width:1px}
+.compact #bootText{font-size:17px}
+.compact .bigbtn{font-size:22px;padding:7px 14px}
+.compact #errBox{font-size:17px}
+.compact #errBox h2{font-size:24px}
+.compact #errHint{font-size:15px}
+.compact .screen{padding:8px 12px}
+.compact #inapp,.compact #rotHint{font-size:15px}
 .touch .help{display:none}
-
-/* ---- portrait phone: stacked fallback (+ rotate overlay) ---- */
-@media (orientation:portrait) and (max-width:700px){
-  html,body{overflow:auto;height:auto}
-  #crt{position:static;height:auto;min-height:calc(var(--vh) * 100);animation:none}
-  .grid{display:flex;flex-direction:column}
-  .stage{height:80vw;min-height:240px;flex:none}
-  .panel{overflow:visible}
-  #targets{max-height:none}
-  #log{max-height:200px;min-height:100px;flex:none}
-  .sys{display:block}
-  .btns{flex-wrap:wrap;overflow:visible}
-  .btns button{flex:1 1 calc(50% - 6px)}
-  html:not(.norot) #rotate{display:flex}
-  header .hide-m{display:none}
-  header .title{font-size:19px;white-space:normal;letter-spacing:1px}
-}
 </style>
 </head>
 <body>
 <noscript>Wymagany JavaScript.</noscript>
 
-<div id="crt">
+<div id="app" class="rot0">
   <header>
-    <div class="title">▓▒░ MAJSTERMAN // TARGETING SYS v1.986 ░▒▓</div>
+    <div class="title">▓▒░ MAJSTERMAN<span class="full"> // TARGETING SYS v1.986 ░▒▓</span></div>
     <div class="right">
+      <span id="fpsH"></span>
       <span class="rec idle" id="rec"><i></i><span id="recTxt">STBY</span> <span id="recTime">00:00:00</span></span>
-      <span id="clock" class="hide-m">--:--:--</span>
+      <span id="clock">--:--:--</span>
     </div>
   </header>
 
-  <div class="grid">
+  <div class="grid" id="grid">
     <aside class="panel left">
-      <div class="box">
+      <div class="box cbox">
         <h3>&gt; LICZNIK / COUNT</h3>
         <div class="counters">
           <div><span>LUDZIE/HUMANS</span><b id="cH">00</b></div>
@@ -209,21 +200,21 @@ footer{display:flex;flex-direction:column;gap:4px;flex:none}
           <div><span>ZAMKNIĘTE/LOCK</span><b id="cL">00</b></div>
         </div>
       </div>
-      <div class="box">
+      <div class="box sysbox">
         <h3>&gt; SYSTEM</h3>
-        <div class="row"><span>FPS</span><b id="fps">--</b></div>
+        <div class="row"><span>CAM FPS</span><b id="fCam">--</b></div>
+        <div class="row"><span>NN FPS</span><b id="fNN">--</b></div>
         <div class="row"><span>INFER</span><b id="inf">-- ms</b></div>
-        <div class="sys" style="margin-top:4px">
+        <div class="sys" style="margin-top:3px">
           CAM : <b id="sCam">OFFLINE</b><br>
           RES : <b id="sRes">----</b><br>
-          NN&nbsp; : <b id="sNN">COCO-SSD</b><br>
-          GPU : <b id="sBk">----</b><br>
+          NN&nbsp; : <b id="sBk">----</b><br>
           PAL : <b id="sPal">GREEN</b>
         </div>
       </div>
       <div class="box radarbox">
         <h3>&gt; RADAR / SONAR</h3>
-        <canvas id="radar" width="400" height="328"></canvas>
+        <canvas id="radar" width="320" height="262"></canvas>
       </div>
     </aside>
 
@@ -238,10 +229,11 @@ footer{display:flex;flex-direction:column;gap:4px;flex:none}
         <div class="segs" id="segs"></div>
         <span class="lvl" id="lvl">ALL CLEAR</span>
       </div>
+      <div id="toast"><span>Masz blokadę obrotu? Użyj tego →</span><button id="toastBtn">[ Obróć HUD ]</button></div>
     </section>
 
     <aside class="panel right">
-      <div class="box">
+      <div class="box tbox">
         <h3>&gt; CELE / TARGETS</h3>
         <div id="targets"><div class="none">-- BRAK CELÓW --</div></div>
       </div>
@@ -254,53 +246,46 @@ footer{display:flex;flex-direction:column;gap:4px;flex:none}
 
   <footer>
     <div class="btns">
-      <button id="bMute">[M] Dźwięk: wł</button>
-      <button id="bObj">[O] Obiekty: wył</button>
-      <button id="bPal">[T] Paleta: zielona</button>
-      <button id="bSnap">[S] Zdjęcie</button>
-      <button id="bCam">[C] Kamera</button>
-      <button id="bGrid" class="on">[G] Siatka</button>
-      <button id="bTrail" class="on">[L] Ślady</button>
-      <button id="bFull">[F] Pełny ekran</button>
+      <button id="bMute" class="on"><b>[M]</b><span class="lbl"> Dźwięk</span></button>
+      <button id="bObj"><b>[O]</b><span class="lbl"> Obiekty</span></button>
+      <button id="bPal"><b>[T]</b><span class="lbl"> Paleta</span></button>
+      <button id="bSnap"><b>[S]</b><span class="lbl"> Zdjęcie</span></button>
+      <button id="bCam"><b>[C]</b><span class="lbl"> Kamera</span></button>
+      <button id="bGrid" class="on"><b>[G]</b><span class="lbl"> Siatka</span></button>
+      <button id="bTrail" class="on"><b>[L]</b><span class="lbl"> Ślady</span></button>
+      <button id="bFull"><b>[F]</b><span class="lbl"> Ekran</span></button>
+      <button id="bRot" class="keep"><b>[H]</b><span class="lbl"> Obróć HUD</span></button>
+      <button id="bVrot" class="keep" style="display:none"><b>[V]</b><span class="lbl"> Obróć obraz</span></button>
     </div>
-    <div class="help kb"><b>KLAWISZE:</b> M dźwięk · O obiekty · T paleta zielona/bursztyn · S zrzut PNG · C przód/tył kamery · G siatka · L ślady · F pełny ekran</div>
+    <div class="help kb"><b>KLAWISZE:</b> M dźwięk · O obiekty · T paleta zielona/bursztyn · S zrzut PNG · C przód/tył · G siatka · L ślady · F pełny ekran · H obróć HUD · V obróć obraz</div>
   </footer>
-</div>
 
-<!-- start / boot -->
-<div id="boot" class="screen">
-  <div id="bootText"></div>
-  <div class="bootbtns">
-    <button id="startBtn" class="bigbtn">[ URUCHOM KAMERĘ ]</button>
-    <button id="copyBtn0" style="display:none">[ Kopiuj link ]</button>
-  </div>
-  <div id="inapp"></div>
-</div>
-
-<!-- error -->
-<div id="errBox" class="screen">
-  <div class="inner">
-    <h2 class="blink">!! BŁĄD SYSTEMU !!</h2>
-    <div id="errTxt"></div>
-    <div id="errHint"></div>
-    <div class="urlbox" id="errUrl"></div>
-    <div class="btns">
-      <button id="retryBtn">[ Ponów ]</button>
-      <button id="copyBtn">[ Kopiuj link ]</button>
-      <button id="reloadBtn">[ Odśwież stronę ]</button>
-      <button id="errClose">[ Zamknij ]</button>
+  <!-- start / boot -->
+  <div id="boot" class="screen">
+    <div id="bootText"></div>
+    <div class="bootbtns">
+      <button id="startBtn" class="bigbtn">[ URUCHOM KAMERĘ ]</button>
+      <button id="bootRot">[ Obróć ekran ]</button>
+      <button id="copyBtn0" style="display:none">[ Kopiuj link ]</button>
     </div>
+    <div id="rotHint">Masz blokadę obrotu ekranu? Dotknij „Obróć ekran” i trzymaj telefon poziomo.</div>
+    <div id="inapp"></div>
   </div>
-</div>
 
-<!-- rotate -->
-<div id="rotate" class="screen">
-  <div class="inner">
-    <svg viewBox="0 0 100 100"><g class="ph"><rect x="31" y="12" width="38" height="76" rx="7"/><line x1="44" y1="80" x2="56" y2="80"/></g></svg>
-    <h2>OBRÓĆ TELEFON</h2>
-    <div>ROTATE DEVICE</div>
-    <div style="font-size:20px;color:var(--dim);text-shadow:none">Celownik działa najlepiej w poziomie.</div>
-    <button id="rotGo">[ Kontynuuj mimo to ]</button>
+  <!-- error -->
+  <div id="errBox" class="screen">
+    <div class="inner">
+      <h2 class="blink">!! BŁĄD SYSTEMU !!</h2>
+      <div id="errTxt"></div>
+      <div id="errHint"></div>
+      <div class="urlbox" id="errUrl"></div>
+      <div class="btns">
+        <button id="retryBtn">[ Ponów ]</button>
+        <button id="copyBtn">[ Kopiuj link ]</button>
+        <button id="reloadBtn">[ Odśwież stronę ]</button>
+        <button id="errClose">[ Zamknij ]</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -309,9 +294,72 @@ footer{display:flex;flex-direction:column;gap:4px;flex:none}
 <div class="rollbar"></div>
 <canvas id="noise" width="96" height="96"></canvas>
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.22.0/dist/tf-backend-wasm.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<!-- inference worker (runs TF.js + COCO-SSD off the main thread, so video/HUD never stutter) -->
+<script id="wsrc" type="text/plain">
+'use strict';
+let model = null;
+const post = m => self.postMessage(m);
+const wt = (p, ms, msg) => { let t; const to = new Promise((_, rej) => { t = setTimeout(() => rej(new Error(msg)), ms); }); return Promise.race([p, to]).finally(() => clearTimeout(t)); };
+let total = 9300000, loaded = 0, lastP = 0;
+const origFetch = self.fetch.bind(self);
+self.fetch = async (url, init) => {
+  const r = await origFetch(url, init);
+  const u = String(url && url.url || url);
+  if (!/\/model\//.test(u) || !r.ok || !r.body) return r;
+  const reader = r.body.getReader(), chunks = [];
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value); loaded += value.length;
+    const now = Date.now();
+    if (now - lastP > 120) { lastP = now; post({ type: 'progress', loaded, total }); }
+  }
+  post({ type: 'progress', loaded, total });
+  return new Response(new Blob(chunks), { status: 200, headers: r.headers });
+};
+async function init(m) {
+  total = m.totalBytes || total;
+  post({ type: 'status', msg: 'NN: LOADING LIBRARIES (WORKER)' });
+  importScripts(m.tf);
+  try { importScripts(m.wasm); } catch (e) { post({ type: 'status', msg: 'WASM SCRIPT FAIL' }); }
+  importScripts(m.coco);
+  const errors = [];
+  for (const name of m.order) {
+    try {
+      post({ type: 'status', msg: 'NN: START BACKEND ' + name.toUpperCase() });
+      if (name === 'wasm') { if (!self.tf.wasm) throw new Error('no wasm backend'); tf.wasm.setWasmPaths(m.wasmPath); }
+      const ok = await wt(tf.setBackend(name), 25000, name + ' init timeout');
+      await wt(tf.ready(), 10000, 'tf.ready timeout');
+      if (ok === false || tf.getBackend() !== name) throw new Error(name + ' unavailable');
+      loaded = 0;
+      post({ type: 'status', msg: 'NN: DOWNLOADING MODEL' });
+      model = await wt(cocoSsd.load({ base: 'lite_mobilenet_v2', modelUrl: m.modelUrl }), 120000, 'model download timeout');
+      post({ type: 'status', msg: 'NN: WARM-UP' });
+      await wt(model.detect(new ImageData(new Uint8ClampedArray(64 * 64 * 4), 64, 64)), 60000, 'warm-up timeout');
+      post({ type: 'ready', backend: name });
+      return;
+    } catch (e) { errors.push(name.toUpperCase() + ': ' + (e && e.message || e)); post({ type: 'status', msg: 'FAIL ' + errors[errors.length - 1] }); }
+  }
+  post({ type: 'fail', msg: errors.join(' | ') });
+}
+self.onmessage = async e => {
+  const m = e.data;
+  try {
+    if (m.type === 'init') await init(m);
+    else if (m.type === 'detect') {
+      if (!model) { post({ type: 'result', id: m.id, error: 'no model' }); return; }
+      const img = new ImageData(new Uint8ClampedArray(m.buf), m.w, m.h);
+      const t0 = performance.now();
+      const preds = await model.detect(img, 20, 0.45);
+      post({ type: 'result', id: m.id, w: m.w, h: m.h, ms: performance.now() - t0,
+        preds: preds.map(p => ({ bbox: p.bbox, class: p.class, score: p.score })) });
+    }
+  } catch (err) {
+    if (m.type === 'init') post({ type: 'fail', msg: String(err && err.message || err) });
+    else post({ type: 'result', id: m.id, error: String(err && err.message || err) });
+  }
+};
+</script>
 <script>
 (() => {
 'use strict';
@@ -324,27 +372,38 @@ const PALETTES = {
   green: { name: 'ZIELONA', en: 'GREEN', fg: '#33ff66', rgb: '51,255,102' },
   amber: { name: 'BURSZTYN', en: 'AMBER', fg: '#ffb000', rgb: '255,176,0' }
 };
+const TF_URL = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js';
+const WASM_JS = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.22.0/dist/tf-backend-wasm.min.js';
+const WASM_PATH = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.22.0/dist/';
+const COCO_URL = 'https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js';
+const MODEL_URL = new URL('model/model.json', location.href).href;   // self-hosted (same origin)
+const MODEL_BYTES = 9290000;
 const UA = navigator.userAgent || '';
 const IS_IOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const IS_TOUCH = (navigator.maxTouchPoints || 0) > 0 && matchMedia('(pointer:coarse)').matches;
-// In-app browsers (Facebook, Instagram, X, Messenger, TikTok, Google app...) and iOS web views (no "Safari/" token) block the camera.
 const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Twitter|TikTok|musical_ly|MicroMessenger|Snapchat|LinkedInApp|GSA\/|Line\/|Telegram|; wv\)/i.test(UA)
   || (IS_IOS && !/Safari\//.test(UA));
+const GLOW = !(IS_IOS || IS_TOUCH);          // canvas shadowBlur is very slow on phones
+const sb = (c, n) => { c.shadowBlur = GLOW ? n : 0; };
 if (IS_TOUCH) document.documentElement.classList.add('touch');
 
-const video = $('#video'), vcanvas = $('#vcanvas'), stage = $('#stage'), hud = $('#hud');
+const app = $('#app'), video = $('#video'), vcanvas = $('#vcanvas'), stage = $('#stage'), hud = $('#hud');
 const vctx = vcanvas.getContext('2d'), hctx = hud.getContext('2d');
 const radar = $('#radar'), rctx = radar.getContext('2d');
 video.muted = true; video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', '');
 
+let savedRot = 0; try { savedRot = parseInt(localStorage.getItem('rt_rot') || '0', 10) || 0; } catch (e) {}
 const S = {
   palette: 'green', mute: false, objects: false, grid: true, trails: true,
-  facing: 'environment', mirrored: false, started: false, running: false, booted: false,
-  model: null, modelP: null, stream: null, busy: false, infMs: 0, fps: 0, detFails: 0, backend: '',
+  facing: 'environment', mirrored: false, started: false, running: false, booted: false, ready: false,
+  mode: '', worker: null, model: null, modelP: null, stream: null, busy: false, busyAt: 0, reqId: 0, nextInfer: 0,
+  infMs: 0, nnFps: 0, camFps: 0, fps: 0, backend: '', progress: 0, status: '', t0: 0, lastRes: 0,
+  rot: [0, 90, -90].includes(savedRot) ? savedRot : 0, vrot: 0, cw: 640, ch: 480, port: false,
   tracks: [], next: { H: 1, A: 1, O: 1 }, locks: 0, recStart: 0,
   W: 640, H: 480, dpr: 1, ox: 0, oy: 0, fg: '#33ff66', rgb: '51,255,102', nCams: 1,
-  az: 12.4, el: 3.1, lastBeepLost: 0, status: '', t0: 0
+  az: 12.4, el: 3.1, lastBeepLost: 0, newFrame: true
 };
+S.vrot = S.rot === 90 ? 270 : S.rot === -90 ? 90 : 0;
 
 /* ---------- audio ---------- */
 let actx = null;
@@ -381,9 +440,9 @@ function log(msg, cls = '') {
   if (cls) d.className = cls;
   d.textContent = `[${stamp()}] ${msg}`;
   logEl.appendChild(d);
-  while (logEl.children.length > 80) logEl.removeChild(logEl.firstChild);
-  logEl.scrollTop = logEl.scrollHeight;
+  while (logEl.children.length > 40) logEl.removeChild(logEl.firstChild);
 }
+function setStatus(msg) { S.status = msg; log(msg, 'sys-l'); }
 window.addEventListener('error', e => { try { log('JS ERROR: ' + (e.message || '?'), 'warn'); } catch (_) {} });
 window.addEventListener('unhandledrejection', e => { try { log('ERR: ' + ((e.reason && (e.reason.message || e.reason.name)) || e.reason), 'warn'); } catch (_) {} });
 
@@ -394,12 +453,61 @@ function applyPalette() {
   r.setProperty('--fg', p.fg); r.setProperty('--fg-rgb', p.rgb);
   r.setProperty('--dim', `rgba(${p.rgb},.45)`); r.setProperty('--faint', `rgba(${p.rgb},.18)`);
   r.setProperty('--glow', `0 0 6px rgba(${p.rgb},.8), 0 0 14px rgba(${p.rgb},.35)`);
-  S.fg = p.fg; S.rgb = p.rgb;
+  S.fg = p.fg; S.rgb = p.rgb; S.newFrame = true;
   $('#sPal').textContent = p.en;
-  $('#bPal').textContent = `[T] Paleta: ${p.name.toLowerCase()}`;
 }
 
-/* ---------- link helpers (copy) ---------- */
+/* ---------- layout: everything on ONE screen, any orientation ---------- */
+function layout() {
+  const iw = window.innerWidth, ih = window.innerHeight;
+  let cw = iw, ch = ih, tf = 'none';
+  if (S.rot !== 0) {
+    cw = ih; ch = iw;
+    tf = S.rot === 90 ? `translateX(${iw}px) rotate(90deg)` : `translateY(${ih}px) rotate(-90deg)`;
+  }
+  app.style.width = cw + 'px'; app.style.height = ch + 'px'; app.style.transform = tf;
+  const land = cw >= ch * 1.05;
+  app.classList.toggle('lay-land', land); app.classList.toggle('lay-port', !land);
+  app.classList.toggle('compact', Math.min(cw, ch) < 520);
+  app.classList.toggle('rot0', S.rot === 0);
+  S.cw = cw; S.ch = ch; S.port = !land;
+  $('#bVrot').style.display = S.rot ? '' : 'none';
+  $('#bootRot').textContent = S.rot ? '[ Obróć ekran ✓ ]' : '[ Obróć ekran ]';
+}
+function resize() {
+  layout();
+  S.W = Math.max(1, stage.clientWidth); S.H = Math.max(1, stage.clientHeight);
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const maxPx = IS_TOUCH ? 0.9e6 : 2.4e6;
+  while (S.W * S.H * dpr * dpr > maxPx && dpr > 1) dpr -= .25;
+  S.dpr = Math.max(1, dpr);
+  hud.width = Math.round(S.W * S.dpr); hud.height = Math.round(S.H * S.dpr);
+  const vs = Math.min(1, 640 / S.W, 480 / S.H);
+  vcanvas.width = Math.max(2, Math.round(S.W * vs)); vcanvas.height = Math.max(2, Math.round(S.H * vs));
+  S.newFrame = true;
+}
+if (window.ResizeObserver) new ResizeObserver(() => { resize(); }).observe(stage);
+let rzT = 0;
+const rz = () => { resize(); clearTimeout(rzT); rzT = setTimeout(resize, 300); };
+window.addEventListener('resize', rz);
+window.addEventListener('orientationchange', () => { rz(); setTimeout(resize, 700); });
+if (window.visualViewport) window.visualViewport.addEventListener('resize', rz);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && video.srcObject) video.play().catch(() => {}); });
+// never scroll / rubber-band / pinch-zoom
+document.addEventListener('touchmove', e => { if (!(e.target.closest && e.target.closest('.screen'))) e.preventDefault(); }, { passive: false });
+['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault()));
+window.addEventListener('scroll', () => window.scrollTo(0, 0));
+
+function setRot(r) {
+  S.rot = r; S.vrot = r === 90 ? 270 : r === -90 ? 90 : 0;
+  try { localStorage.setItem('rt_rot', String(r)); } catch (e) {}
+  S.tracks = []; resize(); setTimeout(resize, 150);
+  log(r === 0 ? 'HUD: NORMALNIE' : `HUD: OBRÓCONY ${r > 0 ? 'W PRAWO' : 'W LEWO'} (${r}°)`, 'warn');
+}
+function cycleRot() { setRot(S.rot === 0 ? -90 : S.rot === -90 ? 90 : 0); }
+function cycleVrot() { S.vrot = (S.vrot + 90) % 360; S.tracks = []; S.newFrame = true; log(`OBRAZ: ${S.vrot}°`, 'sys-l'); }
+
+/* ---------- link helpers ---------- */
 async function copyLink(btn) {
   const url = location.href.split('#')[0];
   let ok = false;
@@ -413,11 +521,11 @@ async function copyLink(btn) {
     } catch (e) {}
   }
   const old = btn.dataset.t || btn.textContent; btn.dataset.t = old;
-  btn.textContent = ok ? '[ Skopiowano! ]' : '[ Przytrzymaj link i skopiuj ]';
+  btn.textContent = ok ? '[ Skopiowano! ]' : '[ Skopiuj ręcznie ]';
   setTimeout(() => { btn.textContent = old; }, 2500);
 }
 
-/* ---------- errors (visible, Polish) ---------- */
+/* ---------- errors ---------- */
 const INAPP_HINT = 'JAK URUCHOMIĆ W SAFARI / CHROME:\n' +
   '1) Dotknij ikony „…” albo kompasu (Safari) w pasku u dołu lub u góry ekranu.\n' +
   '2) Wybierz „Otwórz w przeglądarce” / „Otwórz w Safari”.\n' +
@@ -427,12 +535,11 @@ const DENIED_HINT = 'JEŚLI NIE BYŁO PYTANIA O KAMERĘ:\n' +
   '• Otwórz tę stronę w Safari (lub Chrome), nie w przeglądarce wbudowanej w aplikację (X, Facebook, Messenger…).\n' +
   '• W Safari: dotknij „aA” → Ustawienia witryny → Kamera → Zezwól, potem odśwież.\n' +
   '• iPhone: Ustawienia → Safari → Kamera → Pytaj lub Zezwól.';
-function showErr(msg, hint, opts = {}) {
+function showErr(msg, hint) {
   $('#errTxt').textContent = msg;
   const h = $('#errHint');
   if (hint) { h.textContent = hint; h.style.display = 'block'; } else { h.style.display = 'none'; }
   $('#errUrl').textContent = location.href.split('#')[0];
-  $('#copyBtn').style.display = opts.copy === false ? 'none' : '';
   $('#errBox').classList.add('show');
 }
 function hideErr() { $('#errBox').classList.remove('show'); }
@@ -442,70 +549,79 @@ function camErrInfo(e) {
   if (n === 'NotAllowedError' || n === 'SecurityError' || n === 'PermissionDeniedError')
     return { msg: 'KAMERA ZABLOKOWANA (brak zgody).' + inapp + '\nOtwórz tę stronę w Safari (lub Chrome) i zezwól na kamerę.', hint: IN_APP ? INAPP_HINT : DENIED_HINT };
   if (n === 'NotFoundError' || n === 'OverconstrainedError') return { msg: 'Nie znaleziono kamery w tym urządzeniu.', hint: '' };
-  if (n === 'NotReadableError' || n === 'AbortError') return { msg: 'Kamera jest zajęta przez inną aplikację albo karta. Zamknij ją i dotknij „Ponów”.', hint: '' };
+  if (n === 'NotReadableError' || n === 'AbortError') return { msg: 'Kamera jest zajęta przez inną aplikację albo kartę. Zamknij ją i dotknij „Ponów”.', hint: '' };
   if (n === 'NoMediaDevices') return { msg: 'Ta przeglądarka nie udostępnia kamery tej stronie (wymagane https).' + inapp, hint: INAPP_HINT };
   return { msg: 'Nie można uruchomić kamery: ' + ((e && (e.message || e.name)) || '?') + inapp, hint: IN_APP ? INAPP_HINT : '' };
 }
 
-/* ---------- model ---------- */
-let forceCpu = false;
-function setStatus(msg) { S.status = msg; log(msg, 'sys-l'); }
+/* ---------- inference engine: Web Worker (wasm) with main-thread fallback ---------- */
 function withTimeout(p, ms, msg) {
   let t; const to = new Promise((_, rej) => { t = setTimeout(() => { const e = new Error(msg); e.code = 'TIMEOUT'; rej(e); }, ms); });
   return Promise.race([p, to]).finally(() => clearTimeout(t));
 }
-const WASM_PATH = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.22.0/dist/';
-let flagsSet = false;
-async function tryBackend(name) {
-  setStatus(`TF: START BACKEND ${name.toUpperCase()}`);
-  if (name === 'wasm') {
-    if (!tf.wasm || !tf.wasm.setWasmPaths) throw new Error('wasm backend script missing');
-    tf.wasm.setWasmPaths(WASM_PATH);
-  }
-  const okSet = await withTimeout(tf.setBackend(name), name === 'cpu' ? 20000 : 25000, `backend ${name} init timeout`);
-  await withTimeout(tf.ready(), 10000, `tf.ready timeout (${name})`);
-  if (okSet === false || tf.getBackend() !== name) throw new Error(`backend ${name} unavailable`);
-  setStatus(`MODEL: DOWNLOADING (${name.toUpperCase()})`);
-  const m = await withTimeout(cocoSsd.load({ base: 'lite_mobilenet_v2' }), name === 'cpu' ? 90000 : 60000, 'model download timeout');
-  setStatus(`MODEL: WARM-UP (${name.toUpperCase()})`);
-  try {
-    const c = document.createElement('canvas'); c.width = c.height = 64;
-    await withTimeout(m.detect(c), name === 'cpu' ? 60000 : 40000, `warm-up timeout (${name})`);
-  } catch (e) { try { m.dispose && m.dispose(); } catch (_) {} throw e; }
-  S.backend = name; $('#sBk').textContent = name.toUpperCase();
-  return m;
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = src; s.async = false;
+    s.onload = res; s.onerror = () => rej(new Error('Nie udało się pobrać: ' + src));
+    document.head.appendChild(s);
+  });
 }
-async function loadModelOnce() {
-  if (typeof tf === 'undefined' || typeof cocoSsd === 'undefined') {
-    const e = new Error('Nie udało się pobrać TensorFlow.js / COCO-SSD z internetu (cdn.jsdelivr.net). Sprawdź połączenie, wyłącz blokery treści i odśwież stronę.'); e.code = 'CDN'; throw e;
-  }
-  if (!flagsSet) {
-    flagsSet = true;
-    try { if (IS_IOS) tf.env().set('WEBGL_FORCE_F16_TEXTURES', true); } catch (e) {}
-  }
-  const order = forceCpu ? ['wasm', 'cpu'] : ['webgl', 'wasm', 'cpu'];
+function initWorker() {
+  return new Promise((resolve, reject) => {
+    if (!window.Worker || !window.Blob || !window.URL) return reject(new Error('Brak obsługi Web Worker'));
+    let w;
+    try { w = new Worker(URL.createObjectURL(new Blob([$('#wsrc').textContent], { type: 'text/javascript' }))); }
+    catch (e) { return reject(e); }
+    S.worker = w;
+    const dog = setTimeout(() => reject(new Error('Worker: przekroczono czas wczytywania')), 150000);
+    w.onerror = e => { clearTimeout(dog); reject(new Error('Worker error: ' + (e.message || 'script'))); };
+    w.onmessage = e => {
+      const m = e.data;
+      if (m.type === 'status') setStatus(m.msg);
+      else if (m.type === 'progress') { S.progress = clamp(m.loaded / m.total, 0, 1); }
+      else if (m.type === 'ready') { clearTimeout(dog); S.backend = m.backend; resolve(m.backend); }
+      else if (m.type === 'fail') { clearTimeout(dog); reject(new Error(m.msg)); }
+      else if (m.type === 'result') onWorkerResult(m);
+    };
+    w.postMessage({ type: 'init', tf: TF_URL, wasm: WASM_JS, coco: COCO_URL, wasmPath: WASM_PATH, modelUrl: MODEL_URL, totalBytes: MODEL_BYTES, order: ['wasm', 'cpu'] });
+  });
+}
+async function loadMainThread() {
+  setStatus('NN: FALLBACK - MAIN THREAD');
+  await loadScript(TF_URL); await loadScript(WASM_JS); await loadScript(COCO_URL);
   const errors = [];
-  for (const name of order) {
+  for (const name of ['wasm', 'webgl', 'cpu']) {
     try {
-      const m = await tryBackend(name);
-      S.model = m;
-      return m;
-    } catch (e) {
-      const msg = `${name.toUpperCase()} FAIL: ${(e && e.message) || e}`;
-      errors.push(msg); console.warn(msg, e); log(msg, 'warn');
-    }
+      setStatus('NN: START BACKEND ' + name.toUpperCase());
+      if (name === 'wasm') tf.wasm.setWasmPaths(WASM_PATH);
+      if (name === 'webgl') { try { tf.env().set('WEBGL_PACK', false); } catch (e) {} }
+      const ok = await withTimeout(tf.setBackend(name), 25000, name + ' init timeout');
+      await withTimeout(tf.ready(), 10000, 'tf.ready timeout');
+      if (ok === false || tf.getBackend() !== name) throw new Error(name + ' unavailable');
+      const m = await withTimeout(cocoSsd.load({ base: 'lite_mobilenet_v2', modelUrl: MODEL_URL }), 120000, 'model download timeout');
+      await withTimeout(m.detect(new ImageData(64, 64)), 60000, 'warm-up timeout');
+      S.model = m; S.backend = name; return;
+    } catch (e) { errors.push(name.toUpperCase() + ': ' + ((e && e.message) || e)); setStatus('FAIL ' + errors[errors.length - 1]); }
   }
-  const e = new Error(errors.join('\n')); e.code = 'MODEL'; throw e;
+  throw new Error(errors.join(' | '));
+}
+async function loadEngine() {
+  S.t0 = performance.now();
+  try { await initWorker(); S.mode = 'worker'; }
+  catch (e) {
+    log('WORKER FAIL: ' + ((e && e.message) || e), 'warn');
+    try { if (S.worker) S.worker.terminate(); } catch (_) {} S.worker = null;
+    await loadMainThread(); S.mode = 'main';
+  }
+  $('#sBk').textContent = S.backend.toUpperCase() + (S.mode === 'worker' ? '/WRK' : '');
+  S.ready = true;
 }
 function ensureModel() {
-  if (S.model) return Promise.resolve(S.model);
-  if (!S.modelP) {
-    S.modelP = loadModelOnce().catch(e => { S.modelP = null; throw e; });
-  }
+  if (S.ready) return Promise.resolve();
+  if (!S.modelP) S.modelP = loadEngine().catch(e => { S.modelP = null; throw e; });
   return S.modelP;
 }
 function modelErrMsg(e) {
-  if (e && e.code === 'CDN') return e.message;
   return 'Nie udało się wczytać modelu wykrywania.\n' + ((e && e.message) || '?') + '\n\nKamera nadal działa. Dotknij „Ponów”, żeby spróbować jeszcze raz.';
 }
 
@@ -518,50 +634,49 @@ async function startCamera() {
   }
   if (S.stream) { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
   try {
-    let stream;
+    let stream, lastErr = null;
     const tries = [
-      { audio: false, video: { facingMode: { ideal: S.facing }, width: { ideal: 960 }, height: { ideal: 540 } } },
+      { audio: false, video: { facingMode: { ideal: S.facing }, width: { ideal: 960 }, height: { ideal: 540 }, frameRate: { ideal: 30 } } },
       { audio: false, video: { facingMode: S.facing } },
       { audio: false, video: true }
     ];
-    let lastErr = null;
     for (const c of tries) {
       try { stream = await navigator.mediaDevices.getUserMedia(c); break; }
-      catch (e) {
-        lastErr = e;
-        if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError' || e.name === 'PermissionDeniedError')) throw e;
-      }
+      catch (e) { lastErr = e; if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError' || e.name === 'PermissionDeniedError')) throw e; }
     }
     if (!stream) throw lastErr || new Error('getUserMedia');
     S.stream = stream;
     const tr = stream.getVideoTracks()[0];
     tr.addEventListener('ended', () => { if (S.stream === stream) { showErr('Kamera została odłączona lub przerwana przez system.\nDotknij „Ponów”.', ''); $('#rec').classList.add('idle'); } });
-    video.srcObject = stream;
-    video.muted = true;
+    video.srcObject = stream; video.muted = true;
     await new Promise(res => { if (video.readyState >= 1) res(); else { video.onloadedmetadata = () => res(); setTimeout(res, 4000); } });
     await video.play().catch(() => {});
     const st = tr.getSettings ? tr.getSettings() : {};
-    let label = tr.label || '';
-    S.mirrored = st.facingMode ? st.facingMode === 'user' : !/back|rear|environment|tył/i.test(label);
-    video.classList.toggle('mirror', S.mirrored);
-    const vw = video.videoWidth || st.width || 640, vh = video.videoHeight || st.height || 480;
-    $('#sRes').textContent = `${vw}x${vh}`;
+    S.mirrored = st.facingMode ? st.facingMode === 'user' : !/back|rear|environment|tył/i.test(tr.label || '');
+    S.lastRes = 0;
+    $('#sRes').textContent = `${video.videoWidth || st.width || '?'}x${video.videoHeight || st.height || '?'}`;
     $('#sCam').textContent = S.mirrored ? 'FRONT' : 'REAR';
     resize();
     try { const devs = await navigator.mediaDevices.enumerateDevices(); S.nCams = devs.filter(d => d.kind === 'videoinput').length; } catch (e) {}
     $('#bCam').disabled = S.nCams < 2;
-    $('#bCam').title = S.nCams < 2 ? 'Wykryto tylko jedną kamerę' : '';
     if (!S.recStart) S.recStart = performance.now();
     $('#rec').classList.remove('idle'); $('#recTxt').textContent = 'REC';
     return stream;
   } catch (e) {
     $('#sCam').textContent = 'OFFLINE';
-    const i = camErrInfo(e);
-    showErr(i.msg, i.hint);
+    const i = camErrInfo(e); showErr(i.msg, i.hint);
     log('CAM-01 FAILURE: ' + ((e && e.name) || 'ERR'), 'warn');
     throw e;
   }
 }
+// camera frame counter (real camera fps, independent of render + inference)
+let camFrames = 0, haveRVFC = false;
+if (video.requestVideoFrameCallback) {
+  haveRVFC = true;
+  const cb = () => { camFrames++; S.newFrame = true; video.requestVideoFrameCallback(cb); };
+  video.requestVideoFrameCallback(cb);
+}
+let lastCT = -1;
 
 /* ---------- tracking ---------- */
 const groupOf = c => c === 'person' ? 'H' : ANIMALS.has(c) ? 'A' : 'O';
@@ -572,8 +687,7 @@ function iou(a, b) {
   return i / (a.w * a.h + b.w * b.h - i + 1e-9);
 }
 function label(t) {
-  const g = t.g;
-  return g === 'H' ? `HUMAN #${t.id}` : g === 'A' ? `FAUNA/${t.cls.toUpperCase()} #${t.id}` : `OBJ/${t.cls.toUpperCase()} #${t.id}`;
+  return t.g === 'H' ? `HUMAN #${t.id}` : t.g === 'A' ? `FAUNA/${t.cls.toUpperCase()} #${t.id}` : `OBJ/${t.cls.toUpperCase()} #${t.id}`;
 }
 function confirm(t, now) {
   t.confirmed = true; t.id = S.next[t.g]++; t.born = now;
@@ -583,8 +697,7 @@ function confirm(t, now) {
 }
 function fmtDur(ms) { const s = Math.floor(ms / 1000); return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`; }
 function updateTracks(dets, now) {
-  const tr = S.tracks;
-  const pairs = [];
+  const tr = S.tracks, pairs = [];
   dets.forEach((d, di) => tr.forEach((t, ti) => {
     if (t.g !== d.g || (d.g !== 'H' && t.cls !== d.cls)) return;
     const dx = (t.x + t.w / 2) - (d.x + d.w / 2), dy = (t.y + t.h / 2) - (d.y + d.h / 2);
@@ -601,10 +714,7 @@ function updateTracks(dets, now) {
     t.x = d.x; t.y = d.y; t.w = d.w; t.h = d.h;
     t.score = t.score * .6 + d.score * .4; t.hits++; t.last = now; t.missed = 0;
     if (!t.confirmed && t.hits >= 2) confirm(t, now);
-    if (t.confirmed) {
-      t.trail.push({ x: d.x + d.w / 2, y: d.y + d.h / 2, t: now });
-      if (t.trail.length > 40) t.trail.shift();
-    }
+    if (t.confirmed) { t.trail.push({ x: d.x + d.w / 2, y: d.y + d.h / 2, t: now }); if (t.trail.length > 40) t.trail.shift(); }
   }
   dets.forEach((d, di) => {
     if (usedD.has(di)) return;
@@ -613,8 +723,8 @@ function updateTracks(dets, now) {
   S.tracks = tr.filter((t, i) => {
     if (usedT.has(i) || t.last === now) return true;
     t.missed++;
-    const ttl = t.g === 'H' ? 1200 : 900;
-    if (!t.confirmed) return false;
+    const ttl = t.g === 'H' ? 1500 : 1100;      // inference is slower on phones: keep targets a bit longer
+    if (!t.confirmed) return now - t.last < 600;
     if (now - t.last > ttl) {
       if (t.g === 'H') { log(`${label(t)} LOST - T+${fmtDur(t.last - t.born)}`, 'warn'); const n = performance.now(); if (n - S.lastBeepLost > 500) { sfx.lost(); S.lastBeepLost = n; } }
       else if (t.g === 'A') log(`${label(t)} LEFT SECTOR`);
@@ -625,76 +735,86 @@ function updateTracks(dets, now) {
   });
 }
 
-async function detect() {
-  S.busy = true;
-  const t0 = performance.now();
-  try {
-    const preds = await S.model.detect(video, 20, 0.45);
-    const vw = video.videoWidth, vh = video.videoHeight;
-    const dets = preds.map(p => {
-      let [x, y, w, h] = p.bbox;
-      x /= vw; y /= vh; w /= vw; h /= vh;
-      if (S.mirrored) x = 1 - (x + w);
-      return { x, y, w, h, cls: p.class, score: p.score, g: groupOf(p.class) };
-    });
-    updateTracks(dets, performance.now());
-    S.detFails = 0;
-  } catch (e) {
-    console.warn('detect error', e);
-    if (++S.detFails >= 5 && S.backend === 'webgl') {
-      // WebGL died (common on phones) -> reload the model on CPU
-      S.detFails = 0; S.running = false; S.model = null; S.modelP = null; forceCpu = true;
-      log('WEBGL FAILED -> RELOADING ON CPU', 'warn');
-      ensureModel().then(() => { S.running = true; log('NEURAL CORE ONLINE (CPU)', 'sys-l'); }).catch(er => showErr(modelErrMsg(er), ''));
-    }
-  }
-  const dt = performance.now() - t0;
-  S.infMs = S.infMs ? S.infMs * .8 + dt * .2 : dt;
+/* ---------- inference scheduling (downscaled frame, one in flight, adaptive) ---------- */
+const fitScale = (w, h, fw, fh) => IS_TOUCH ? Math.max(w / fw, h / fh) : Math.min(w / fw, h / fh);  // phones: fill (cover), desktop: whole picture (contain)
+const viewDims = () => {
+  const vw = video.videoWidth || 16, vh = video.videoHeight || 9;
+  return (S.vrot === 90 || S.vrot === 270) ? [vh, vw] : [vw, vh];
+};
+const icv = document.createElement('canvas'), ictx = icv.getContext('2d', { willReadFrequently: true });
+function captureFrame() {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  if (!vw || !vh) return null;
+  const [fw, fh] = viewDims();
+  const tw = 300, th = Math.max(32, Math.round(300 * fh / fw));
+  if (icv.width !== tw || icv.height !== th) { icv.width = tw; icv.height = th; }
+  const sw = (S.vrot === 90 || S.vrot === 270);
+  const sc = sw ? th / vw : tw / vw;
+  ictx.save(); ictx.setTransform(1, 0, 0, 1, 0, 0);
+  ictx.translate(tw / 2, th / 2); ictx.rotate(S.vrot * Math.PI / 180);
+  ictx.drawImage(video, -vw * sc / 2, -vh * sc / 2, vw * sc, vh * sc);
+  ictx.restore();
+  return ictx.getImageData(0, 0, tw, th);
+}
+function handlePreds(preds, w, h, ms) {
+  const dets = preds.map(p => {
+    let [x, y, bw, bh] = p.bbox;
+    x /= w; y /= h; bw /= w; bh /= h;
+    if (S.mirrored) x = 1 - (x + bw);
+    return { x, y, w: bw, h: bh, cls: p.class, score: p.score, g: groupOf(p.class) };
+  });
+  const now = performance.now();
+  updateTracks(dets, now);
+  S.infMs = S.infMs ? S.infMs * .75 + ms * .25 : ms;
+  if (S.lastResAt) { const fpsNow = 1000 / Math.max(1, now - S.lastResAt); S.nnFps = S.nnFps ? S.nnFps * .8 + fpsNow * .2 : fpsNow; }
+  S.lastResAt = now;
   S.busy = false;
+  S.nextInfer = now + Math.min(250, ms * .15);     // adaptive pause so the device is never saturated
+}
+function onWorkerResult(m) {
+  if (m.id !== S.reqId) { return; }
+  if (m.error) { S.busy = false; S.nextInfer = performance.now() + 500; log('NN ERR: ' + m.error, 'warn'); return; }
+  handlePreds(m.preds, m.w, m.h, m.ms);
+}
+function infer(now) {
+  const img = captureFrame();
+  if (!img) return;
+  S.busy = true; S.busyAt = now; const id = ++S.reqId;
+  if (S.mode === 'worker') {
+    S.worker.postMessage({ type: 'detect', id, w: img.width, h: img.height, buf: img.data.buffer }, [img.data.buffer]);
+  } else {
+    const t0 = performance.now();
+    S.model.detect(img, 20, 0.45).then(p => { if (id === S.reqId) handlePreds(p, img.width, img.height, performance.now() - t0); })
+      .catch(e => { S.busy = false; S.nextInfer = performance.now() + 500; log('NN ERR: ' + (e && e.message), 'warn'); });
+  }
 }
 
-/* ---------- layout / canvases ---------- */
-function resize() {
-  document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
-  const r = stage.getBoundingClientRect();
-  S.W = Math.max(1, Math.round(r.width)); S.H = Math.max(1, Math.round(r.height));
-  let dpr = Math.min(window.devicePixelRatio || 1, 2);
-  while (S.W * S.H * dpr * dpr > 2.4e6 && dpr > 1) dpr -= .25;
-  S.dpr = Math.max(1, dpr);
-  hud.width = Math.round(S.W * S.dpr); hud.height = Math.round(S.H * S.dpr);
-  const vs = Math.min(1, 1280 / S.W);
-  vcanvas.width = Math.round(S.W * vs); vcanvas.height = Math.round(S.H * vs);
-}
-if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
-window.addEventListener('resize', resize);
-window.addEventListener('orientationchange', () => { resize(); setTimeout(resize, 250); setTimeout(resize, 700); });
-if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && video.srcObject) video.play().catch(() => {}); });
-const uiSize = base => Math.max(12, Math.round(base * clamp(S.H / 480, .62, 1)));
-
+/* ---------- drawing ---------- */
 function paintVideo(c, w, h) {
   const vw = video.videoWidth, vh = video.videoHeight;
   c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
   c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
   if (!vw || video.readyState < 2) return;
-  const sc = Math.max(w / vw, h / vh), dw = vw * sc, dh = vh * sc, ox = (w - dw) / 2, oy = (h - dh) / 2;
+  const [fw, fh] = viewDims();
+  const sc = fitScale(w, h, fw, fh);
   c.save();
-  if (S.mirrored) { c.translate(w, 0); c.scale(-1, 1); }
-  c.drawImage(video, ox, oy, dw, dh);
+  c.translate(w / 2, h / 2);
+  if (S.mirrored) c.scale(-1, 1);
+  c.rotate(S.vrot * Math.PI / 180);
+  c.drawImage(video, -vw * sc / 2, -vh * sc / 2, vw * sc, vh * sc);
   c.restore();
-  c.globalCompositeOperation = 'saturation'; c.fillStyle = '#000'; c.fillRect(0, 0, w, h);          // -> grayscale
-  c.globalCompositeOperation = 'overlay'; c.globalAlpha = .55; c.drawImage(c.canvas, 0, 0, w, h, 0, 0, w, h); // contrast
-  c.globalCompositeOperation = 'multiply'; c.globalAlpha = 1; c.fillStyle = S.fg; c.fillRect(0, 0, w, h);  // phosphor tint
+  c.globalCompositeOperation = 'saturation'; c.fillStyle = '#000'; c.fillRect(0, 0, w, h);               // grayscale
+  c.globalCompositeOperation = 'overlay'; c.globalAlpha = .5; c.drawImage(c.canvas, 0, 0, w, h, 0, 0, w, h); // contrast
+  c.globalCompositeOperation = 'multiply'; c.globalAlpha = 1; c.fillStyle = S.fg; c.fillRect(0, 0, w, h);    // phosphor tint
   c.globalCompositeOperation = 'source-over';
 }
-
-/* ---------- drawing ---------- */
+const uiSize = base => Math.max(12, Math.round(base * clamp(Math.min(S.W / 760, S.H / 480), .62, 1)));
 function tag(c, text, x, y, filled = true, size = 20, alpha = 1) {
   c.font = `${size}px VT323, "Courier New", monospace`;
   const w = c.measureText(text).width + 8, h = size * .85 + 4;
-  c.save(); c.globalAlpha = alpha; c.shadowBlur = 0;
+  c.save(); c.globalAlpha = alpha; sb(c, 0);
   if (filled) { c.fillStyle = S.fg; c.fillRect(x, y, w, h); c.fillStyle = '#000'; c.fillText(text, x + 4, y + h - 5); }
-  else { c.fillStyle = S.fg; c.shadowColor = S.fg; c.shadowBlur = 6; c.fillText(text, x + 4, y + h - 5); }
+  else { c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 6); c.fillText(text, x + 4, y + h - 5); }
   c.restore();
   return { w, h };
 }
@@ -708,7 +828,7 @@ function corners(c, x, y, w, h, len, lw) {
 }
 function drawTrail(c, t, now, W, H) {
   if (!S.trails || t.trail.length < 2) return;
-  c.save(); c.lineWidth = 2; c.shadowColor = S.fg; c.shadowBlur = 6;
+  c.save(); c.lineWidth = 2; c.shadowColor = S.fg; sb(c, 6);
   let prev = null;
   for (const p of t.trail) {
     const age = (now - p.t) / 1800;
@@ -721,16 +841,14 @@ function drawTrail(c, t, now, W, H) {
   }
   c.restore();
 }
-// W,H below = size of the (cover-fitted) video in stage px; coordinates are translated by (S.ox,S.oy)
 function drawHuman(c, t, now, W, H) {
   let x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H;
-  const age = (now - t.born) / 1000;
-  const stale = now - t.last > 250;
+  const age = (now - t.born) / 1000, stale = now - t.last > 400;
   if (age < .6) { const k = 1 + (1 - age / .6) * .7; const cx = x + w / 2, cy = y + h / 2; w *= k; h *= k; x = cx - w / 2; y = cy - h / 2; }
   const cx = x + w / 2, cy = y + h / 2;
   c.save();
   c.globalAlpha = stale ? .5 : 1;
-  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; c.shadowBlur = 8;
+  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 8);
   const len = clamp(Math.min(w, h) * .22, 12, 46);
   corners(c, x, y, w, h, len, 3);
   c.globalAlpha *= .25; c.lineWidth = 1; c.strokeRect(x, y, w, h); c.globalAlpha = stale ? .5 : 1;
@@ -747,17 +865,17 @@ function drawHuman(c, t, now, W, H) {
   if (ty < 2 - S.oy) ty = y + 3;
   const a = tag(c, label(t), x, ty, true, size);
   if (Math.floor(now / 400) % 2 === 0) tag(c, '■ TARGET LOCKED', x + a.w + 4, ty, false, size);
-  const sb = S.H - S.oy;
-  const by = y + h + 3 + lh > sb ? y + h - lh * 2 - 3 : y + h + 3;
+  const sbt = S.H - S.oy;
+  const by = y + h + 3 + lh > sbt ? y + h - lh * 2 - 3 : y + h + 3;
   tag(c, `CONF ${Math.round(t.score * 100)}%  T+${fmtDur(now - t.born)}`, x, by, false, size - 2);
   tag(c, `X${(cx / W > .5 ? '+' : '-')}${pad(Math.round(Math.abs(cx / W - .5) * 200), 2)} RNG ${(1.2 / Math.max(.08, t.dh)).toFixed(1)}M`, x, by + lh, false, size - 4, .75);
   c.restore();
 }
 function drawAnimal(c, t, now, W, H) {
   const x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H;
-  const stale = now - t.last > 250;
+  const stale = now - t.last > 400;
   c.save(); c.globalAlpha = stale ? .45 : .9;
-  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; c.shadowBlur = 5;
+  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 5);
   c.lineWidth = 2; c.setLineDash([8, 5]); c.lineDashOffset = -(now / 60) % 13;
   c.strokeRect(x, y, w, h); c.setLineDash([]);
   const cx = x + w / 2, cy = y + h / 2;
@@ -766,28 +884,26 @@ function drawAnimal(c, t, now, W, H) {
   let ty = y - (lh + 2); if (ty < 2 - S.oy) ty = y + 3;
   const a = tag(c, label(t), x, ty, true, size);
   tag(c, 'FAUNA // NON-HOSTILE', x + a.w + 4, ty, false, size - 2);
-  const sb = S.H - S.oy;
-  const by = y + h + 3 + lh > sb ? y + h - lh - 3 : y + h + 3;
+  const sbt = S.H - S.oy;
+  const by = y + h + 3 + lh > sbt ? y + h - lh - 3 : y + h + 3;
   tag(c, `CONF ${Math.round(t.score * 100)}%  T+${fmtDur(now - t.born)}`, x, by, false, size - 3);
   c.restore();
 }
 function drawObject(c, t, now, W, H) {
   const x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H;
-  c.save(); c.globalAlpha = .38; c.strokeStyle = S.fg; c.lineWidth = 1; c.shadowBlur = 0;
+  c.save(); c.globalAlpha = .38; c.strokeStyle = S.fg; c.lineWidth = 1; sb(c, 0);
   c.strokeRect(x, y, w, h);
   const ty = y > 16 - S.oy ? y - 14 : y + 2;
   tag(c, `${t.cls.toUpperCase()} ${Math.round(t.score * 100)}%`, x, ty, false, uiSize(15), 1);
   c.restore();
 }
-
 function drawHud(now, dt) {
   const c = hctx, W = S.W, H = S.H;
   c.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
   c.clearRect(0, 0, W, H);
   c.lineCap = 'butt'; c.textBaseline = 'alphabetic'; c.textAlign = 'left';
-  c.strokeStyle = S.fg; c.fillStyle = S.fg;
-  c.shadowColor = S.fg; c.shadowBlur = 4;
-  const small = H < 400;
+  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 4);
+  const small = Math.min(W, H) < 420;
 
   if (S.grid) {
     c.save(); c.globalAlpha = .22; c.lineWidth = 1; c.setLineDash([2, 6]); c.beginPath();
@@ -801,25 +917,18 @@ function drawHud(now, dt) {
     c.stroke(); c.restore();
   }
   c.save(); c.globalAlpha = .6; c.lineWidth = 1; c.beginPath();
-  for (let i = 0; i <= 40; i++) {
-    const x = W * i / 40, l = i % 10 === 0 ? 12 : i % 5 === 0 ? 8 : 4;
-    c.moveTo(x, 0); c.lineTo(x, l); c.moveTo(x, H); c.lineTo(x, H - l);
-  }
-  for (let i = 0; i <= 30; i++) {
-    const y = H * i / 30, l = i % 10 === 0 ? 12 : i % 5 === 0 ? 8 : 4;
-    c.moveTo(0, y); c.lineTo(l, y); c.moveTo(W, y); c.lineTo(W - l, y);
-  }
+  for (let i = 0; i <= 40; i++) { const x = W * i / 40, l = i % 10 === 0 ? 12 : i % 5 === 0 ? 8 : 4; c.moveTo(x, 0); c.lineTo(x, l); c.moveTo(x, H); c.lineTo(x, H - l); }
+  for (let i = 0; i <= 30; i++) { const y = H * i / 30, l = i % 10 === 0 ? 12 : i % 5 === 0 ? 8 : 4; c.moveTo(0, y); c.lineTo(l, y); c.moveTo(W, y); c.lineTo(W - l, y); }
   c.stroke(); c.restore();
   c.save(); corners(c, 6, 6, W - 12, H - 12, 24, 2); c.restore();
 
   const sy = ((now / 12) % (H + 80)) - 40;
   const grd = c.createLinearGradient(0, sy - 30, 0, sy + 30);
   grd.addColorStop(0, `rgba(${S.rgb},0)`); grd.addColorStop(.5, `rgba(${S.rgb},.08)`); grd.addColorStop(1, `rgba(${S.rgb},0)`);
-  c.save(); c.shadowBlur = 0; c.fillStyle = grd; c.fillRect(0, sy - 30, W, 60); c.restore();
+  c.save(); sb(c, 0); c.fillStyle = grd; c.fillRect(0, sy - 30, W, 60); c.restore();
 
-  // cover-fit mapping of the video into the stage
-  const vw = video.videoWidth || 16, vh = video.videoHeight || 9;
-  const sc = Math.max(W / vw, H / vh), dw = vw * sc, dh = vh * sc;
+  const [fw, fh] = viewDims();
+  const sc = fitScale(W, H, fw, fh), dw = fw * sc, dh = fh * sc;
   S.ox = (W - dw) / 2; S.oy = (H - dh) / 2;
 
   const k = 1 - Math.exp(-dt * 14);
@@ -832,30 +941,37 @@ function drawHud(now, dt) {
   for (const t of vis) if (t.g === 'H') drawHuman(c, t, now, dw, dh);
   c.restore();
 
-  const size = uiSize(20), bb = small ? 36 : 46;
-  c.font = `${size}px VT323, "Courier New", monospace`; c.shadowBlur = 6;
-  c.fillText(`CAM-01 ${S.mirrored ? 'FRONT' : 'REAR'}  ${$('#sRes').textContent}`, 16, size + 8);
+  const size = uiSize(20), bb = small ? 30 : 46;
+  c.font = `${size}px VT323, "Courier New", monospace`; sb(c, 6);
+  const topY = S.port ? 62 : size + 8;     // portrait: threat bar sits at the top of the video
+  c.fillText(`CAM-01 ${S.mirrored ? 'FRONT' : 'REAR'}  ${$('#sRes').textContent}`, 14, topY);
   c.textAlign = 'right';
-  c.fillText(S.running ? 'MODE: AUTO-TRACK' : 'MODE: STANDBY', W - 16, size + 8);
-  S.az += (Math.random() - .5) * .08; S.el += (Math.random() - .5) * .04;
-  c.fillText(`ZOOM 1.0X  ${S.palette === 'green' ? 'PHOS-G' : 'PHOS-A'}`, W - 16, H - bb);
-  c.textAlign = 'left';
-  c.fillText(`AZ ${S.az.toFixed(1).padStart(5, '0')}°  EL ${S.el >= 0 ? '+' : ''}${S.el.toFixed(1)}°`, 16, H - bb);
-  if (!S.model || !S.stream) {
-    c.textAlign = 'center';
-    c.fillText(!S.stream ? 'OCZEKIWANIE NA KAMERĘ...' : 'ŁADOWANIE SIECI NEURONOWEJ...', W / 2, H / 2 + 50);
-    if (S.stream && S.status) c.fillText(S.status.slice(0, 60) + ' ' + Math.floor((performance.now() - (S.t0 || performance.now())) / 1000) + 's', W / 2, H / 2 + 50 + size + 4);
+  c.fillText(S.running ? 'AUTO-TRACK' : 'STANDBY', W - 14, topY);
+  if (!S.port) {
+    S.az += (Math.random() - .5) * .08; S.el += (Math.random() - .5) * .04;
+    c.fillText(`ZOOM 1.0X  ${S.palette === 'green' ? 'PHOS-G' : 'PHOS-A'}`, W - 14, H - bb);
     c.textAlign = 'left';
+    c.fillText(`AZ ${S.az.toFixed(1).padStart(5, '0')}°  EL ${S.el >= 0 ? '+' : ''}${S.el.toFixed(1)}°`, 14, H - bb);
   }
+  c.textAlign = 'center';
+  if (!S.stream) c.fillText('OCZEKIWANIE NA KAMERĘ...', W / 2, H / 2 + 50);
+  else if (!S.ready) {
+    const pct = S.progress > 0 && S.progress < 1 ? ` ${Math.round(S.progress * 100)}%` : '';
+    c.fillText('ŁADOWANIE SIECI NEURONOWEJ...' + pct, W / 2, H / 2 + 50);
+    c.fillText(((S.status || '').slice(0, 44)) + ' ' + Math.floor((performance.now() - (S.t0 || performance.now())) / 1000) + 's', W / 2, H / 2 + 50 + size + 2);
+    // progress bar
+    const bw = Math.min(W * .6, 300), bx = (W - bw) / 2, by = H / 2 + 50 + size * 2 + 8;
+    c.lineWidth = 1; c.strokeRect(bx, by, bw, 10); c.fillRect(bx + 2, by + 2, Math.max(0, (bw - 4) * S.progress), 6);
+  }
+  c.textAlign = 'left';
 }
-
 function drawRadar(now) {
   const c = rctx, W = radar.width, H = radar.height;
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.clearRect(0, 0, W, H);
   const ox = W / 2, oy = H - 18, R = H - 40;
   const FOV = 56 * Math.PI / 180;
-  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; c.shadowBlur = 4; c.lineWidth = 1.5;
+  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 4); c.lineWidth = 1.5;
   const ang = th => -Math.PI / 2 + th;
   c.globalAlpha = .45;
   for (let i = 1; i <= 4; i++) { c.beginPath(); c.arc(ox, oy, R * i / 4, ang(-FOV), ang(FOV)); c.stroke(); }
@@ -863,16 +979,15 @@ function drawRadar(now) {
   c.moveTo(ox, oy); c.lineTo(ox + Math.cos(ang(FOV)) * R, oy + Math.sin(ang(FOV)) * R);
   c.moveTo(ox, oy); c.lineTo(ox, oy - R); c.stroke();
   c.globalAlpha = 1;
-  const period = 3200, ph = (now % period) / period;
-  const sw = -FOV + ph * 2 * FOV;
-  c.shadowBlur = 0;
-  for (let i = 0; i < 26; i++) {
-    const a0 = sw - i * .02, a1 = sw - (i + 1) * .02;
+  const ph = (now % 3200) / 3200, sw = -FOV + ph * 2 * FOV;
+  sb(c, 0);
+  for (let i = 0; i < 14; i++) {
+    const a0 = sw - i * .04, a1 = sw - (i + 1) * .04;
     if (a1 < -FOV) break;
-    c.globalAlpha = .22 * (1 - i / 26);
+    c.globalAlpha = .22 * (1 - i / 14);
     c.beginPath(); c.moveTo(ox, oy); c.arc(ox, oy, R, ang(a1), ang(a0)); c.closePath(); c.fill();
   }
-  c.shadowBlur = 6; c.globalAlpha = 1; c.lineWidth = 2;
+  sb(c, 6); c.globalAlpha = 1; c.lineWidth = 2;
   c.beginPath(); c.moveTo(ox, oy); c.lineTo(ox + Math.cos(ang(sw)) * R, oy + Math.sin(ang(sw)) * R); c.stroke();
   for (const t of S.tracks) {
     if (!t.confirmed || (t.g === 'O' && !S.objects)) continue;
@@ -881,23 +996,22 @@ function drawRadar(now) {
     const px = ox + Math.cos(ang(th)) * rr, py = oy + Math.sin(ang(th)) * rr;
     let d = sw - th; if (d < 0) d += 2 * FOV;
     const b = .4 + .6 * Math.max(0, 1 - d / (FOV * .9));
-    c.globalAlpha = (t.g === 'O' ? .4 : 1) * b; c.shadowBlur = 8;
-    if (t.g === 'H') { c.fillRect(px - 6, py - 6, 12, 12); }
-    else if (t.g === 'A') { c.beginPath(); c.moveTo(px, py - 8); c.lineTo(px + 8, py); c.lineTo(px, py + 8); c.lineTo(px - 8, py); c.closePath(); c.stroke(); }
-    else { c.fillRect(px - 2, py - 2, 4, 4); }
-    if (d < .15) { c.globalAlpha = .6; c.beginPath(); c.arc(px, py, 14, 0, Math.PI * 2); c.stroke(); }
+    c.globalAlpha = (t.g === 'O' ? .4 : 1) * b; sb(c, 8);
+    if (t.g === 'H') c.fillRect(px - 7, py - 7, 14, 14);
+    else if (t.g === 'A') { c.beginPath(); c.moveTo(px, py - 9); c.lineTo(px + 9, py); c.lineTo(px, py + 9); c.lineTo(px - 9, py); c.closePath(); c.stroke(); }
+    else c.fillRect(px - 2, py - 2, 4, 4);
+    if (d < .15) { c.globalAlpha = .6; c.beginPath(); c.arc(px, py, 16, 0, Math.PI * 2); c.stroke(); }
   }
-  c.globalAlpha = 1; c.shadowBlur = 0;
-  c.font = '22px VT323, monospace'; c.fillStyle = S.fg;
+  c.globalAlpha = 1; sb(c, 0);
+  c.font = '26px VT323, monospace'; c.fillStyle = S.fg;
   c.fillText('■ HUMAN  ◇ FAUNA', 6, H - 3);
-  c.textAlign = 'right'; c.fillText(`${S.mirrored ? 'FRONT' : 'REAR'} 112°`, W - 6, H - 3); c.textAlign = 'left';
 }
 
 /* ---------- panels ---------- */
 const segsEl = $('#segs');
 for (let i = 0; i < 10; i++) segsEl.appendChild(document.createElement('i'));
 function updatePanels(now) {
-  const act = S.tracks.filter(t => t.confirmed && now - t.last < 600);
+  const act = S.tracks.filter(t => t.confirmed && now - t.last < 900);
   const nH = act.filter(t => t.g === 'H').length, nA = act.filter(t => t.g === 'A').length, nO = act.filter(t => t.g === 'O').length;
   $('#cH').textContent = pad(nH); $('#cA').textContent = pad(nA); $('#cO').textContent = pad(nO); $('#cL').textContent = pad(S.locks);
   let lvl = 0, txt = 'ALL CLEAR / SPOKÓJ';
@@ -908,14 +1022,12 @@ function updatePanels(now) {
   [...segsEl.children].forEach((s, i) => s.classList.toggle('on', i < lvl));
   $('#lvl').textContent = txt;
   $('#threat').classList.toggle('crit', nH >= 4);
-  const maxRows = S.H < 400 ? 3 : 8;
+  const maxRows = S.ch < 400 ? 3 : 8;
   const list = act.filter(t => t.g !== 'O' || S.objects).sort((a, b) => (a.g === 'H' ? 0 : 1) - (b.g === 'H' ? 0 : 1)).slice(0, maxRows);
-  const tb = $('#targets');
-  tb.textContent = '';
+  const tb = $('#targets'); tb.textContent = '';
   if (!list.length) { const d = document.createElement('div'); d.className = 'none'; d.textContent = '-- BRAK CELÓW --'; tb.appendChild(d); }
   for (const t of list) {
-    const d = document.createElement('div');
-    const a = document.createElement('span'), b = document.createElement('span');
+    const d = document.createElement('div'), a = document.createElement('span'), b = document.createElement('span');
     a.textContent = `${t.g === 'H' ? '■' : t.g === 'A' ? '◇' : '·'} ${label(t)}`;
     b.textContent = `${Math.round(t.score * 100)}% ${fmtDur(now - t.born)}`;
     d.append(a, b); tb.appendChild(d);
@@ -923,31 +1035,44 @@ function updatePanels(now) {
 }
 function updateClock() {
   const d = new Date();
-  $('#clock').textContent = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${stamp(d)}`;
+  $('#clock').textContent = S.port ? stamp(d) : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${stamp(d)}`;
   if (S.recStart) { const s = Math.floor((performance.now() - S.recStart) / 1000); $('#recTime').textContent = `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; }
 }
 setInterval(updateClock, 500); updateClock();
 
-/* ---------- noise ---------- */
-const nz = $('#noise'), nctx = nz.getContext('2d'), nimg = nctx.createImageData(96, 96);
-setInterval(() => {
-  const d = nimg.data, [r, g, b] = S.rgb.split(',').map(Number);
-  for (let i = 0; i < d.length; i += 4) { const v = Math.random(); d[i] = r * v; d[i + 1] = g * v; d[i + 2] = b * v; d[i + 3] = 255; }
-  nctx.putImageData(nimg, 0, 0);
-}, 110);
+/* ---------- noise (desktop only) ---------- */
+if (!IS_TOUCH) {
+  const nz = $('#noise'), nctx = nz.getContext('2d'), nimg = nctx.createImageData(96, 96);
+  setInterval(() => {
+    const d = nimg.data, [r, g, b] = S.rgb.split(',').map(Number);
+    for (let i = 0; i < d.length; i += 4) { const v = Math.random(); d[i] = r * v; d[i + 1] = g * v; d[i + 2] = b * v; d[i + 3] = 255; }
+    nctx.putImageData(nimg, 0, 0);
+  }, 110);
+}
 
-/* ---------- main loop ---------- */
-let last = performance.now(), fpsN = 0, fpsT = last, panelT = 0;
+/* ---------- main loop: render is independent of inference ---------- */
+let last = performance.now(), rN = 0, rT = last, panelT = 0, hudT = 0, radT = 0, cfN = 0, hudDt = 0;
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(.1, (now - last) / 1000); last = now;
-  if (S.running && S.model && !S.busy && video.readyState >= 2 && !document.hidden) detect();
-  try { paintVideo(vctx, vcanvas.width, vcanvas.height); } catch (e) {}
-  drawHud(now, dt);
-  drawRadar(now);
-  fpsN++;
-  if (now - fpsT > 1000) { S.fps = Math.round(fpsN * 1000 / (now - fpsT)); fpsN = 0; fpsT = now; $('#fps').textContent = S.fps; $('#inf').textContent = S.infMs ? Math.round(S.infMs) + ' ms' : '-- ms'; }
-  if (now - panelT > 200) { panelT = now; updatePanels(now); }
+  const dt = Math.min(.1, (now - last) / 1000); last = now; hudDt += dt;
+  // 1) live camera -> screen, every new camera frame (cheap, low-res canvas)
+  if (!haveRVFC && video.currentTime !== lastCT) { lastCT = video.currentTime; camFrames++; S.newFrame = true; }
+  if (S.newFrame || !S.stream) { S.newFrame = false; try { paintVideo(vctx, vcanvas.width, vcanvas.height); } catch (e) {} }
+  // 2) inference kicks off in the background (never awaited here)
+  if (S.busy && now - S.busyAt > 12000) S.busy = false;
+  if (S.ready && S.running && !S.busy && now >= S.nextInfer && video.readyState >= 2 && !document.hidden) infer(now);
+  // 3) HUD overlay (30 fps cap on phones)
+  if (!IS_TOUCH || now - hudT > 30) { hudT = now; drawHud(now, hudDt); hudDt = 0; }
+  if (!IS_TOUCH || now - radT > 66) { radT = now; drawRadar(now); }
+  rN++;
+  if (now - rT > 1000) {
+    S.fps = Math.round(rN * 1000 / (now - rT)); S.camFps = Math.round(camFrames * 1000 / (now - rT));
+    rN = 0; camFrames = 0; rT = now;
+    $('#fCam').textContent = S.camFps; $('#fNN').textContent = S.nnFps ? S.nnFps.toFixed(1) : '--';
+    $('#inf').textContent = S.infMs ? Math.round(S.infMs) + ' ms' : '-- ms';
+    $('#fpsH').textContent = `CAM ${S.camFps} · NN ${S.nnFps ? S.nnFps.toFixed(1) : '--'}` + (S.port ? '' : ` · R ${S.fps}`);
+  }
+  if (now - panelT > 250) { panelT = now; updatePanels(now); }
 }
 
 /* ---------- actions ---------- */
@@ -955,10 +1080,7 @@ const fsEl = document.documentElement;
 const fsSupported = !!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen);
 if (!fsSupported) $('#bFull').style.display = 'none';
 async function enterFullscreenLandscape() {
-  try {
-    if (fsEl.requestFullscreen) await fsEl.requestFullscreen();
-    else if (fsEl.webkitRequestFullscreen) fsEl.webkitRequestFullscreen();
-  } catch (e) {}
+  try { if (fsEl.requestFullscreen) await fsEl.requestFullscreen(); else if (fsEl.webkitRequestFullscreen) fsEl.webkitRequestFullscreen(); } catch (e) {}
   try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch (e) {}
 }
 function toggleFull() {
@@ -967,8 +1089,8 @@ function toggleFull() {
     try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (e) {}
   } else enterFullscreenLandscape();
 }
-function toggleMute() { S.mute = !S.mute; $('#bMute').textContent = `[M] Dźwięk: ${S.mute ? 'wył' : 'wł'}`; $('#bMute').classList.toggle('on', S.mute); log(`AUDIO ${S.mute ? 'MUTED' : 'ENABLED'}`, 'sys-l'); if (!S.mute) sfx.tick(); }
-function toggleObjects() { S.objects = !S.objects; $('#bObj').textContent = `[O] Obiekty: ${S.objects ? 'wł' : 'wył'}`; $('#bObj').classList.toggle('on', S.objects); log(`OBJECT LAYER ${S.objects ? 'ON' : 'OFF'}`, 'sys-l'); }
+function toggleMute() { S.mute = !S.mute; $('#bMute').classList.toggle('on', !S.mute); log(`AUDIO ${S.mute ? 'MUTED' : 'ENABLED'}`, 'sys-l'); if (!S.mute) sfx.tick(); }
+function toggleObjects() { S.objects = !S.objects; $('#bObj').classList.toggle('on', S.objects); log(`OBJECT LAYER ${S.objects ? 'ON' : 'OFF'}`, 'sys-l'); }
 function togglePalette() { S.palette = S.palette === 'green' ? 'amber' : 'green'; applyPalette(); log(`PHOSPHOR: ${PALETTES[S.palette].en}`, 'sys-l'); }
 function toggleGrid() { S.grid = !S.grid; $('#bGrid').classList.toggle('on', S.grid); }
 function toggleTrails() { S.trails = !S.trails; $('#bTrail').classList.toggle('on', S.trails); }
@@ -981,8 +1103,8 @@ async function switchCam() {
 }
 function snapshot() {
   if (!video.videoWidth) return;
-  const k = Math.min(2, 1920 / S.W);
-  const w = Math.round(S.W * k), h = Math.round(S.H * k), bar = Math.round(h / 14);
+  const k = Math.min(2, 1280 / S.W);
+  const w = Math.round(S.W * k), h = Math.round(S.H * k), bar = Math.round(h / 12);
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h + bar;
   const c = cv.getContext('2d');
   paintVideo(c, w, h);
@@ -991,7 +1113,7 @@ function snapshot() {
   const nowd = new Date();
   c.fillStyle = '#000'; c.fillRect(0, h, w, bar);
   c.strokeStyle = S.fg; c.lineWidth = 2; c.beginPath(); c.moveTo(0, h); c.lineTo(w, h); c.stroke();
-  c.font = `${Math.round(bar * .6)}px VT323, monospace`; c.fillStyle = S.fg; c.shadowColor = S.fg; c.shadowBlur = 6;
+  c.font = `${Math.round(bar * .6)}px VT323, monospace`; c.fillStyle = S.fg;
   c.fillText(`MAJSTERMAN TARGETING SYS  ${nowd.getFullYear()}-${pad(nowd.getMonth() + 1)}-${pad(nowd.getDate())} ${stamp(nowd)}  HUM:${S.tracks.filter(t => t.confirmed && t.g === 'H').length} FAU:${S.tracks.filter(t => t.confirmed && t.g === 'A').length}`, 14, h + Math.round(bar * .68));
   const name = `majsterman-tracker-${nowd.getFullYear()}${pad(nowd.getMonth() + 1)}${pad(nowd.getDate())}-${pad(nowd.getHours())}${pad(nowd.getMinutes())}${pad(nowd.getSeconds())}.png`;
   cv.toBlob(async blob => {
@@ -1012,46 +1134,37 @@ function snapshot() {
 $('#bMute').onclick = toggleMute; $('#bObj').onclick = toggleObjects; $('#bPal').onclick = togglePalette;
 $('#bSnap').onclick = snapshot; $('#bCam').onclick = switchCam; $('#bGrid').onclick = toggleGrid;
 $('#bTrail').onclick = toggleTrails; $('#bFull').onclick = toggleFull;
-$('#rotGo').onclick = () => { document.documentElement.classList.add('norot'); resize(); };
+$('#bRot').onclick = cycleRot; $('#bootRot').onclick = cycleRot; $('#bVrot').onclick = cycleVrot;
+$('#toastBtn').onclick = () => { $('#toast').classList.remove('show'); cycleRot(); };
 $('#errClose').onclick = hideErr;
 $('#reloadBtn').onclick = () => location.reload();
 $('#copyBtn').onclick = e => copyLink(e.currentTarget);
 $('#copyBtn0').onclick = e => copyLink(e.currentTarget);
 $('#retryBtn').onclick = async () => {
   hideErr(); audio();
-  // camera first, straight from the tap
-  const camP = startCamera();
-  camP.catch(() => {});
-  if (!S.model) {
+  const camP = startCamera(); camP.catch(() => {});
+  if (!S.ready) {
     try { await ensureModel(); S.running = true; log('NEURAL CORE ONLINE', 'sys-l'); }
     catch (e) { showErr(modelErrMsg(e), ''); return; }
   }
-  try { await camP; log('CAM-01 ONLINE - SCANNING SECTOR', 'sys-l'); } catch (e) {}
+  try { await camP; log('CAM-01 ONLINE', 'sys-l'); } catch (e) {}
 };
 document.querySelectorAll('button').forEach(b => b.addEventListener('click', () => b.blur()));
-
 window.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
-  if (!S.started) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); start(); } return; }
+  if (!S.started) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); start(); } else if (e.code === 'KeyH') cycleRot(); return; }
   if (!S.booted) { skipBoot = true; return; }
   switch (e.code) {
-    case 'KeyM': toggleMute(); break;
-    case 'KeyO': toggleObjects(); break;
-    case 'KeyT': togglePalette(); break;
-    case 'KeyS': snapshot(); break;
-    case 'KeyC': switchCam(); break;
-    case 'KeyG': toggleGrid(); break;
-    case 'KeyL': toggleTrails(); break;
-    case 'KeyF': toggleFull(); break;
+    case 'KeyM': toggleMute(); break; case 'KeyO': toggleObjects(); break; case 'KeyT': togglePalette(); break;
+    case 'KeyS': snapshot(); break; case 'KeyC': switchCam(); break; case 'KeyG': toggleGrid(); break;
+    case 'KeyL': toggleTrails(); break; case 'KeyF': toggleFull(); break; case 'KeyH': cycleRot(); break; case 'KeyV': if (S.rot) cycleVrot(); break;
   }
 });
 
 /* ---------- boot sequence ---------- */
 const bootEl = $('#bootText');
 let skipBoot = false;
-async function typeText(txt, speed = 9) {
-  for (const ch of txt) { bootEl.textContent += ch; if (!skipBoot) await sleep(speed); }
-}
+async function typeText(txt, speed = 9) { for (const ch of txt) { bootEl.textContent += ch; if (!skipBoot) await sleep(speed); } }
 const BANNER =
 `  __  __    _    _     ____ _____ _____ ____  __  __    _    _   _
  |  \\/  |  / \\  | |   / ___|_   _| ____|  _ \\|  \\/  |  / \\  | \\ | |
@@ -1060,18 +1173,15 @@ const BANNER =
  |_|  |_/_/   \\_\\_____|____/ |_| |_____|_| \\_\\_|  |_/_/   \\_\\_| \\_|
 `;
 function introScreen() {
-  const small = window.innerWidth < 700 || window.innerHeight < 420;
+  const small = S.cw < 700 || S.ch < 420;
   bootEl.textContent = (small ? 'MAJSTERMAN // TARGETING SYS\n' : BANNER) +
     (small ? '' : '\nTARGETING & RECOGNITION SYSTEM  v1.986\n(C) 1986 ZAKŁADY OPTYCZNE MAJSTERMAN\n') +
-    '\nKamera wykrywa ludzi i odróżnia ich od zwierząt.\n' +
-    'Wszystko działa lokalnie - obraz nigdzie nie jest wysyłany.\n' +
-    'Najlepiej trzymaj telefon poziomo.\n' +
+    '\nKamera wykrywa ludzi i odróżnia ich od zwierząt.\nWszystko działa lokalnie - obraz nigdzie nie jest wysyłany.\n' +
     'Po dotknięciu przycisku przeglądarka zapyta o zgodę na kamerę.\n';
   if (IN_APP) {
     const b = $('#inapp');
     b.textContent = '⚠ WYKRYTO PRZEGLĄDARKĘ WBUDOWANĄ W APLIKACJĘ (np. X, Facebook, Messenger).\nTaka przeglądarka zwykle BLOKUJE KAMERĘ.\n\n' + INAPP_HINT;
-    b.style.whiteSpace = 'pre-line'; b.classList.add('show');
-    $('#copyBtn0').style.display = '';
+    b.classList.add('show'); $('#copyBtn0').style.display = '';
   }
 }
 async function runBoot(modelP, camP) {
@@ -1081,8 +1191,6 @@ async function runBoot(modelP, camP) {
     ['CRT PHOSPHOR WARMUP .............. OK'],
     ['OPENING OPTICAL SENSOR [CAM-01] .. ', camP],
     ['LOADING NEURAL CORE [COCO-SSD] ... ', modelP],
-    ['RADAR / SONAR ARRAY .............. OK'],
-    ['HUMAN / FAUNA CLASSIFIER ......... OK'],
     ['\n>> SYSTEM GOTOWY. NAMIERZANIE AKTYWNE.']
   ];
   for (const [t, p] of lines) {
@@ -1091,43 +1199,40 @@ async function runBoot(modelP, camP) {
       let state = 'wait';
       const dots = setInterval(() => { if (!skipBoot) bootEl.textContent += '.'; }, 250);
       p.then(() => { state = 'ok'; }, () => { state = 'fail'; });
-      await Promise.race([p.catch(() => {}), sleep(skipBoot ? 0 : 5000)]);
+      await Promise.race([p.catch(() => {}), sleep(skipBoot ? 0 : 2500)]);
       clearInterval(dots);
-      bootEl.textContent += state === 'ok' ? ' OK' : state === 'fail' ? ' FAIL' : ' W TLE';
+      bootEl.textContent += state === 'ok' ? ' OK' : state === 'fail' ? ' FAIL' : ' (W TLE)';
     }
     bootEl.textContent += '\n';
-    if (!skipBoot) await sleep(60);
+    if (!skipBoot) await sleep(50);
   }
-  await sleep(skipBoot ? 0 : 400);
+  await sleep(skipBoot ? 0 : 300);
 }
-
 async function start() {
   if (S.started) return;
   S.started = true; S.t0 = performance.now();
-  $('#startBtn').style.display = 'none'; $('#copyBtn0').style.display = 'none'; $('#inapp').classList.remove('show');
+  $('#startBtn').style.display = 'none'; $('#copyBtn0').style.display = 'none'; $('#bootRot').style.display = 'none';
+  $('#inapp').classList.remove('show'); $('#rotHint').style.display = 'none';
   // 1) camera request goes out synchronously from the user's tap
-  const camP = startCamera();
-  camP.catch(() => {});
+  const camP = startCamera(); camP.catch(() => {});
   audio();
   if (IS_TOUCH && fsSupported && !IS_IOS) enterFullscreenLandscape();
-  // 2) model loads in parallel
-  const modelP = ensureModel();
-  modelP.catch(() => {});
-  try { await Promise.race([document.fonts.load('20px VT323'), sleep(1500)]); } catch (e) {}
-  bootEl.parentNode.addEventListener('click', () => { if (!S.booted) skipBoot = true; });
+  // 2) neural engine loads in a worker, in parallel; never blocks camera or rendering
+  const modelP = ensureModel(); modelP.catch(() => {});
+  try { await Promise.race([document.fonts.load('20px VT323'), sleep(1200)]); } catch (e) {}
+  $('#boot').addEventListener('click', () => { if (!S.booted) skipBoot = true; });
   await runBoot(modelP, camP);
   S.booted = true;
   $('#boot').classList.add('hide');
   log('SYSTEM BOOT COMPLETE', 'sys-l');
-  try { await modelP; log('NEURAL CORE ONLINE: COCO-SSD LITE (' + S.backend.toUpperCase() + ')', 'sys-l'); S.running = true; }
+  if (S.port && S.rot === 0 && IS_TOUCH) { $('#toast').classList.add('show'); setTimeout(() => $('#toast').classList.remove('show'), 9000); }
+  try { await modelP; log(`NEURAL CORE ONLINE (${S.backend.toUpperCase()}${S.mode === 'worker' ? ', WORKER' : ''})`, 'sys-l'); S.running = true; }
   catch (e) { showErr(modelErrMsg(e), ''); log('NEURAL CORE FAILURE', 'warn'); }
   try { await camP; log('CAM-01 ONLINE - SCANNING SECTOR', 'sys-l'); } catch (e) {}
   window.__ready = true;
 }
 $('#startBtn').onclick = start;
-applyPalette();
-introScreen();
-resize();
+applyPalette(); resize(); introScreen();
 requestAnimationFrame(frame);
 window.__S = S;
 if (new URLSearchParams(location.search).has('auto')) start();
