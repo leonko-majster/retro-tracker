@@ -4,15 +4,55 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="app-version" content="2026-11-14-v5-names">
+<meta name="app-version" content="2026-11-14-v6-sources">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tracker">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MAJSTERMAN // TARGETING SYSTEM</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 <style>
+/* vietnamese */
+@font-face {
+  font-family: 'VT323';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(fonts/pxiKyp0ihIEF2isQFJXUdVNFKPY.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'VT323';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(fonts/pxiKyp0ihIEF2isRFJXUdVNFKPY.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'VT323';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(fonts/pxiKyp0ihIEF2isfFJXUdVNF.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+.net{display:flex;flex-direction:column;align-items:flex-start;font-size:15px;line-height:.95;text-shadow:0 0 4px #000;white-space:nowrap;margin-top:2px}
+.net b{font-weight:400;color:var(--dim)}.net i{font-style:normal;color:var(--dim);font-size:13px}
+.net.off b{color:var(--fg);animation:blink 1.4s steps(2) infinite}.net.warn i{color:var(--fg)}
+.compact .net{font-size:13px}.compact .net i{font-size:11px}
+#upd{position:absolute;z-index:80;left:50%;transform:translateX(-50%);top:calc(40px + env(safe-area-inset-top, 0px));display:none;border:2px solid var(--fg);background:#000;color:var(--fg);padding:5px 10px;font-size:19px;line-height:1.05;text-align:center;cursor:pointer;box-shadow:0 0 10px rgba(var(--fg-rgb),.5);pointer-events:auto;max-width:92%}
+#upd.show{display:block;animation:blink 1.6s steps(2) infinite}
+.compact #upd{font-size:15px;padding:3px 8px}
+#dlBar{height:8px;border:1px solid var(--fg);margin-top:4px;display:none}#dlBar i{display:block;height:100%;width:0;background:var(--fg)}
+#bDl{width:100%;margin-top:6px}
 :root{
   --fg:#33ff66; --fg-rgb:51,255,102;
   --dim:rgba(51,255,102,.55);
@@ -37,10 +77,12 @@ input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;bor
 /* the whole UI lives in #app: sized/rotated from JS so it always fits one screen */
 #app{position:fixed;left:0;top:0;width:100%;height:100%;transform-origin:0 0;overflow:hidden;background:#000}
 #stage{position:absolute;inset:0;background:#000;cursor:pointer;overflow:hidden}
-#stage video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;pointer-events:none}
+#stage video{position:absolute;left:50%;top:50%;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:1;background:#000;transform:translate(-50%,-50%);transform-origin:50% 50%;filter:grayscale(1) contrast(1.28) brightness(1.04);will-change:transform}
+#tint{position:absolute;inset:0;z-index:1;pointer-events:none;background:var(--fg);mix-blend-mode:multiply}
 #stage canvas{position:absolute;left:0;top:0;width:100%;height:100%}
-#vcanvas{z-index:1;background:#000}
+#vcanvas{display:none}
 #hud{z-index:2}
+.nc #card{display:none!important}
 .vig{position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.55) 100%)}
 .flash{position:absolute;inset:0;background:var(--fg);opacity:0;z-index:30;pointer-events:none}
 .flash.go{animation:flash .35s ease-out}
@@ -128,6 +170,58 @@ input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;bor
 .tabs{display:flex;gap:6px}
 .tabs button{flex:1}
 
+
+/* v6: reticle, name card, source sheet */
+#ret{position:absolute;left:50%;top:50%;width:132px;height:132px;margin:-66px 0 0 -66px;z-index:4;pointer-events:none;color:var(--fg);overflow:visible}
+#ret.off{display:none}
+#taint{position:absolute;z-index:12;left:10px;right:10px;top:calc(40px + env(safe-area-inset-top, 0px));display:none;border:1px solid var(--fg);background:rgba(0,0,0,.82);padding:4px 8px;font-size:17px;line-height:1.1;text-shadow:none;max-width:560px}
+.rot0 #taint{top:calc(40px + env(safe-area-inset-top))}
+#taint.show{display:block}
+.compact #taint{font-size:14px}
+#bar button.cb.hl{border:1px solid var(--fg);background:rgba(var(--fg-rgb),.16);max-width:70px;font-weight:bold}
+#bar button.cb.hl .g{font-size:24px}
+.compact #bar button.cb.hl .g{font-size:20px}
+#ncard{position:absolute;z-index:26;left:8px;right:8px;bottom:calc(var(--bar) + 8px);display:none;border:2px solid var(--fg);background:rgba(0,0,0,.88);padding:6px 9px;gap:5px;flex-direction:column;max-width:560px;margin:0 auto;max-height:calc(100% - var(--bar) - 20px);overflow:hidden}
+#ncard.show{display:flex}
+#ncard .t{font-size:26px;letter-spacing:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ncard .s{white-space:pre-line;font-size:18px;color:var(--dim);text-shadow:none;line-height:1.1}
+#ncL{display:flex;flex-wrap:wrap;gap:5px;overflow:auto;max-height:84px}
+#ncL button{padding:2px 8px;font-size:18px}
+#ncard .btns{justify-content:flex-start}
+.compact #ncard .t{font-size:21px}.compact #ncard .s{font-size:15px}
+.lay-land #ncard{left:auto;right:8px;width:min(56%,470px);bottom:calc(var(--bar) + 6px);max-height:calc(100% - var(--bar) - 12px)}
+.lay-land #ncL{max-height:52px}
+#src{overflow:hidden;gap:6px}
+#src .pane{display:none;flex-direction:column;gap:6px;flex:1;min-height:0}
+#src .pane.show{display:flex}
+#src .tabs button{padding:4px 2px}
+.lst{display:flex;flex-direction:column;gap:4px;overflow:auto;min-height:0;flex:1}
+.lst button{text-align:left;overflow:hidden;text-overflow:ellipsis;padding:4px 8px}
+.lst button.cur{background:rgba(var(--fg-rgb),.28)}
+.sm{font-size:16px;color:var(--dim);text-shadow:none;line-height:1.1;white-space:pre-line}
+.warn2{border:1px dashed var(--fg);padding:3px 6px;font-size:15px;line-height:1.1;text-shadow:none;white-space:pre-line}
+.row2{display:flex;gap:6px;align-items:center}
+.row2 input{flex:1;min-width:0}
+.compact .sm{font-size:14px}.compact .warn2{font-size:13px}.compact #src button{font-size:16px}.compact input{font-size:18px;padding:3px 6px}
+#src h2{flex:none}
+.grid2 button.off{opacity:.55}
+#retStyles{display:flex;flex-wrap:wrap;gap:6px}
+#retStyles button{flex:1 1 30%;padding:6px 4px;font-size:18px;white-space:normal}
+#retStyles button.on{background:rgba(var(--fg-rgb),.3)}
+
+
+#zoom{position:absolute;z-index:14;right:6px;top:134px;bottom:calc(var(--bar) + 12px);width:44px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.rot0 #zoom{right:max(6px,env(safe-area-inset-right))}
+.compact #zoom{top:116px;width:40px}
+#zVal{font-size:20px;border:1px solid var(--faint);background:rgba(0,0,0,.6);padding:0 4px;min-width:44px;text-align:center;text-shadow:none;touch-action:manipulation}
+.compact #zVal{font-size:16px;min-width:40px}
+#zoom.dig #zVal{border-color:var(--fg)}
+#zTrack{position:relative;flex:1;min-height:40px;width:30px;touch-action:none;cursor:pointer}
+#zTrack:before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--faint)}
+#zTrack:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:10px;margin-left:-5px;background:repeating-linear-gradient(to bottom,var(--dim) 0 1px,transparent 1px 12%);opacity:.5}
+#zFill{position:absolute;left:50%;bottom:0;width:2px;margin-left:-1px;background:var(--fg);height:0}
+#zThumb{position:absolute;left:50%;margin-left:-11px;width:22px;height:18px;border:2px solid var(--fg);background:rgba(0,0,0,.75);bottom:-9px}
+
 /* CRT effects (outside #app) */
 .fx{position:fixed;inset:0;pointer-events:none;z-index:70}
 .scan{background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.18) 3px,rgba(0,0,0,0) 4px)}
@@ -194,17 +288,24 @@ input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;bor
   <section id="stage">
     <video id="video" autoplay muted playsinline webkit-playsinline></video>
     <canvas id="vcanvas"></canvas>
+    <div id="tint"></div>
     <canvas id="hud"></canvas>
     <div class="vig"></div>
+    <svg id="ret" viewBox="-66 -66 132 132" aria-hidden="true"></svg>
     <div class="flash" id="flash"></div>
   </section>
 
   <div id="top">
     <div class="counts"><div><span>LUDZIE</span><b id="cH">0</b></div><div><span>ZWIERZĘTA</span><b id="cA">0</b></div><div id="cOw" style="display:none"><span>OBIEKTY</span><b id="cO">0</b></div></div>
+    <div class="net" id="net"><b id="netA">● ONLINE</b><i id="netB"></i></div>
     <div class="recind" id="recind"><i></i><span id="recTime">00:00</span></div>
   </div>
+  <div id="taint"></div>
+  <div id="upd" role="button">NOWA WERSJA — DOTKNIJ, BY ODŚWIEŻYĆ</div>
   <canvas id="radar" width="240" height="156"></canvas>
   <div id="log"></div>
+
+  <div id="zoom"><div id="zVal">1.0x</div><div id="zTrack"><div id="zFill"></div><div id="zThumb"></div></div></div>
 
   <div id="toast"><span id="toastTxt"></span></div>
 
@@ -219,13 +320,22 @@ input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;bor
     <div class="n" id="cdN"></div>
   </div>
 
+  <!-- name recognition card (manual IMIĘ flow) -->
+  <div id="ncard">
+    <div class="t" id="ncT"></div>
+    <div class="s" id="ncS"></div>
+    <input id="ncI" type="text" maxlength="30" autocomplete="off" autocapitalize="characters" spellcheck="false" style="display:none">
+    <div id="ncL"></div>
+    <div class="btns" id="ncB"></div>
+  </div>
+
   <div id="bar">
     <button class="cb" id="bBase"><span class="g">☺</span><span>BAZA</span></button>
-    <button class="cb" id="bPal"><span class="g">◐</span><span>PALETA</span></button>
+    <button class="cb" id="bSrc"><span class="g">◉</span><span>ŹRÓDŁO</span></button>
     <button id="bShot" aria-label="Zdjęcie"><i></i></button>
     <button id="bRec" aria-label="Nagrywaj"><i></i></button>
+    <button class="cb hl" id="bName"><span class="g">✎</span><span>IMIĘ</span></button>
     <button class="cb" id="bCam"><span class="g">⟲</span><span>KAMERA</span></button>
-    <button class="cb on" id="bMute"><span class="g">♪</span><span>DŹWIĘK</span></button>
     <button class="cb" id="bSet"><span class="g">≡</span><span>MENU</span></button>
   </div>
 
@@ -241,10 +351,19 @@ input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;bor
       <button id="bVrot" style="display:none"><b>[V]</b> Obróć obraz</button>
       <button id="bFull"><b>[F]</b> Pełny ekran</button>
       <button id="bBase2"><b>[B]</b> Baza twarzy</button>
+      <button id="bPal"><b>[T]</b> Paleta</button>
+      <button id="bMute" class="on"><b>[M]</b> Dźwięk</button>
+      <button id="bRet" class="on"><b>[X]</b> Celownik</button>
+      <button id="bAuto"><b>[A]</b> Auto-rozpoznawanie imion</button>
     </div>
+    <button id="bDl">⇩ POBIERZ MODELE OFFLINE</button>
+    <div id="dlBar"><i></i></div>
+    <div class="statbox sm" id="dlStat"></div>
+    <div class="statbox">STYL CELOWNIKA</div>
+    <div id="retStyles"></div>
     <div class="statbox" id="stats"></div>
-    <div class="statbox">Rozpoznawanie twarzy to porównanie wektorów twarzy (może się mylić: podobne osoby, słabe światło, profil). Dane twarzy zostają w tej przeglądarce (IndexedDB) i nigdy nie są wysyłane. Radar i odległość to SZACUNEK: kierunek wynika z położenia celu w kadrze i przybliżonego kąta widzenia kamery (~65°), a odległość z wysokości ramki (człowiek ≈ 1,7 m; zwierzęta wg typowych rozmiarów) – błąd może sięgać kilkudziesięciu procent. Zwierzęta (i ubranie człowieka, gdy nie widać twarzy) rozpoznaję tylko po PODOBIEŃSTWIE WYGLĄDU – to słabsza wskazówka i może mylić podobne zwierzęta.</div>
-    <div class="statbox kb">KLAWISZE: S zdjęcie · R nagrywanie · C kamera · T paleta · M dźwięk · O obiekty · G siatka · L ślady · D radar · B baza twarzy · F pełny ekran · H obróć HUD · V obróć obraz · Esc zamknij</div>
+    <div class="statbox">Rozpoznawanie twarzy to porównanie wektorów twarzy (może się mylić: podobne osoby, słabe światło, profil). Dane twarzy zostają w tej przeglądarce (IndexedDB) i nigdy nie są wysyłane. Radar i odległość to SZACUNEK: kierunek wynika z położenia celu w kadrze i przybliżonego kąta widzenia kamery (~65°), a odległość z wysokości ramki (człowiek ≈ 1,7 m; zwierzęta wg typowych rozmiarów) – błąd może sięgać kilkudziesięciu procent. Zwierzęta (i ubranie człowieka, gdy nie widać twarzy) rozpoznaję tylko po PODOBIEŃSTWIE WYGLĄDU – to słabsza wskazówka i może mylić podobne zwierzęta. Rozpoznanie człowiek/zwierzę działa samo. IMIĘ (klawisz N) uruchamia rozpoznawanie imienia na wybranym celu (albo największym): potwierdzasz „TO JEST: Imię?” albo wpisujesz imię; potwierdzone imię zostaje przy celu. Automatyczne podpisywanie imion jest opcją „Auto-rozpoznawanie imion” (domyślnie wyłączona). Strumień z internetu: obraz zawsze widać, ale analiza wymaga nagłówków CORS na serwerze.</div>
+    <div class="statbox kb">KLAWISZE: S zdjęcie · R nagrywanie · C kamera · I źródło obrazu · N imię · T paleta · M dźwięk · X celownik · A auto-imiona · O obiekty · G siatka · L ślady · D radar · B baza · F pełny ekran · H obróć HUD · V obróć obraz · Esc zamknij</div>
   </div>
 
   <!-- face / animal database -->
@@ -254,6 +373,39 @@ input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;bor
     <div class="statbox" id="dbNote"></div>
     <div class="plist" id="plist"></div>
     <div class="btns"><button id="dbClear">[ Wyczyść wszystko ]</button></div>
+  </div>
+
+  <!-- image source menu -->
+  <div class="sheet" id="src">
+    <h2><span>ŹRÓDŁO OBRAZU</span><button id="srcX">[ Zamknij ]</button></h2>
+    <div class="sm" id="srcCur"></div>
+    <div class="tabs"><button id="stCam" class="on">KAMERY</button><button id="stStr">STRUMIEŃ</button><button id="stBle">BLUETOOTH</button></div>
+    <div class="pane show" id="pCam">
+      <div class="sm">Kamery USB i karty przechwytywania HDMI pojawiają się tutaj jak zwykłe kamery. Wybór jest zapamiętywany.</div>
+      <div class="lst" id="camList"></div>
+      <div class="btns"><button id="camRef">[ Odśwież listę ]</button></div>
+    </div>
+    <div class="pane" id="pStr">
+      <div class="row2"><input id="strUrl" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://host/stream.m3u8  lub  https://host:8889/kam/whep"></div>
+      <div class="row2"><button id="strMode">TYP: AUTO</button><button id="strGo">[ Połącz ]</button><button id="strCam">[ Wróć do kamery ]</button></div>
+      <div class="warn2" id="strOff" style="display:none">OFFLINE: strumienie HLS/WHEP i adresy z internetu wymagają sieci. Adres w sieci lokalnej (np. kamera w Wi-Fi) może działać bez internetu. Kamera telefonu i Bluetooth działają bez sieci.</div>
+      <div class="sm" id="strStat"></div>
+      <div class="lst" id="strRecent"></div>
+      <div class="warn2">HLS (.m3u8): Safari natywnie, gdzie indziej hls.js. WebRTC: protokół WHEP (np. MediaMTX https://host:8889/ścieżka/whep). Można też podać bezpośredni plik .mp4/.webm.
+Strona jest na https: adresy http:// są blokowane (mixed content) – potrzebny https. Serwer musi wysyłać nagłówki CORS, inaczej obraz będzie widoczny, ale analiza i zdjęcia/nagrania będą niemożliwe.</div>
+    </div>
+    <div class="pane" id="pBle">
+      <div class="warn2" id="bleNote">Bluetooth służy tylko do sterowania – obraz nie przechodzi przez BLE.</div>
+      <div id="bleOff" class="warn2" style="display:none"></div>
+      <div id="bleOn" style="display:flex;flex-direction:column;gap:6px;flex:1;min-height:0">
+        <div class="row2"><input id="bleUuid" type="text" placeholder="własny UUID usługi (opcjonalnie)" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+        <div class="row2"><button id="bleConn">[ Połącz urządzenie BLE ]</button><button id="bleDisc" disabled>[ Rozłącz ]</button></div>
+        <div class="sm" id="bleInfo">Nie połączono.</div>
+        <div class="lst" id="bleList"></div>
+        <div class="row2"><input id="bleVal" type="text" placeholder="wartość do zapisu" autocomplete="off" autocapitalize="off" spellcheck="false"><button id="bleFmt">HEX</button></div>
+        <div class="sm" id="bleOut"></div>
+      </div>
+    </div>
   </div>
 
   <!-- photo / video result -->
@@ -472,18 +624,18 @@ const PALETTES = {
   green: { name: 'ZIELONA', fg: '#33ff66', rgb: '51,255,102' },
   amber: { name: 'BURSZTYN', fg: '#ffb000', rgb: '255,176,0' }
 };
-const CDN = 'https://cdn.jsdelivr.net/npm/';
-const TF_URL = CDN + '@tensorflow/tfjs@4.22.0/dist/tf.min.js';
-const WASM_JS = CDN + '@tensorflow/tfjs-backend-wasm@4.22.0/dist/tf-backend-wasm.min.js';
-const WASM_PATH = CDN + '@tensorflow/tfjs-backend-wasm@4.22.0/dist/';
-const COCO_URL = CDN + '@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js';
+const LIBTF = new URL('lib/tf/', location.href).href;                         // self-hosted (precached by the service worker => works offline)
+const TF_URL = LIBTF + 'tf.min.js';
+const WASM_JS = LIBTF + 'tf-backend-wasm.min.js';
+const WASM_PATH = LIBTF;
+const COCO_URL = LIBTF + 'coco-ssd.min.js';
 const MODEL_URL = new URL('model/model.json', location.href).href;          // self-hosted (same origin)
 const MODEL_BYTES = 9290000;
 const FACE_LIB = new URL('lib/face-api.js', location.href).href;            // self-hosted
 const FACE_BASE = new URL('facemodel/', location.href).href;                // self-hosted
 const FACE_BYTES = 7000000;
 const EMB_URL = new URL('emodel/model.json', location.href).href;          // self-hosted MobileNetV2 feature extractor (appearance)
-const KNOWN_D = 0.52, MAYBE_D = 0.58;                                       // face-descriptor distance thresholds (euclidean)
+const KNOWN_D = 0.45, MAYBE_D = 0.58, MARGIN_D = 0.06, ENR_MIN = 3, ENR_N = 5;                                       // face-descriptor distance thresholds (euclidean)
 const A_KNOWN = 0.74, A_MAYBE = 0.62, APP_MAYBE = 0.80;                     // appearance cosine-similarity thresholds
 const UA = navigator.userAgent || '';
 const IS_IOS = /iPad|iPhone|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -502,6 +654,7 @@ video.muted = true; video.setAttribute('playsinline', ''); video.setAttribute('w
 
 const savedRot = parseInt(lsGet('rt_rot', '0'), 10) || 0;
 const S = {
+  online: navigator.onLine !== false, aiErr: '',
   palette: lsGet('rt_pal', 'green') === 'amber' ? 'amber' : 'green', mute: lsGet('rt_mute', '0') === '1',
   objects: lsGet('rt_obj', '0') === '1', radar: lsGet('rt_radar', '1') === '1', grid: lsGet('rt_grid', '1') === '1', trails: lsGet('rt_trail', '1') === '1',
   facing: 'environment', mirrored: false, started: false, running: false, ready: false,
@@ -513,6 +666,7 @@ const S = {
   sel: null, profiles: [], animals: [], dbOk: false,
   face: { worker: null, ready: false, p: null, prog: 0, backend: '', ms: 0, cbs: {}, req: 0, mode: '', err: '', fails: 0, failAt: 0, main: null },
   diag: { ticks: 0, faceOk: 0, faceNo: 0, lastD: null, lastName: '', lastSim: null, lastSimName: '', lastErr: '', persisted: '?' }, dead: [],
+  tainted: false, zt: 1, zc: 1, hwz: 1, hwReq: 1, dz: 1, res: { level: 0, fail: false, t: 0, hi: 0, low: 0, busy: false }, autoName: lsGet('rt_auto', '0') === '1', ret: lsGet('rt_ret', '1') === '1', retStyle: lsGet('rt_rets', 'classic'),
   scanBusy: false, matchBusy: false, nextMatch: 0, rec: null, lastCapture: null, logLines: [], panel: ''
 };
 S.vrot = S.rot === 90 ? 270 : S.rot === -90 ? 90 : 0;
@@ -740,7 +894,7 @@ async function loadEngine() {
 }
 function ensureModel() {
   if (S.ready) return Promise.resolve();
-  if (!S.modelP) S.modelP = loadEngine().catch(e => { S.modelP = null; throw e; });
+  if (!S.modelP) S.modelP = (async () => { await refreshCached(); if (aiBlocked('det')) throw needNetErr('det'); return loadEngine(); })().then(() => { S.aiErr = ''; }, e => { S.modelP = null; if (navigator.onLine === false) e.needNet = true; S.aiErr = e.needNet ? 'WYMAGA SIECI (MODEL NIE POBRANY)' : ((e && e.message) || 'błąd'); throw e; });
   return S.modelP;
 }
 function modelErrMsg(e) {
@@ -785,6 +939,7 @@ function ensureFace() {
   const F = S.face;
   if (F.ready) return Promise.resolve();
   if (F.p) return F.p;
+  if (aiBlocked('face')) { F.err = 'WYMAGA SIECI (MODEL TWARZY NIE POBRANY)'; return Promise.reject(needNetErr('face')); }
   F.err = '';
   F.p = faceViaWorker()
     .catch(e => { setStatus('FACE WORKER FAIL: ' + ((e && e.message) || e)); try { if (F.worker) F.worker.terminate(); } catch (_) {} F.worker = null; return faceViaMain(); })
@@ -800,6 +955,7 @@ function ensureFace() {
 function faceKick(now) {
   const F = S.face;
   if (F.ready || F.p) return;
+  if (aiBlocked('face')) return;
   if (F.fails && now - F.failAt < Math.min(60000, 8000 * F.fails)) return;
   ensureFace().catch(() => {});
 }
@@ -835,6 +991,7 @@ function onEmbedMsg(m) {
 function ensureEmbed() {
   if (E.ready) return Promise.resolve();
   if (E.p) return E.p;
+  if (aiBlocked('emb')) { E.err = 'WYMAGA SIECI (MODEL WYGLĄDU NIE POBRANY)'; return Promise.reject(needNetErr('emb')); }
   E.err = '';
   E.p = (async () => {
     await ensureModel();
@@ -850,6 +1007,7 @@ function ensureEmbed() {
 }
 function embedKick(now) {
   if (E.ready || E.p || !S.ready) return;
+  if (aiBlocked('emb')) return;
   if (E.fails && now - E.failAt < Math.min(60000, 8000 * E.fails)) return;
   ensureEmbed().catch(() => {});
 }
@@ -878,38 +1036,77 @@ function embedCanvas(cv) {
   });
 }
 
-/* ---------- camera ---------- */
+/* ---------- image source layer (camera / HLS / WebRTC-WHEP): the ONLY code that touches the <video> element ---------- */
+const SRC = { kind: 'cam', url: '', mode: lsGet('rt_smode', 'auto'), hls: null, pc: null, devId: lsGet('rt_cam', ''), devs: [], label: '', gen: 0, tryNoCors: false };
+const hasFrames = () => video.videoWidth > 0 && video.readyState >= 2;
+const isLocalHost = h => /^(localhost|127\.|\[::1\]|::1)/.test(h);
+function teardownSource() {
+  SRC.gen++;
+  if (S.stream) { S.stream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); S.stream = null; }
+  if (SRC.hls) { try { SRC.hls.destroy(); } catch (e) {} SRC.hls = null; }
+  if (SRC.pc) { try { SRC.pc.close(); } catch (e) {} SRC.pc = null; }
+  try { video.pause(); } catch (e) {}
+  video.srcObject = null; video.removeAttribute('src'); video.removeAttribute('crossorigin'); try { video.load(); } catch (e) {}
+  S.zt = S.zc = 1; S.hwReq = 1; S.dz = 1; S.hwz = 1; Object.assign(S.res, { level: 0, fail: false, hi: 0, low: 0, busy: false, t: performance.now() });
+  S.tainted = false; $('#taint').classList.remove('show'); S.tracks = []; S.sel = null; S.dead = []; try { hideCard(); } catch (e) {}
+}
+const TAINT_MSG = 'OBRAZ WIDOCZNY, ALE ANALIZA NIEMOŻLIWA – serwer strumienia musi wysyłać nagłówki CORS (Access-Control-Allow-Origin). Rozpoznawanie, zdjęcia i nagrywanie są wyłączone dla tego źródła.';
+function onTaint() {
+  if (S.tainted) return;
+  S.tainted = true; $('#taint').textContent = TAINT_MSG; $('#taint').classList.add('show');
+  log('STRUMIEŃ BEZ CORS: ANALIZA WYŁĄCZONA', 'warn'); S.tracks = [];
+}
+const isTaintErr = e => e && (e.name === 'SecurityError' || /tainted|insecure|cross-origin/i.test(e.message || ''));
+async function refreshDevices(askPerm) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return [];
+  let devs = [];
+  try { devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput'); } catch (e) {}
+  if (askPerm && devs.length && devs.every(d => !d.label) && !S.stream) {
+    try { const s = await navigator.mediaDevices.getUserMedia({ audio: false, video: true }); s.getTracks().forEach(t => t.stop()); devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput'); } catch (e) {}
+  }
+  SRC.devs = devs; S.nCams = devs.length; updCamBtn();
+  return devs;
+}
+function curDeviceId() { const tr = S.stream && S.stream.getVideoTracks()[0]; return tr && tr.getSettings ? (tr.getSettings().deviceId || '') : ''; }
+function updCamBtn() { $('#bCam').disabled = SRC.kind === 'cam' && S.nCams < 2; }
+function srcLabel() { return SRC.kind === 'cam' ? ('KAMERA: ' + (SRC.label || '—')) : (SRC.kind === 'hls' ? 'STRUMIEŃ HLS: ' : SRC.kind === 'whep' ? 'WEBRTC (WHEP): ' : 'WIDEO: ') + SRC.url.slice(0, 60); }
 async function startCamera() {
   hideErr();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     const e = new Error('no mediaDevices'); e.name = 'NoMediaDevices';
     const i = camErrInfo(e); showErr(i.msg, i.hint); throw e;
   }
-  if (S.stream) { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+  teardownSource(); SRC.kind = 'cam'; SRC.url = ''; const gen = SRC.gen;
   try {
     let stream, lastErr = null;
-    const tries = [
-      { audio: false, video: { facingMode: { ideal: S.facing }, width: { ideal: 960 }, height: { ideal: 540 }, frameRate: { ideal: 30 } } },
+    const base = { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, base2 = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } };
+    const tries = [];
+    if (SRC.devId) { tries.push({ audio: false, video: { deviceId: { exact: SRC.devId }, ...base } }, { audio: false, video: { deviceId: { exact: SRC.devId }, ...base2 } }, { audio: false, video: { deviceId: { exact: SRC.devId } } }); }
+    tries.push(
+      { audio: false, video: { facingMode: { ideal: S.facing }, ...base } },
+      { audio: false, video: { facingMode: { ideal: S.facing }, ...base2 } },
       { audio: false, video: { facingMode: S.facing } },
-      { audio: false, video: true }
-    ];
+      { audio: false, video: true });
     for (const c of tries) {
       try { stream = await navigator.mediaDevices.getUserMedia(c); break; }
       catch (e) { lastErr = e; if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError' || e.name === 'PermissionDeniedError')) throw e; }
     }
     if (!stream) throw lastErr || new Error('getUserMedia');
+    if (gen !== SRC.gen) { stream.getTracks().forEach(t => t.stop()); return stream; }
     S.stream = stream;
     const tr = stream.getVideoTracks()[0];
+    const st0 = tr.getSettings ? tr.getSettings() : {};
+    if (SRC.devId && st0.deviceId && st0.deviceId !== SRC.devId) { log('WYBRANA KAMERA NIEDOSTĘPNA – UŻYWAM DOMYŚLNEJ', 'warn'); SRC.devId = ''; lsSet('rt_cam', ''); }
     tr.addEventListener('ended', () => { if (S.stream === stream) showErr('Kamera została odłączona lub przerwana przez system.\nDotknij „Ponów”.', ''); });
     video.srcObject = stream; video.muted = true;
     await new Promise(res => { if (video.readyState >= 1) res(); else { video.onloadedmetadata = () => res(); setTimeout(res, 4000); } });
     await video.play().catch(() => {});
     const st = tr.getSettings ? tr.getSettings() : {};
-    S.mirrored = st.facingMode ? st.facingMode === 'user' : !/back|rear|environment|tył/i.test(tr.label || '');
+    SRC.label = tr.label || 'kamera';
+    S.mirrored = st.facingMode ? st.facingMode === 'user' : !/back|rear|environment|tył|capture|hdmi|elgato|cam link|grabber/i.test(tr.label || '');
     S.camRes = `${video.videoWidth || st.width || '?'}x${video.videoHeight || st.height || '?'}`;
     resize();
-    try { const devs = await navigator.mediaDevices.enumerateDevices(); S.nCams = devs.filter(d => d.kind === 'videoinput').length; } catch (e) {}
-    $('#bCam').disabled = S.nCams < 2;
+    await refreshDevices(false);
     return stream;
   } catch (e) {
     const i = camErrInfo(e); showErr(i.msg, i.hint);
@@ -917,6 +1114,89 @@ async function startCamera() {
     throw e;
   }
 }
+let hlsLoading = null;
+function loadHlsLib() {
+  if (window.Hls) return Promise.resolve();
+  if (hlsLoading) return hlsLoading;
+  hlsLoading = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'lib/hls.min.js'; s.onload = () => res(); s.onerror = () => { hlsLoading = null; rej(new Error('Nie wczytano hls.js')); }; document.head.appendChild(s); });
+  return hlsLoading;
+}
+const detectKind = (url, mode) => mode === 'hls' ? 'hls' : mode === 'whep' ? 'whep' : (/\.m3u8(\?|#|$)/i.test(url) ? 'hls' : /(\/whep(\?|#|$)|:8889\/)/i.test(url) ? 'whep' : 'file');
+function waitVideo(gen, ms) {
+  return new Promise((res, rej) => {
+    let done = false; const fin = (ok, e) => { if (done) return; done = true; clearTimeout(tm); video.removeEventListener('loadeddata', ok1); video.removeEventListener('error', er1); ok ? res() : rej(e); };
+    const ok1 = () => fin(true), er1 = () => fin(false, new Error('VideoError ' + ((video.error && video.error.code) || ''))), tm = setTimeout(() => fin(false, new Error('Przekroczono czas oczekiwania na obraz')), ms);
+    video.addEventListener('loadeddata', ok1); video.addEventListener('error', er1);
+    if (video.readyState >= 2 && video.videoWidth) fin(true);
+  });
+}
+async function playHls(url, gen, cors) {
+  video.muted = true;
+  if (cors) video.crossOrigin = 'anonymous'; else video.removeAttribute('crossorigin');
+  const native = video.canPlayType('application/vnd.apple.mpegurl');
+  if (native && (IS_IOS || !window.MediaSource || /Safari\//.test(UA) && !/Chrome|Chromium|Android/.test(UA))) { video.src = url; video.load(); video.play().catch(() => {}); await waitVideo(gen, 20000); return; }
+  await loadHlsLib();
+  if (!window.Hls || !Hls.isSupported()) { if (native) { video.src = url; video.play().catch(() => {}); await waitVideo(gen, 20000); return; } throw new Error('Ta przeglądarka nie obsługuje HLS (MSE).'); }
+  await new Promise((res, rej) => {
+    const h = new Hls({ lowLatencyMode: true, enableWorker: true, xhrSetup: undefined }); SRC.hls = h; let ok = false;
+    h.on(Hls.Events.ERROR, (ev, d) => { if (d && d.fatal && !ok) { ok = true; rej(Object.assign(new Error('HLS: ' + (d.details || d.type)), { hls: d })); } });
+    video.addEventListener('loadeddata', () => { if (!ok) { ok = true; res(); } }, { once: true });
+    setTimeout(() => { if (!ok) { ok = true; rej(new Error('Przekroczono czas oczekiwania na strumień HLS')); } }, 25000);
+    h.loadSource(url); h.attachMedia(video); video.play().catch(() => {});
+  });
+}
+async function playFile(url, gen, cors) {
+  video.muted = true; video.loop = true;
+  if (cors) video.crossOrigin = 'anonymous'; else video.removeAttribute('crossorigin');
+  video.src = url; video.load(); video.play().catch(() => {}); await waitVideo(gen, 20000);
+}
+async function playWhep(url, gen) {
+  const pc = new RTCPeerConnection({ iceServers: [] }); SRC.pc = pc;
+  pc.addTransceiver('video', { direction: 'recvonly' });
+  const got = new Promise((res, rej) => { pc.ontrack = e => { video.srcObject = e.streams[0] || new MediaStream([e.track]); video.muted = true; video.play().catch(() => {}); res(); }; setTimeout(() => rej(new Error('Brak obrazu WebRTC (limit czasu)')), 20000); });
+  await pc.setLocalDescription(await pc.createOffer());
+  await new Promise(r => { if (pc.iceGatheringState === 'complete') return r(); const f = () => { if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', f); r(); } }; pc.addEventListener('icegatheringstatechange', f); setTimeout(r, 2500); });
+  let r;
+  try { r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/sdp' }, body: pc.localDescription.sdp }); }
+  catch (e) { throw Object.assign(new Error('Brak połączenia z serwerem WHEP (adres? CORS? https?)'), { cors: true }); }
+  if (!r.ok) throw new Error('Serwer WHEP odrzucił zapytanie: HTTP ' + r.status);
+  await pc.setRemoteDescription({ type: 'answer', sdp: await r.text() });
+  await got; await waitVideo(gen, 15000);
+}
+async function setStream(rawUrl) {
+  const url = (rawUrl || '').trim();
+  if (!url) throw new Error('Wpisz adres strumienia.');
+  let u; try { u = new URL(url, location.href); } catch (e) { throw new Error('Nieprawidłowy adres URL.'); }
+  if (location.protocol === 'https:' && u.protocol === 'http:' && !isLocalHost(u.hostname)) throw new Error('Adres http:// jest blokowany na stronie https (mixed content). Potrzebny adres https://.');
+  if (!/^https?:$/.test(u.protocol)) throw new Error('Obsługiwane są adresy http(s)://.');
+  const kind = detectKind(u.href, SRC.mode);
+  teardownSource(); const gen = SRC.gen; SRC.kind = kind; SRC.url = u.href; S.mirrored = false; S.camRes = ''; video.loop = false;
+  const sameOrigin = u.origin === location.origin;
+  try {
+    if (kind === 'whep') await playWhep(u.href, gen);
+    else {
+      const fn = kind === 'hls' ? playHls : playFile;
+      try { await fn(u.href, gen, true); }
+      catch (e1) {
+        if (gen !== SRC.gen) return;
+        if (SRC.hls) { try { SRC.hls.destroy(); } catch (x) {} SRC.hls = null; }
+        // CORS-less server: <video> can still show it (no crossorigin) but the canvas becomes tainted
+        let ok2 = false;
+        if (kind === 'file' || video.canPlayType('application/vnd.apple.mpegurl')) { try { await fn(u.href, gen, false); ok2 = true; } catch (e2) { } }
+        if (!ok2) throw Object.assign(e1, { corsHint: true });
+        if (!sameOrigin) onTaint();
+      }
+    }
+    if (gen !== SRC.gen) return;
+    S.camRes = `${video.videoWidth}x${video.videoHeight}`; SRC.label = u.host;
+    const rec = JSON.parse(lsGet('rt_urls', '[]')).filter(x => x !== u.href); rec.unshift(u.href); lsSet('rt_urls', JSON.stringify(rec.slice(0, 5)));
+    log('ŹRÓDŁO: ' + srcLabel(), 'warn'); resize(); updCamBtn();
+  } catch (e) {
+    if (gen === SRC.gen) { teardownSource(); SRC.kind = 'cam'; }
+    throw e;
+  }
+}
+if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener('devicechange', () => { refreshDevices(false).then(() => { if (S.panel === 'src') renderSrc(); }); });
 let camFrames = 0, haveRVFC = false;
 if (video.requestVideoFrameCallback) {
   haveRVFC = true;
@@ -942,9 +1222,11 @@ const profOf = t => t.person.pid == null ? null : (t.g === 'H' ? getProfile(t.pe
 function label(t) {
   if (t.g === 'O') return baseName(t);
   const p = t.person, pr = profOf(t);
+  if (p.manual && pr) return `ZNANY: ${pr.name}`;
+  if (!S.autoName) return baseName(t);
   if (p.state === 'known' && pr) return `ZNANY: ${pr.name} (${p.pct}%)`;
   if (p.state === 'maybe' && pr) return `PODOBNY DO: ${pr.name}? (${p.pct}%)`;
-  if (p.state === 'new') return t.g === 'H' ? `NOWA OSOBA #${t.id}` : `NOWE ZWIERZĘ #${t.id}`;
+  if (p.state === 'new') return t.g === 'H' ? 'NIEZNANY' : `NOWE ZWIERZĘ #${t.id}`;
   if (t.g === 'H' && S.profiles.length) {
     if (p.state === 'noface') return 'BRAK TWARZY (odwróć się)';
     if (!S.face.ready) return S.face.err ? `HUMAN #${t.id} (BŁĄD MODUŁU TWARZY)` : 'ŁADUJĘ ROZPOZNAWANIE…';
@@ -968,6 +1250,37 @@ function confirm(t, now) {
   else if (t.g === 'A') { sfx.animal(); log(`${baseName(t)} WYKRYTY`); }
   else if (S.objects) log(`${baseName(t)} WYKRYTY`, 'sys-l');
 }
+/* ---------- smoothing: One Euro filter on detections + predictive critically-damped spring per display frame ---------- */
+const mkFil = (d, now) => { const f = { x: { x: d.x, dx: 0, t: now }, y: { x: d.y, dx: 0, t: now }, w: { x: d.w, dx: 0, t: now }, h: { x: d.h, dx: 0, t: now } }; return f; };
+function oneEuro(f, x, t, minC, beta) {
+  const dt = Math.max(.005, (t - f.t) / 1000); f.t = t;
+  const al = c => 1 / (1 + 1 / (2 * Math.PI * c) / dt);
+  f.dx += al(1.2) * ((x - f.x) / dt - f.dx);
+  f.x += al(minC + beta * Math.abs(f.dx)) * (x - f.x);
+  return f.x;
+}
+function filt(t, d, now) {
+  const f = t.fil;
+  t.fx = oneEuro(f.x, d.x, now, .9, 5); t.fy = oneEuro(f.y, d.y, now, .9, 5);
+  t.fw = oneEuro(f.w, d.w, now, .6, 1.5); t.fh = oneEuro(f.h, d.h, now, .6, 1.5);
+  t.vx = f.x.dx; t.vy = f.y.dx;                       // filtered velocity (fraction of frame / s), used to predict between inferences
+}
+const smoothDamp = (cur, vel, target, st, dt) => {
+  const w = 2 / st, x = w * dt, e = 1 / (1 + x + .48 * x * x + .235 * x * x * x), ch = cur - target, tmp = (vel + w * ch) * dt;
+  return [target + (ch + tmp) * e, (vel - w * tmp) * e];
+};
+const sstep = x => { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); };
+function stepTrack(t, now, dt) {
+  const age = Math.max(0, now - t.last) / 1000, pk = Math.min(age, .22) * Math.exp(-age * 2.5);    // limited, decaying extrapolation
+  const tx = t.fx + t.vx * pk, ty = t.fy + t.vy * pk;
+  let r;
+  r = smoothDamp(t.dx, t.vdx, tx, .09, dt); t.dx = r[0]; t.vdx = r[1];
+  r = smoothDamp(t.dy, t.vdy, ty, .09, dt); t.dy = r[0]; t.vdy = r[1];
+  r = smoothDamp(t.dw, t.vdw, t.fw, .12, dt); t.dw = r[0]; t.vdw = r[1];
+  r = smoothDamp(t.dh, t.vdh, t.fh, .12, dt); t.dh = r[0]; t.vdh = r[1];
+  const ttl = t.g === 'H' ? 1500 : 1100, ageMs = age * 1000;
+  t.alpha = Math.min(1, t.alpha + dt * 5) * (ageMs < 250 ? 1 : 1 - sstep((ageMs - 250) / (ttl - 250)));
+}
 function fmtDur(ms) { const s = Math.floor(ms / 1000); return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`; }
 function updateTracks(dets, now) {
   const tr = S.tracks, pairs = [];
@@ -984,14 +1297,14 @@ function updateTracks(dets, now) {
     if (usedD.has(di) || usedT.has(ti)) continue;
     usedD.add(di); usedT.add(ti);
     const t = tr[ti], d = dets[di];
-    t.x = d.x; t.y = d.y; t.w = d.w; t.h = d.h;
+    t.x = d.x; t.y = d.y; t.w = d.w; t.h = d.h; filt(t, d, now);
     t.score = t.score * .6 + d.score * .4; t.hits++; t.last = now; t.missed = 0;
     if (!t.confirmed && t.hits >= 2) confirm(t, now);
-    if (t.confirmed) { t.trail.push({ x: d.x + d.w / 2, y: d.y + d.h / 2, t: now }); if (t.trail.length > 40) t.trail.shift(); }
+    if (t.confirmed) { t.trail.push({ x: t.fx + t.fw / 2, y: t.fy + t.fh / 2, t: now }); if (t.trail.length > 40) t.trail.shift(); }
   }
   dets.forEach((d, di) => {
     if (usedD.has(di)) return;
-    tr.push({ ...d, uid: S.uid++, hits: 1, last: now, missed: 0, confirmed: false, id: 0, born: now, trail: [], dx: d.x, dy: d.y, dw: d.w, dh: d.h,
+    tr.push({ ...d, uid: S.uid++, hits: 1, last: now, missed: 0, confirmed: false, id: 0, born: now, trail: [], dx: d.x, dy: d.y, dw: d.w, dh: d.h, vdx: 0, vdy: 0, vdw: 0, vdh: 0, fx: d.x, fy: d.y, fw: d.w, fh: d.h, vx: 0, vy: 0, fil: mkFil(d, now), alpha: 0,
       person: { state: 'unk', kind: '', pid: null, d: 9, pct: 0, tried: 0, nof: 0, nnew: 0, logged: false, busy: false } });
   });
   S.tracks = tr.filter((t, i) => {
@@ -1017,6 +1330,11 @@ const viewDims = () => {
   const vw = video.videoWidth || 16, vh = video.videoHeight || 9;
   return (S.vrot === 90 || S.vrot === 270) ? [vh, vw] : [vw, vh];
 };
+function drawVid(c, x, y, w, h) {      // centre crop of the video for digital zoom, high-quality scaling
+  const vw = video.videoWidth, vh = video.videoHeight, dz = Math.max(1, S.dz || 1);
+  c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+  c.drawImage(video, (vw - vw / dz) / 2, (vh - vh / dz) / 2, vw / dz, vh / dz, x, y, w, h);
+}
 const icv = document.createElement('canvas'), ictx = icv.getContext('2d', { willReadFrequently: true });
 function captureFrame() {
   const vw = video.videoWidth, vh = video.videoHeight;
@@ -1028,9 +1346,9 @@ function captureFrame() {
   const sc = sw ? th / vw : tw / vw;
   ictx.save(); ictx.setTransform(1, 0, 0, 1, 0, 0);
   ictx.translate(tw / 2, th / 2); ictx.rotate(S.vrot * Math.PI / 180);
-  ictx.drawImage(video, -vw * sc / 2, -vh * sc / 2, vw * sc, vh * sc);
+  drawVid(ictx, -vw * sc / 2, -vh * sc / 2, vw * sc, vh * sc);
   ictx.restore();
-  return ictx.getImageData(0, 0, tw, th);
+  try { return ictx.getImageData(0, 0, tw, th); } catch (e) { if (isTaintErr(e)) onTaint(); return null; }
 }
 // crop of the (unmirrored) view at native camera resolution; nx/ny/nw/nh are fractions of the view
 function captureRegion(nx, ny, nw, nh, maxSide, maxUp) {
@@ -1045,7 +1363,8 @@ function captureRegion(nx, ny, nw, nh, maxSide, maxUp) {
   const c = cv.getContext('2d', { willReadFrequently: true });
   c.translate(-nx * fw * sc, -ny * fh * sc);
   c.translate(fw * sc / 2, fh * sc / 2); c.rotate(S.vrot * Math.PI / 180);
-  c.drawImage(video, -vw * sc / 2, -vh * sc / 2, vw * sc, vh * sc);
+  drawVid(c, -vw * sc / 2, -vh * sc / 2, vw * sc, vh * sc);
+  try { c.getImageData(0, 0, 1, 1); } catch (e) { if (isTaintErr(e)) onTaint(); return null; }
   return cv;
 }
 function handlePreds(preds, w, h, ms) {
@@ -1065,10 +1384,12 @@ function handlePreds(preds, w, h, ms) {
 }
 function onWorkerResult(m) {
   if (m.id !== S.reqId) { return; }
+  if (S.tainted) { S.busy = false; return; }
   if (m.error) { S.busy = false; S.nextInfer = performance.now() + 500; log('BŁĄD SIECI: ' + m.error, 'warn'); return; }
   handlePreds(m.preds, m.w, m.h, m.ms);
 }
 function infer(now) {
+  if (S.tainted) return;
   const img = captureFrame();
   if (!img) return;
   S.busy = true; S.busyAt = now; const id = ++S.reqId;
@@ -1076,7 +1397,7 @@ function infer(now) {
     S.worker.postMessage({ type: 'detect', id, w: img.width, h: img.height, buf: img.data.buffer }, [img.data.buffer]);
   } else {
     const t0 = performance.now();
-    S.model.detect(img, 20, 0.45).then(p => { if (id === S.reqId) handlePreds(p, img.width, img.height, performance.now() - t0); })
+    S.model.detect(img, 20, 0.45).then(p => { if (S.tainted) { S.busy = false; return; } if (id === S.reqId) handlePreds(p, img.width, img.height, performance.now() - t0); })
       .catch(e => { S.busy = false; S.nextInfer = performance.now() + 500; log('BŁĄD SIECI: ' + (e && e.message), 'warn'); });
   }
 }
@@ -1093,7 +1414,7 @@ function paintVideo(c, w, h) {
   c.translate(w / 2, h / 2);
   if (S.mirrored) c.scale(-1, 1);
   c.rotate(S.vrot * Math.PI / 180);
-  c.drawImage(video, -vw * sc / 2, -vh * sc / 2, vw * sc, vh * sc);
+  drawVid(c, -vw * sc / 2, -vh * sc / 2, vw * sc, vh * sc);
   c.restore();
   c.globalCompositeOperation = 'saturation'; c.fillStyle = '#000'; c.fillRect(0, 0, w, h);               // grayscale
   c.globalCompositeOperation = 'overlay'; c.globalAlpha = .5; c.drawImage(c.canvas, 0, 0, w, h, 0, 0, w, h); // contrast
@@ -1139,7 +1460,7 @@ const REAL_H = { person: 1.7, cat: .25, dog: .5, bird: .15, horse: 1.6, sheep: .
 const HFOV = () => (S.mirrored ? 70 : 65) * Math.PI / 180;      // horizontal FOV along the sensor's long side (typical phone, approximate)
 function viewFov() {                                              // horizontal FOV of the current view (it may be the sensor's short side)
   const vw = video.videoWidth || 16, vh = video.videoHeight || 9, [fw] = viewDims();
-  return 2 * Math.atan(Math.tan(HFOV() / 2) * fw / Math.max(vw, vh));
+  return 2 * Math.atan(Math.tan(HFOV() / 2) * fw / Math.max(vw, vh) / Math.max(1, S.zc || 1));
 }
 function estDist(t) {                                             // meters, or null (objects)
   const rh = REAL_H[t.cls]; if (!rh) return null;
@@ -1149,43 +1470,62 @@ function estDist(t) {                                             // meters, or 
   return t.dist;
 }
 const fmtDist = d => d == null ? '' : d > 30 ? '~30+ m' : d >= 10 ? `~${Math.round(d)} m` : `~${d.toFixed(1)} m`;
-function labelRows(c, t, x, y, w, h, now, size, sel) {
-  const lh = size * .85 + 4;
+function labelRows(c, t, x, y, w, h, now, size, sel, a) {
+  const lh = size * .85 + 4, k = S.hk || .3;
   let ty = y - (lh + 2);
   if (ty < 2 - S.oy) ty = y + 3;
-  tag(c, label(t) + (sel ? ' ◄' : ''), x, ty, true, size);
-  const by = y + h + 3 + lh > S.H - S.oy ? y + h - lh - 3 : y + h + 3;
-  tag(c, `PEWNOŚĆ ${Math.round(t.score * 100)}%  T+${fmtDur(now - t.born)}` + (t.dist ? `  ${fmtDist(t.dist)}` : ''), x, by, false, size - 3);
+  t.lty = t.lty === undefined ? ty : t.lty + (ty - t.lty) * k; ty = t.lty;
+  tag(c, label(t) + (sel ? ' ◄' : ''), x, ty, true, size, a);
+  let by = y + h + 3 + lh > S.H - S.oy ? y + h - lh - 3 : y + h + 3;
+  t.lby = t.lby === undefined ? by : t.lby + (by - t.lby) * k; by = t.lby;
+  tag(c, `PEWNOŚĆ ${Math.round(t.score * 100)}%  T+${fmtDur(now - t.born)}` + (t.dist ? `  ${fmtDist(t.dist)}` : ''), x, by, false, size - 3, a * .9);
+}
+// lock-on: brackets scale in with ease-out over 0.45 s from acquisition
+function lockBox(t, x, y, w, h, now) {
+  const e = clamp((now - t.born) / 450, 0, 1), k = 1 + (1 - (1 - Math.pow(1 - e, 3))) * .55;
+  const cx = x + w / 2, cy = y + h / 2; w *= k; h *= k; return [cx - w / 2, cy - h / 2, w, h, e];
+}
+function glowCorners(c, x, y, w, h, len, lw, a) {      // glow = one wide faint stroke under the bright one (no shadowBlur: cheap on phones)
+  c.globalAlpha = a * .2; c.lineWidth = lw + 5; corners(c, x, y, w, h, len, lw + 5);
+  c.globalAlpha = a; c.lineWidth = lw; corners(c, x, y, w, h, len, lw);
+}
+function scanLine(c, x, y, w, h, now, a) {
+  const p = (now / 1500) % 1, sy = y + p * h;
+  for (let i = 0; i < 4; i++) { c.globalAlpha = a * .5 * (1 - i / 4); const yy = sy - i * 3; if (yy < y) break; c.fillRect(x + 2, yy, w - 4, 1.5); }
 }
 function drawHuman(c, t, now, W, H) {
   let x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H;
-  const age = (now - t.born) / 1000, stale = now - t.last > 400, sel = S.sel === t;
-  if (age < .5) { const k = 1 + (1 - age / .5) * .5; const cx = x + w / 2, cy = y + h / 2; w *= k; h *= k; x = cx - w / 2; y = cy - h / 2; }
-  c.save();
-  c.globalAlpha = stale ? .5 : 1;
-  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 8);
+  const sel = S.sel === t, a = t.alpha; if (a < .02) return;
+  let e; [x, y, w, h, e] = lockBox(t, x, y, w, h, now);
+  c.save(); sb(c, 0);
+  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.lineCap = 'butt';
   const len = clamp(Math.min(w, h) * .22, 12, 46);
-  corners(c, x, y, w, h, len, sel ? 4 : 3);
-  c.globalAlpha *= sel ? (.55 + .35 * Math.sin(now / 160)) : .22; c.lineWidth = sel ? 2 : 1; c.strokeRect(x, y, w, h); c.globalAlpha = stale ? .5 : 1;
-  labelRows(c, t, x, y, w, h, now, uiSize(20), sel);
+  glowCorners(c, x, y, w, h, len, sel ? 3 : 2.2, a * (.35 + .65 * e));
+  c.globalAlpha = a * (sel ? (.4 + .25 * Math.sin(now / 200)) : .2); c.lineWidth = 1; c.strokeRect(x, y, w, h);
+  if (sel) scanLine(c, x, y, w, h, now, a);
+  labelRows(c, t, x, y, w, h, now, uiSize(20), sel, a);
   c.restore();
 }
 function drawAnimal(c, t, now, W, H) {
-  const x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H;
-  const stale = now - t.last > 400, sel = S.sel === t;
-  c.save(); c.globalAlpha = stale ? .45 : .9;
-  c.strokeStyle = S.fg; c.fillStyle = S.fg; c.shadowColor = S.fg; sb(c, 5);
-  c.lineWidth = sel ? 3 : 2; c.setLineDash([8, 5]); c.lineDashOffset = -(now / 60) % 13;
+  let x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H;
+  const sel = S.sel === t, a = t.alpha; if (a < .02) return;
+  let e; [x, y, w, h, e] = lockBox(t, x, y, w, h, now);
+  c.save(); sb(c, 0);
+  c.strokeStyle = S.fg; c.fillStyle = S.fg;
+  const len = clamp(Math.min(w, h) * .16, 10, 34);
+  glowCorners(c, x, y, w, h, len, sel ? 3 : 2, a * (.35 + .65 * e));
+  c.globalAlpha = a * (sel ? .65 : .4); c.lineWidth = 1; c.setLineDash([6, 5]); c.lineDashOffset = -(now / 70) % 11;
   c.strokeRect(x, y, w, h); c.setLineDash([]);
-  labelRows(c, t, x, y, w, h, now, uiSize(19), sel);
+  if (sel) scanLine(c, x, y, w, h, now, a);
+  labelRows(c, t, x, y, w, h, now, uiSize(19), sel, a);
   c.restore();
 }
 function drawObject(c, t, now, W, H) {
-  const x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H, sel = S.sel === t;
-  c.save(); c.globalAlpha = sel ? .9 : .45; c.strokeStyle = S.fg; c.lineWidth = sel ? 2 : 1; sb(c, 0);
+  const x = t.dx * W, y = t.dy * H, w = t.dw * W, h = t.dh * H, sel = S.sel === t, a = t.alpha; if (a < .02) return;
+  c.save(); c.globalAlpha = a * (sel ? .9 : .45); c.strokeStyle = S.fg; c.lineWidth = sel ? 2 : 1; sb(c, 0);
   c.strokeRect(x, y, w, h);
   const ty = y > 16 ? y - 14 : y + 2;
-  tag(c, `${t.cls.toUpperCase()} ${Math.round(t.score * 100)}%`, x, ty, false, uiSize(15), 1);
+  tag(c, `${t.cls.toUpperCase()} ${Math.round(t.score * 100)}%`, x, ty, false, uiSize(15), a);
   c.restore();
 }
 function drawHud(now, dt) {
@@ -1207,8 +1547,8 @@ function drawHud(now, dt) {
   const sc = fitScale(W, H, fw, fh), dw = fw * sc, dh = fh * sc;
   S.ox = (W - dw) / 2; S.oy = (H - dh) / 2; S.dw = dw; S.dh = dh;
 
-  const k = 1 - Math.exp(-dt * 14);
-  for (const t of S.tracks) { t.dx += (t.x - t.dx) * k; t.dy += (t.y - t.dy) * k; t.dw += (t.w - t.dw) * k; t.dh += (t.h - t.dh) * k; }
+  S.hk = 1 - Math.exp(-dt * 16);
+  for (const t of S.tracks) stepTrack(t, now, Math.min(dt, .1));
   for (const t of S.tracks) if (t.confirmed) estDist(t);
   const vis = S.tracks.filter(t => t.confirmed);
   c.save(); c.translate(S.ox, S.oy);
@@ -1222,7 +1562,14 @@ function drawHud(now, dt) {
   c.font = `${size}px VT323, "Courier New", monospace`; sb(c, 6);
   c.textAlign = 'center';
   const cy = H * 0.42;
-  if (!S.stream) c.fillText('OCZEKIWANIE NA KAMERĘ...', W / 2, cy);
+  if (!hasFrames()) c.fillText('OCZEKIWANIE NA OBRAZ...', W / 2, cy);
+  else if (!S.ready && S.aiErr) {
+    const nn = /^WYMAGA/.test(S.aiErr);
+    { const bw = Math.min(W - 16, 360), bh = size * 3 + 22; c.save(); c.fillStyle = 'rgba(0,0,0,.72)'; c.fillRect((W - bw) / 2, cy - size - 4, bw, bh); c.strokeStyle = S.fg; c.lineWidth = 1; c.strokeRect((W - bw) / 2 + .5, cy - size - 3.5, bw - 1, bh - 1); c.restore(); }
+    c.fillText(nn ? 'AI: WYMAGA SIECI (MODEL NIE POBRANY)' : 'AI: BŁĄD MODELU – ' + S.aiErr.slice(0, 26), W / 2, cy);
+    c.fillText('KAMERA, RADAR, ZOOM, ŹRÓDŁA DZIAŁAJĄ', W / 2, cy + size + 2);
+    c.globalAlpha = .7; c.fillText(nn ? 'POŁĄCZ SIĘ Z SIECIĄ – WZNOWIĘ SAM' : 'MENU → ŹRÓDŁO / ponów', W / 2, cy + size * 2 + 6); c.globalAlpha = 1;
+  }
   else if (!S.ready) {
     const pct = S.progress > 0 && S.progress < 1 ? ` ${Math.round(S.progress * 100)}%` : '';
     c.fillText('ŁADOWANIE SIECI NEURONOWEJ...' + pct, W / 2, cy);
@@ -1341,10 +1688,13 @@ async function askPersist() {
 const fdist = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; s += d * d; } return Math.sqrt(s); };
 const dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
 const pctA = s => Math.round(clamp((s - .45) / .5, 0, 1) * 100);
-function matchProfile(desc) {
-  let best = null, bd = 9;
-  for (const p of S.profiles) for (const e of p.embs) { const d = fdist(desc, e); if (d < bd) { bd = d; best = p; } }
-  return { p: best, d: bd };
+function matchProfile(desc) {      // best profile + margin to the runner-up profile (a name is only proposed when it clearly wins)
+  let best = null, bd = 9, second = 9;
+  for (const p of S.profiles) {
+    let pm = 9; for (const e of p.embs) { const d = fdist(desc, e); if (d < pm) pm = d; }
+    if (pm < bd) { second = bd; bd = pm; best = p; } else if (pm < second) second = pm;
+  }
+  return { p: best, d: bd, d2: second, ok: !!best && bd < KNOWN_D && (second - bd) >= MARGIN_D };
 }
 function matchApp(emb) {
   let best = null, bs = -1;
@@ -1379,9 +1729,12 @@ async function faceAt(t, wantThumb) {
   if (m.error) { D.lastErr = m.error; return null; }
   if (!m.faces || !m.faces.length) return null;
   F.ms = F.ms ? F.ms * .7 + m.ms * .3 : m.ms;
-  const f = m.faces.filter(q => q.score >= .4).sort((a, b) => b.score * b.box[2] * b.box[3] - a.score * a.box[2] * a.box[3])[0];
+  // only faces whose centre lies inside THIS track's box (a neighbour's face overlapping the crop must not be attributed to this target)
+  const bx0 = (ux - rx) / rw * cv.width - t.w * .05 / rw * cv.width, bx1 = (ux + t.w - rx) / rw * cv.width + t.w * .05 / rw * cv.width, by0 = (t.y - ry) / rh * cv.height - .03 * cv.height, by1 = (t.y + t.h - ry) / rh * cv.height;
+  const inside = q => { const cx = q.box[0] + q.box[2] / 2, cy = q.box[1] + q.box[3] / 2; return cx >= bx0 && cx <= bx1 && cy >= by0 && cy <= by1; };
+  const f = m.faces.filter(q => q.score >= .4 && inside(q)).sort((a, b) => b.score * b.box[2] * b.box[3] - a.score * a.box[2] * a.box[3])[0];
   if (!f) return null;
-  const out = { desc: f.desc, score: f.score, thumb: null };
+  const out = { desc: f.desc, score: f.score, thumb: null, px: f.box[2] / (cv.width / (rw * viewDims()[0])) };
   if (wantThumb) {
     try {
       const [bx, by, bw, bh] = f.box, m2 = Math.max(bw, bh) * .3, side = Math.max(bw, bh) + 2 * m2;
@@ -1406,20 +1759,20 @@ async function autoApp(t, prof) {      // remember what this person looks like t
   prof.app = prof.app || []; addCapped(prof.app, Array.from(e), 6, 1); dbPut('faces', prof);
 }
 function applyFace(t, f, now) {
-  const p = t.person; p.kind = 'face';
+  const p = t.person; if (p.manual) return true; p.kind = 'face';
   if (!f) { D.faceNo++; p.nof++; if (p.state === 'unk' && p.nof >= 2) p.state = 'noface'; return false; }
   D.faceOk++; p.nof = 0;
-  const m = matchProfile(f.desc); D.lastD = m.d; D.lastName = m.p ? m.p.name : '';
-  if (m.p && m.d < KNOWN_D) {
-    p.state = 'known'; p.pid = m.p.id; p.d = m.d; p.pct = pctOf(m.d); p.nnew = 0; announce(t, m.p);
-    if (m.d < .40 && now - (m.p.lastAuto || 0) > 15000) {      // confident match: learn another view of this person
-      m.p.lastAuto = now; addCapped(m.p.embs, Array.from(f.desc), 12, 3); dbPut('faces', m.p); autoApp(t, m.p);
+  const m = matchProfile(f.desc); D.lastD = m.d; D.lastD2 = m.d2; D.lastName = m.p ? m.p.name : '';
+  if (m.ok) {                                         // strict distance + margin over the 2nd profile + 2 consecutive agreeing frames
+    if (p.cpid === m.p.id) p.cn++; else { p.cpid = m.p.id; p.cn = 1; }
+    if (p.cn >= 2) {
+      p.state = 'known'; p.pid = m.p.id; p.d = m.d; p.pct = pctOf(m.d); p.nnew = 0; announce(t, m.p);
+      if (m.d < .32 && now - (m.p.lastAuto || 0) > 15000) { m.p.lastAuto = now; addCapped(m.p.embs, Array.from(f.desc), 12, 3); dbPut('faces', m.p); autoApp(t, m.p); }
     }
-  } else if (m.p && m.d < MAYBE_D) { if (p.state !== 'known') { p.state = 'maybe'; p.pid = m.p.id; p.d = m.d; p.pct = pctOf(m.d); } }
-  else {
-    p.nnew++;
+  } else {
+    p.cpid = null; p.cn = 0; p.nnew++;
     if (p.state !== 'known' || p.nnew >= 2) {
-      if (p.state !== 'new') log(`NOWA OSOBA: ${baseName(t)}`, 'warn');
+      if (p.state !== 'new') log(`NIEZNANY: ${baseName(t)}`, 'warn');
       p.state = 'new'; p.pid = null; p.d = m.d;
     }
   }
@@ -1443,14 +1796,14 @@ async function animalTry(t) {
   }
 }
 async function matchTick(now) {
-  if (now < S.nextMatch) return;
+  if (!S.autoName || S.tainted || now < S.nextMatch) return;
   const needFace = S.profiles.length > 0, needEmb = hasAppEmbs() || S.animals.some(a => a.embs && a.embs.length);
   if (needFace && S.ready) faceKick(now);
   if (needEmb) embedKick(now);
   if (S.matchBusy || S.scanBusy) return;
   let best = null, bw = 1e12;
   for (const t of S.tracks) {
-    if (!t.confirmed || now - t.last > 600) continue;
+    if (!t.confirmed || now - t.last > 600 || t.person.manual) continue;
     const ok = (t.g === 'H' && needFace && S.face.ready && t.h > .15) || (t.g === 'A' && E.ready && hasAnimalEmbs(t.cls) && t.h > .08);
     if (!ok) continue;
     const wait = t.person.state === 'known' ? 6000 : 600;
@@ -1477,105 +1830,6 @@ async function faceReady(label) {
   finally { clearInterval(iv); }
 }
 const nextPersonNo = () => { let n = S.profiles.length + 1; while (S.profiles.some(p => p.name === `OSOBA #${n}`)) n++; return n; };
-async function scanHuman(t, addToId) {
-  if (S.scanBusy || !t) return;
-  S.scanBusy = true; $('#cdScan').disabled = $('#cdAdd').disabled = true; t.person.busy = true;
-  try {
-    if (!(await faceReady())) return;
-    toast('Skanuję twarz… patrz w kamerę', 0);
-    const samples = [];
-    for (let i = 0; i < 5 && samples.length < 2; i++) {
-      if (!S.tracks.includes(t)) break;
-      const f = await faceAt(t, samples.length === 0);
-      if (f && f.score >= .5) samples.push(f);
-      else if (f && !samples.length && i >= 3) samples.push(f);
-      await sleep(180);
-    }
-    hideToast();
-    if (!samples.length) { toast(S.tracks.includes(t) ? 'Nie widzę wyraźnej twarzy.\nPodejdź bliżej, zwróć twarz do kamery i dotknij jeszcze raz.' : 'Cel zniknął z kadru.', 5000); return; }
-    let target = addToId != null ? getProfile(addToId) : null;
-    if (!target) {
-      const m = matchProfile(samples[0].desc);
-      if (m.p && m.d < .42) {
-        const yes = await ask({ title: 'TA OSOBA JEST JUŻ W BAZIE?', text: `Twarz wygląda na „${m.p.name}” (${pctOf(m.d)}%).\nDodać skan do tego profilu, czy zapisać jako nową osobę?`, ok: 'Dodaj do ' + m.p.name.slice(0, 14), cancel: 'Nowa osoba' });
-        if (yes) target = m.p;
-      }
-    }
-    if (target) {
-      for (const s of samples) addCapped(target.embs, Array.from(s.desc), 12, 3);
-      target.scans = (target.scans || 1) + samples.length; target.last = Date.now();
-      await dbPut('faces', target);
-      Object.assign(t.person, { state: 'known', kind: 'face', pid: target.id, d: 0, pct: 100, logged: 'H' + target.id });
-      log(`DODANO SKAN: ${target.name} (${target.embs.length})`, 'warn'); sfx.ok();
-      toast(`Dodano skan do profilu „${target.name}”.\nSkanów: ${target.embs.length}`, 3500);
-      autoApp(t, target).catch(() => {});
-    } else {
-      const name = await ask({ title: 'NOWA OSOBA - NAZWA', text: 'Zapisuję tylko w tej przeglądarce. Możesz zmienić nazwę później w BAZIE.', input: true, def: `OSOBA #${nextPersonNo()}`, ok: 'Zapisz', cancel: 'Anuluj' });
-      if (name === null) return;
-      const prof = { name: name || `OSOBA #${nextPersonNo()}`, embs: samples.map(s => Array.from(s.desc)), app: [], thumb: samples[0].thumb, first: Date.now(), last: Date.now(), seen: 1, scans: samples.length };
-      await dbPut('faces', prof); S.profiles.push(prof);
-      Object.assign(t.person, { state: 'known', kind: 'face', pid: prof.id, d: 0, pct: 100, logged: 'H' + prof.id });
-      log(`ZAPISANO TWARZ: ${prof.name}`, 'warn'); sfx.ok(); askPersist();
-      toast(`Zapisano „${prof.name}”. Od teraz będę ją rozpoznawać.`, 3500);
-      ensureEmbed().then(() => autoApp(t, prof)).catch(() => {});   // also remember appearance (background, ~4 MB model)
-    }
-  } finally { S.scanBusy = false; t.person.busy = false; $('#cdScan').disabled = $('#cdAdd').disabled = false; cardSig = ''; }
-}
-async function scanAnimal(t, addToId) {
-  if (S.scanBusy || !t) return;
-  S.scanBusy = true; $('#cdScan').disabled = $('#cdAdd').disabled = true;
-  try {
-    toast('Skanuję zwierzę…' + (E.ready ? '' : ' (pierwszy raz pobiera model wyglądu ~4 MB)'), 0);
-    let withEmb = true;
-    try { await ensureEmbed(); } catch (e) { withEmb = false; }
-    const samples = []; let thumb = null;
-    for (let i = 0; i < 3; i++) {
-      if (!S.tracks.includes(t)) break;
-      const cv = trackCrop(t, 1, 320, 1);
-      if (cv) {
-        if (!thumb) {
-          const th = document.createElement('canvas'), s = Math.min(1, 160 / Math.max(cv.width, cv.height)); th.width = Math.round(cv.width * s); th.height = Math.round(cv.height * s);
-          const c = th.getContext('2d'); c.drawImage(cv, 0, 0, th.width, th.height);
-          c.globalCompositeOperation = 'saturation'; c.fillStyle = '#000'; c.fillRect(0, 0, th.width, th.height);
-          c.globalCompositeOperation = 'multiply'; c.fillStyle = S.fg; c.fillRect(0, 0, th.width, th.height);
-          thumb = th.toDataURL('image/jpeg', .75);
-        }
-        if (withEmb) { const e = await embedCanvas(cv); if (e) samples.push(Array.from(e)); }
-        else samples.push(null);
-      }
-      await sleep(250);
-    }
-    hideToast();
-    if (!samples.length) { toast(S.tracks.includes(t) ? 'Nie mogę pobrać obrazu z kamery.' : 'Cel zniknął z kadru.', 3500); return; }
-    const embs = samples.filter(Boolean);
-    if (!withEmb) toast('Model wyglądu się nie wczytał (' + E.err + ').\nZapiszę samo zdjęcie i nazwę – bez rozpoznawania.', 5000);
-    let target = addToId != null ? S.animals.find(a => a.id === addToId) : null;
-    if (!target && embs.length) {
-      const m = matchAnimal(Float32Array.from(embs[0]), t.cls);
-      if (m.a && m.s >= .80) {
-        const yes = await ask({ title: 'TO ZWIERZĘ JEST JUŻ W BAZIE?', text: `Wygląda podobnie do „${m.a.name}” (${pctA(m.s)}%).\nDodać zdjęcia do tego wpisu, czy zapisać jako nowe?`, ok: 'Dodaj do ' + m.a.name.slice(0, 12), cancel: 'Nowe' });
-        if (yes) target = m.a;
-      }
-    }
-    if (target) {
-      target.embs = target.embs || []; for (const e of embs) addCapped(target.embs, e, 12, 3);
-      target.last = Date.now(); await dbPut('animals', target);
-      Object.assign(t.person, { state: 'known', kind: 'animal', pid: target.id, sim: 1, pct: 100, logged: 'A' + target.id });
-      log(`DODANO SKAN: ${target.name} (${target.embs.length})`, 'warn'); sfx.ok();
-      toast(`Dodano skan do „${target.name}”.`, 3000);
-    } else {
-      const n = S.animals.filter(a => a.cls === t.cls).length + 1;
-      const name = await ask({ title: 'ZWIERZĘ - NAZWA', text: 'Zapisuję zdjęcia i wygląd tylko w tej przeglądarce. Rozpoznawanie to podobieństwo wyglądu – może mylić podobne zwierzęta.', input: true, def: `${PL[t.cls] || t.cls.toUpperCase()} #${n}`, ok: 'Zapisz', cancel: 'Anuluj' });
-      if (name === null) return;
-      const a = { name: name || `${PL[t.cls] || t.cls} #${n}`, cls: t.cls, thumb, embs, time: Date.now(), last: Date.now(), seen: 1, conf: Math.round(t.score * 100) };
-      await dbPut('animals', a); S.animals.push(a); askPersist();
-      Object.assign(t.person, { state: 'known', kind: 'animal', pid: a.id, sim: 1, pct: 100, logged: 'A' + a.id });
-      log(`ZAPISANO ZWIERZĘ: ${a.name}`, 'warn'); sfx.ok();
-      toast(`Zapisano „${a.name}”.` + (embs.length ? ' Od teraz będę je rozpoznawać po wyglądzie.' : ''), 3500);
-    }
-  } finally { S.scanBusy = false; $('#cdScan').disabled = $('#cdAdd').disabled = false; cardSig = ''; }
-}
-
 /* ---------- tap-to-select + info card ---------- */
 function clientToLocal(cx, cy) {
   const iw = window.innerWidth, ih = window.innerHeight;
@@ -1615,7 +1869,7 @@ function renderCard() {
   if (!t) { if (!S.scanBusy) hideCard(); return; }
   const now = performance.now(), p = t.person;
   const pr = t.g !== 'O' ? profOf(t) : null;
-  const sig = [t.uid, label(t), Math.round(t.score * 100), t.dist ? Math.round(t.dist * 5) : 0, Math.floor((now - t.born) / 1000), p && p.state, p && p.kind, S.face.ready, S.profiles.length].join('|');
+  const sig = [t.uid, label(t), Math.round(t.score * 100), t.dist ? Math.round(t.dist * 5) : 0, Math.floor((now - t.born) / 1000), p && p.state, p && p.kind, S.face.ready, S.profiles.length, p && p.manual ? 1 : 0, S.autoName ? 1 : 0].join('|');
   if (sig === cardSig) return; cardSig = sig;
   $('#cdT').textContent = label(t);
   const dur = fmtDur(now - t.born);
@@ -1623,40 +1877,41 @@ function renderCard() {
   let note = '';
   const scan = $('#cdScan'), add = $('#cdAdd');
   scan.style.display = ''; add.style.display = 'none';
-  const addBtn = () => { add.style.display = ''; add.textContent = `[ + Skan: ${pr.name.slice(0, 12)} ]`; };
+  const addBtn = () => {};
   if (t.g === 'H') {
-    scan.textContent = '[ Skanuj twarz ]';
-    if (p.state === 'known' && pr) { sub += `\nPodobieństwo twarzy do „${pr.name}”: ${p.pct}% · widziano ${pr.seen || 1}×`; addBtn(); }
+    scan.textContent = '[ IMIĘ ]';
+    if (p.manual && pr) sub += `\nImię potwierdzone przez Ciebie: „${pr.name}”`;
+    else if (p.state === 'known' && pr) { sub += `\nPodobieństwo twarzy do „${pr.name}”: ${p.pct}% · widziano ${pr.seen || 1}×`; addBtn(); }
     else if (p.state === 'maybe' && pr) { sub += p.kind === 'app' ? `\nTwarz niewidoczna – podobny WYGLĄD (ubranie/sylwetka) do „${pr.name}” (${p.pct}%). Słaba wskazówka.` : `\nNIEPEWNE: twarz podobna do „${pr.name}” (${p.pct}%)`; addBtn(); }
-    else if (p.state === 'new') sub += '\nTwarz nie pasuje do nikogo z bazy.';
+    else if (p.state === 'new') sub += '\nNIEZNANY: twarz nie pasuje wyraźnie do nikogo z bazy.';
     else if (p.state === 'noface') sub += '\nNie widać twarzy – odwróć się do kamery.';
-    note = 'Rozpoznawanie to porównanie twarzy – może się mylić. Dane tylko w tej przeglądarce.' + (S.face.ready ? '' : ' Pierwszy skan pobiera moduł twarzy (~7 MB).');
+    note = 'IMIĘ rozpoznaje twarz i pyta o potwierdzenie. Może się mylić. Dane tylko w tej przeglądarce.' + (S.face.ready ? '' : ' Pierwsze użycie pobiera moduł twarzy (~7 MB).');
   } else if (t.g === 'A') {
-    scan.textContent = '[ Skanuj ]';
-    if ((p.state === 'known' || p.state === 'maybe') && pr) { sub += `\nPodobieństwo wyglądu do „${pr.name}”: ${p.pct}%`; addBtn(); }
+    scan.textContent = '[ IMIĘ ]';
+    if (p.manual && pr) sub += `\nImię potwierdzone przez Ciebie: „${pr.name}”`;
+    else if ((p.state === 'known' || p.state === 'maybe') && pr) { sub += `\nPodobieństwo wyglądu do „${pr.name}”: ${p.pct}%`; addBtn(); }
     else if (p.state === 'new') sub += '\nNie pasuje do żadnego zapisanego zwierzęcia.';
-    note = 'Zapisuje zdjęcia i „odcisk” wyglądu lokalnie. To podobieństwo wyglądu, nie pewna identyfikacja – podobne zwierzęta mogą się mylić.';
+    note = 'IMIĘ porównuje wygląd zwierzęcia. To podobieństwo wyglądu, nie pewna identyfikacja – podobne zwierzęta mogą się mylić.';
   } else { scan.style.display = 'none'; note = 'Obiekt – brak akcji.'; }
   $('#cdS').textContent = sub; $('#cdN').textContent = note;
   card.classList.add('show');
 }
 $('#cdX').onclick = () => { S.sel = null; hideCard(); };
-$('#cdScan').onclick = () => { const t = S.sel; if (!t) return; if (t.g === 'H') scanHuman(t); else if (t.g === 'A') scanAnimal(t); };
-$('#cdAdd').onclick = () => { const t = S.sel; if (!t || t.person.pid == null) return; if (t.g === 'H') scanHuman(t, t.person.pid); else if (t.g === 'A') scanAnimal(t, t.person.pid); };
+$('#cdScan').onclick = () => { const t = S.sel; if (t) nameFlow(t); };
 stage.addEventListener('click', e => onTap(e.clientX, e.clientY));
 
 /* ---------- sheets: settings, database ---------- */
 function openPanel(id) {
   closePanels(true);
   S.panel = id; $('#' + id).classList.add('show');
-  if (id === 'dbp') renderDb(); else renderStats();
+  if (id === 'dbp') renderDb(); else if (id === 'src') renderSrc(); else { renderStats(); refreshNetInfo(); }
 }
 function closePanels(silent) { S.panel = ''; document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show')); }
 let dbTab = 'F';
 const fmtDate = ms => { const d = new Date(ms); return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 function mkBtn(txt, fn) { const b = document.createElement('button'); b.textContent = txt; b.onclick = fn; return b; }
 function resetIdent(g, id) {
-  const r = t => { if (t.g === g && (id == null || t.person.pid === id)) Object.assign(t.person, { state: 'unk', pid: null, logged: false, tried: 0, nof: 0 }); };
+  const r = t => { if (t.g === g && (id == null || t.person.pid === id)) Object.assign(t.person, { state: 'unk', pid: null, logged: false, tried: 0, nof: 0, manual: false, cn: 0, cpid: null }); };
   S.tracks.forEach(r); S.dead.forEach(d => r({ g: d.g, person: d.person }));
 }
 function renderDb() {
@@ -1666,7 +1921,7 @@ function renderDb() {
     : `Zapisane zwierzęta: ${S.animals.length}. Rozpoznawanie po wyglądzie (podobieństwo – może mylić podobne zwierzęta). Dane tylko w tej przeglądarce.`;
   const list = $('#plist'); list.textContent = '';
   const arr = dbTab === 'F' ? S.profiles : S.animals;
-  if (!arr.length) { const d = document.createElement('div'); d.className = 'statbox'; d.textContent = dbTab === 'F' ? 'Brak zapisanych twarzy. Dotknij osobę na ekranie i wybierz „Skanuj twarz”.' : 'Brak zapisanych zwierząt. Dotknij zwierzę na ekranie i wybierz „Skanuj”.'; list.appendChild(d); }
+  if (!arr.length) { const d = document.createElement('div'); d.className = 'statbox'; d.textContent = dbTab === 'F' ? 'Brak zapisanych twarzy. Zaznacz osobę na ekranie i naciśnij IMIĘ (klawisz N).' : 'Brak zapisanych zwierząt. Zaznacz zwierzę na ekranie i naciśnij IMIĘ (klawisz N).'; list.appendChild(d); }
   for (const it of arr.slice().reverse()) {
     const row = document.createElement('div'); row.className = 'prow';
     if (it.thumb) { const im = document.createElement('img'); im.src = it.thumb; row.appendChild(im); } else { const ph = document.createElement('div'); ph.className = 'ph'; row.appendChild(ph); }
@@ -1709,17 +1964,551 @@ function renderStats() {
   const es = E.ready ? `GOTOWE · ${E.mode} · ${Math.round(E.ms)} ms` : E.p ? 'ładowanie…' : E.err ? `BŁĄD: ${E.err} (próba ${E.fails})` : 'nie wczytano';
   $('#stats').textContent =
     `KAMERA: ${S.camRes || '—'} · ${S.camFps} kl./s · ${S.mirrored ? 'przód' : 'tył'}\n` +
+    `STRUMIEŃ WIDEO: ${video.videoWidth || 0}x${video.videoHeight || 0} · poziom ${S.res.level ? 'WYSOKI (zoom)' : 'bazowy'}${S.res.fail ? ' · wyższa rozdzielczość niedostępna' : ''} · wyświetlanie: pełna rozdzielczość (<video> + CSS)\n` +
     `WYKRYWANIE: ${S.backend ? S.backend.toUpperCase() + (S.mode === 'worker' ? ' (worker)' : '') : '—'} · ${S.nnFps ? S.nnFps.toFixed(1) : '—'}/s · ${S.infMs ? Math.round(S.infMs) : '—'} ms\n` +
     `BAZA: ${S.profiles.length} twarzy · ${S.animals.length} zwierząt · ${S.dbOk ? 'IndexedDB' : 'pamięć tymczasowa'} · trwałe: ${D.persisted}\n` +
-    `Wersja: v5\n\nDIAGNOSTYKA\n` +
+    `Wersja: v6 · ŹRÓDŁO: ${srcLabel()}${S.tainted ? ' (BEZ CORS: analiza wyłączona)' : ''} · zoom ${(S.zc || 1).toFixed(1)}x (sprzęt ${(S.hwz || 1).toFixed(1)}x + cyfrowy ${(S.dz || 1).toFixed(1)}x)\n\nDIAGNOSTYKA\n` +
+    `SIEĆ: ${navigator.onLine === false ? 'OFFLINE' : 'online'} · SERWIS WORKER: ${NET.sw} · pamięć aplikacji: ${NET.shell || '—'}\n` +
+    `MODELE OFFLINE: ${Object.entries(MSETS).map(([k, v]) => `${v.n} ${NET.cached[k] === null ? '…' : NET.cached[k] ? 'POBRANE' : 'brak'}`).join(' · ')} · zajęte ${NET.usage || '—'}\n` +
+    `${aiShort() || 'AI: —'}${S.aiErr ? ' (' + S.aiErr + ')' : ''}\n` +
     `Twarze: ${fs}\n` +
     `Wygląd (zwierzęta/ubranie): ${es}\n` +
     `Dopasowania: ${D.ticks} prób · twarz widziana ${D.faceOk}× / brak ${D.faceNo}×\n` +
-    `Ostatni dystans twarzy: ${D.lastD == null ? '—' : D.lastD.toFixed(2)} (${D.lastName || '—'}) · próg ZNANY < ${KNOWN_D}\n` +
+    `Ostatni dystans twarzy: ${D.lastD == null ? '—' : D.lastD.toFixed(2)} (${D.lastName || '—'}) · próg ZNANY < ${KNOWN_D}, margines ≥ ${MARGIN_D} (2. profil ${D.lastD2 == null || D.lastD2 > 8 ? '—' : D.lastD2.toFixed(2)}) · auto-imiona: ${S.autoName ? 'WŁ' : 'WYŁ'}\n` +
     `Ostatnie podobieństwo wyglądu: ${D.lastSim == null ? '—' : D.lastSim.toFixed(2)} (${D.lastSimName || '—'})\n` +
     `Ostatni błąd: ${D.lastErr || '—'}\n` +
     S.tracks.filter(t => t.confirmed && t.g !== 'O').slice(0, 4).map(t => `· ${baseName(t)}: ${t.person.state}${t.person.kind ? '/' + t.person.kind : ''}`).join('\n');
 }
+/* ====================== v6: manual name flow (IMIĘ), guided face enrollment ====================== */
+const ENR_SCORE = .6, ENR_PX = 48, ENR_DUP = .10;
+const ncEl = $('#ncard'); let ncRes = null;
+function ncShow({ title, text = '', input = false, def = '', list = null, buttons = [] }) {
+  return new Promise(res => {
+    if (ncRes) ncRes({ id: 'cancel' });
+    ncRes = res; app.classList.add('nc');
+    $('#ncT').textContent = title; const s = $('#ncS'); s.textContent = text; s.style.display = text ? '' : 'none';
+    const i = $('#ncI'); i.style.display = input ? '' : 'none'; i.value = def;
+    const L = $('#ncL'); L.textContent = ''; L.style.display = list && list.length ? '' : 'none';
+    (list || []).forEach((nm, k) => L.appendChild(mkBtn(nm, () => ncDone({ id: 'pick', idx: k }))));
+    const B = $('#ncB'); B.textContent = '';
+    buttons.forEach(bd => { const b = mkBtn(bd.label, () => ncDone({ id: bd.id, val: i.value.trim() })); b.dataset.id = bd.id; if (bd.disabled) b.disabled = true; B.appendChild(b); });
+    ncEl.classList.add('show');
+    if (input) setTimeout(() => { i.focus(); i.select(); }, 60);
+  });
+}
+function ncDone(r) { ncEl.classList.remove('show'); app.classList.remove('nc'); const f = ncRes; ncRes = null; if (f) f(r); }
+function ncSet(title, text) { $('#ncT').textContent = title; const s = $('#ncS'); s.textContent = text; s.style.display = text ? '' : 'none'; }
+const ncBtn = id => $('#ncB').querySelector(`[data-id="${id}"]`);
+$('#ncI').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); const b = $('#ncB').firstChild; if (b && !b.disabled) b.click(); } else if (e.key === 'Escape') ncDone({ id: 'cancel' }); });
+
+function pickTarget() {
+  if (S.sel && S.tracks.includes(S.sel) && S.sel.g !== 'O') return S.sel;
+  const now = performance.now(); let best = null, ba = 0;
+  for (const t of S.tracks) { if (!t.confirmed || t.g === 'O' || now - t.last > 800) continue; const a = t.w * t.h; if (a > ba) { ba = a; best = t; } }
+  return best;
+}
+function setManual(t, kind, prof, pct) {
+  Object.assign(t.person, { state: 'known', kind, pid: prof.id, manual: true, pct: pct == null ? 100 : pct, d: 0, sim: 1, logged: t.g + prof.id, nof: 0, cn: 0 });
+  prof.seen = (prof.seen || 0) + 1; prof.last = Date.now(); dbPut(storeOf(t), prof);
+  log(`POTWIERDZONO: ${prof.name}`, 'warn'); sfx.ok(); cardSig = '';
+}
+async function nameFlow(t) {
+  if (S.scanBusy || !S.started) return;
+  if (aiBlocked('det') || (!S.ready && /^WYMAGA/.test(S.aiErr || ''))) { await needNetCard('wykrywania'); return; }
+  if (!S.ready) { toast('Sieć neuronowa jeszcze się ładuje…', 2500); return; }
+  t = t || pickTarget();
+  if (!t) { toast('Nie widzę człowieka ani zwierzęcia.\nNamierz kamerę na cel.', 3000); return; }
+  if (S.tainted) { toast(TAINT_MSG, 5000); return; }
+  if (t.g === 'H' && aiBlocked('face')) { await needNetCard('twarzy'); return; }
+  if (t.g !== 'H' && aiBlocked('emb')) { await needNetCard('wyglądu zwierząt'); return; }
+  S.sel = t; cardSig = ''; S.scanBusy = true; t.person.busy = true;
+  try { if (t.g === 'H') await nameHuman(t); else await nameAnimal(t); }
+  catch (e) { D.lastErr = String((e && e.message) || e); hideToast(); ncDone({ id: 'cancel' }); toast('Błąd rozpoznawania: ' + D.lastErr, 4500); }
+  finally { S.scanBusy = false; t.person.busy = false; cardSig = ''; }
+}
+async function askName(title, text, names, def) {
+  const r = await ncShow({ title, text, input: true, def, list: names, buttons: [{ id: 'ok', label: '[ ZAPISZ ]' }, { id: 'cancel', label: '[ ANULUJ ]' }] });
+  if (r.id === 'pick') return { idx: r.idx };
+  if (r.id === 'ok') return { name: r.val || def };
+  return null;
+}
+// guided multi-shot enrollment: prompts, quality gate (score + face size), near-duplicate skipping, progress "SKAN i/N", early finish (min shots)
+async function enrollFace(t, first, min, n = ENR_N, title = 'SKAN') {
+  const prompts = ['PATRZ PROSTO', 'LEKKO W LEWO', 'LEKKO W PRAWO', 'LEKKO W GÓRĘ', 'LEKKO W DÓŁ'];
+  const samples = first ? [first] : []; let stop = null;
+  ncShow({ title: `${title} ${samples.length}/${n}`, text: '', buttons: [{ id: 'fin', label: '[ ZAKOŃCZ ]', disabled: samples.length < min }, { id: 'cancel', label: '[ ANULUJ ]' }] }).then(r => { stop = r.id; });
+  const t0 = performance.now(); let lastAcc = t0, hint = '';
+  while (!stop && samples.length < n) {
+    if (!S.tracks.includes(t)) { stop = 'lost'; break; }
+    ncSet(`${title} ${samples.length}/${n}`, `${prompts[samples.length % 5]}${hint ? '\n' + hint : ''}\n${min ? `Min. ${min} skany` : 'Dodatkowe ujęcia (opcjonalnie)'} · ZAKOŃCZ gdy gotowe`);
+    const f = await faceAt(t, false), now = performance.now();
+    if (stop) break;
+    if (!f) hint = 'nie widzę twarzy';
+    else if (f.score < ENR_SCORE) hint = 'za mało wyraźnie';
+    else if (f.px < ENR_PX) hint = 'podejdź bliżej';
+    else if (samples.length && fdist(f.desc, samples[0].desc) > .55) hint = 'to chyba inna osoba';
+    else if (samples.some(s => fdist(f.desc, s.desc) < ENR_DUP)) hint = 'zmień ustawienie głowy';
+    else { samples.push(f); lastAcc = now; hint = 'OK'; sfx.tick(); const b = ncBtn('fin'); if (b && samples.length >= min) b.disabled = false; }
+    if (now - lastAcc > 12000 && samples.length >= Math.max(1, min)) { stop = 'idle'; break; }
+    if (now - t0 > 40000) { stop = 'idle'; break; }
+    await sleep(230);
+  }
+  const reason = stop; if (!stop || stop === 'idle' || stop === 'lost') ncDone({ id: 'x' });
+  if (reason === 'cancel') return null;
+  if (samples.length < min) { toast(`Za mało skanów (${samples.length}/${min}) – ${reason === 'lost' ? 'cel zniknął z kadru' : 'brak ruchu'}.\nSpróbuj ponownie.`, 5000); return null; }
+  if (samples.length < n && min) toast(`Uwaga: zebrano tylko ${samples.length} z ${n} skanów – rozpoznawanie może być słabsze.`, 4500);
+  return { samples };
+}
+async function nameHuman(t) {
+  if (!(await faceReady('Ładowanie modułu twarzy…'))) return;
+  toast('Rozpoznaję twarz… patrz w kamerę', 0);
+  const probes = [];
+  for (let i = 0; i < 12 && probes.length < 3; i++) {
+    if (!S.tracks.includes(t)) break;
+    const f = await faceAt(t, probes.length === 0);
+    if (f && f.score >= ENR_SCORE && f.px >= ENR_PX) probes.push(f);
+    await sleep(140);
+  }
+  hideToast();
+  if (!probes.length) { await ncShow({ title: 'BRAK TWARZY', text: S.tracks.includes(t) ? 'Nie widzę wyraźnej twarzy.\nOdwróć się do kamery, podejdź bliżej i naciśnij IMIĘ jeszcze raz.' : 'Cel zniknął z kadru.', buttons: [{ id: 'ok', label: '[ OK ]' }] }); return; }
+  D.faceOk += probes.length;
+  const ms = probes.map(f => matchProfile(f.desc)); D.lastD = ms[0].d; D.lastD2 = ms[0].d2; D.lastName = ms[0].p ? ms[0].p.name : '';
+  const votes = new Map(); ms.forEach(m => { if (m.ok) votes.set(m.p.id, (votes.get(m.p.id) || 0) + 1); });
+  let prof = null, vn = 0; for (const [id, k] of votes) if (k > vn) { vn = k; prof = getProfile(id); }
+  const propose = !!prof && vn >= Math.min(2, probes.length);
+  let who = null, pct = 100;
+  if (propose) {
+    const ds = ms.filter(m => m.p === prof).map(m => m.d); pct = pctOf(ds.reduce((a, b) => a + b, 0) / ds.length);
+    const r = await ncShow({ title: `TO JEST: ${prof.name} (${pct}%)?`, text: 'Rozpoznanie po twarzy może się mylić. Potwierdź albo wskaż inną osobę.', buttons: [{ id: 'yes', label: '[ POTWIERDŹ ]' }, { id: 'other', label: '[ TO KTOŚ INNY ]' }, { id: 'cancel', label: '[ ANULUJ ]' }] });
+    if (r.id === 'yes') who = prof; else if (r.id !== 'other') return;
+  }
+  if (!who) {
+    const a = await askName(propose ? 'KTO TO JEST?' : 'NIEZNANY – WPISZ IMIĘ', propose ? 'Wpisz imię albo wybierz zapisaną osobę.' : 'Nie rozpoznaję tej osoby. Wpisz imię (zrobię krótki skan z kilku ujęć) albo wybierz zapisaną osobę.', S.profiles.map(p => p.name), `OSOBA #${nextPersonNo()}`);
+    if (!a) return;
+    if (a.idx != null) who = S.profiles[a.idx];
+    else {
+      const ex = S.profiles.find(p => p.name.toLowerCase() === a.name.toLowerCase());
+      if (ex) who = ex;
+      else {
+        const en = await enrollFace(t, probes[0], ENR_MIN, ENR_N, 'SKAN');
+        if (!en) return;
+        const np = { name: a.name, embs: en.samples.map(s => Array.from(s.desc)), app: [], thumb: probes[0].thumb || en.samples[0].thumb, first: Date.now(), last: Date.now(), seen: 0, scans: en.samples.length };
+        await dbPut('faces', np); S.profiles.push(np); askPersist(); setManual(t, 'face', np);
+        log(`ZAPISANO TWARZ: ${np.name} (${en.samples.length} skanów)`, 'warn'); toast(`Zapisano „${np.name}” (${en.samples.length} skanów).`, 3500);
+        ensureEmbed().then(() => autoApp(t, np)).catch(() => {});
+        return;
+      }
+    }
+  }
+  for (const f of probes) addCapped(who.embs, Array.from(f.desc), 12, 3);
+  who.scans = (who.scans || 1) + probes.length; setManual(t, 'face', who, pct);
+  toast(`Potwierdzono: ${who.name}. Dodaję kolejne ujęcia…`, 2500);
+  const en = await enrollFace(t, null, 0, 3, 'DODATKOWE SKANY');
+  if (en && en.samples.length) { for (const s of en.samples) addCapped(who.embs, Array.from(s.desc), 12, 3); who.scans += en.samples.length; await dbPut('faces', who); log(`DODANO SKANY: ${who.name} (${who.embs.length})`, 'warn'); }
+  ensureEmbed().then(() => autoApp(t, who)).catch(() => {});
+}
+function mkThumb(cv) {
+  const th = document.createElement('canvas'), s = Math.min(1, 160 / Math.max(cv.width, cv.height)); th.width = Math.round(cv.width * s); th.height = Math.round(cv.height * s);
+  const c = th.getContext('2d'); c.drawImage(cv, 0, 0, th.width, th.height);
+  c.globalCompositeOperation = 'saturation'; c.fillStyle = '#000'; c.fillRect(0, 0, th.width, th.height);
+  c.globalCompositeOperation = 'multiply'; c.fillStyle = S.fg; c.fillRect(0, 0, th.width, th.height);
+  return th.toDataURL('image/jpeg', .75);
+}
+async function nameAnimal(t) {
+  toast('Rozpoznaję zwierzę…' + (E.ready ? '' : ' (pierwszy raz pobiera model wyglądu ~4 MB)'), 0);
+  try { await ensureEmbed(); } catch (e) { hideToast(); await ncShow({ title: 'BŁĄD', text: 'Model wyglądu się nie wczytał (' + (E.err || '?') + ').\nSpróbuj ponownie z internetem.', buttons: [{ id: 'ok', label: '[ OK ]' }] }); return; }
+  const embs = []; let thumb = null;
+  for (let i = 0; i < 3; i++) {
+    if (!S.tracks.includes(t)) break;
+    const cv = trackCrop(t, 1, 320, 1);
+    if (cv) { if (!thumb) thumb = mkThumb(cv); const e = await embedCanvas(cv); if (e) embs.push(Array.from(e)); }
+    await sleep(220);
+  }
+  hideToast();
+  if (!embs.length) { await ncShow({ title: 'BRAK OBRAZU', text: S.tracks.includes(t) ? 'Nie mogę pobrać obrazu zwierzęcia.' : 'Cel zniknął z kadru.', buttons: [{ id: 'ok', label: '[ OK ]' }] }); return; }
+  let m = { a: null, s: -1 }; for (const e of embs) { const q = matchAnimal(Float32Array.from(e), t.cls); if (q.s > m.s) m = q; }
+  D.lastSim = m.s; D.lastSimName = m.a ? m.a.name : '';
+  const propose = !!m.a && m.s >= A_MAYBE; let who = null;
+  if (propose) {
+    const r = await ncShow({ title: `TO JEST: ${m.a.name} (${pctA(m.s)}%)?`, text: 'To podobieństwo WYGLĄDU, nie pewna identyfikacja – podobne zwierzęta mogą się mylić.', buttons: [{ id: 'yes', label: '[ POTWIERDŹ ]' }, { id: 'other', label: '[ TO KTOŚ INNY ]' }, { id: 'cancel', label: '[ ANULUJ ]' }] });
+    if (r.id === 'yes') who = m.a; else if (r.id !== 'other') return;
+  }
+  if (!who) {
+    const n = S.animals.filter(a => a.cls === t.cls).length + 1, def = `${PL[t.cls] || t.cls.toUpperCase()} #${n}`;
+    const a = await askName(propose ? 'KTO TO JEST?' : 'NOWE ZWIERZĘ – WPISZ IMIĘ', 'Zapisuję zdjęcie i „odcisk” wyglądu tylko w tej przeglądarce. Wpisz imię albo wybierz zapisane zwierzę.', S.animals.map(x => x.name), def);
+    if (!a) return;
+    if (a.idx != null) who = S.animals[a.idx];
+    else {
+      const ex = S.animals.find(x => x.name.toLowerCase() === a.name.toLowerCase());
+      if (ex) who = ex;
+      else { const na = { name: a.name, cls: t.cls, thumb, embs, time: Date.now(), last: Date.now(), seen: 0, conf: Math.round(t.score * 100) }; await dbPut('animals', na); S.animals.push(na); askPersist(); setManual(t, 'animal', na); log(`ZAPISANO ZWIERZĘ: ${na.name}`, 'warn'); toast(`Zapisano „${na.name}”.`, 3000); return; }
+    }
+  }
+  who.embs = who.embs || []; for (const e of embs) addCapped(who.embs, e, 12, 3);
+  setManual(t, 'animal', who, m.a === who ? pctA(m.s) : 100); toast(`Potwierdzono: ${who.name}`, 3000);
+}
+
+/* ====================== v6: reticle (SVG overlay; same primitives drawn on canvas for photos/recordings) ====================== */
+const RET = (() => {
+  const ring = [['c', 30]]; for (let a = 0; a < 360; a += 15) { const r = a % 90 === 0 ? 40 : 34, x = Math.cos(a * Math.PI / 180), y = Math.sin(a * Math.PI / 180); ring.push(['l', 30 * x, 30 * y, r * x, r * y]); } ring.push(['d', 1.6]);
+  return {
+    classic: { n: 'Klasyczny', a: .6, p: [['l', -44, 0, -22, 0], ['l', 22, 0, 44, 0], ['l', 0, -44, 0, -22], ['l', 0, 22, 0, 44], ['d', 1.5]] },   // v1: arms from 22 to 44 px
+    cross: { n: 'Krzyż', a: .85, p: [['l', -28, 0, 28, 0], ['l', 0, -28, 0, 28], ['d', 1.2]] },
+    dot: { n: 'Kropka', a: .9, p: [['d', 3.5], ['c', 10]] },
+    ring: { n: 'Pierścień z podziałką', a: .85, p: ring },
+    brackets: { n: 'Nawiasy', a: .85, p: [['q', -36, -22, -36, -36, -22, -36], ['q', 22, -36, 36, -36, 36, -22], ['q', 36, 22, 36, 36, 22, 36], ['q', -22, 36, -36, 36, -36, 22], ['d', 1.5]] }
+  };
+})();
+const SVGNS = 'http://www.w3.org/2000/svg';
+function renderRet() {
+  const el = $('#ret'); el.textContent = ''; el.classList.toggle('off', !S.ret);
+  if (!RET[S.retStyle]) S.retStyle = 'classic';
+  const st = RET[S.retStyle];
+  for (const [w, o] of [[4.5, .18], [1.4, 1]]) {
+    const g = document.createElementNS(SVGNS, 'g'); g.setAttribute('fill', 'none'); g.setAttribute('stroke', 'currentColor'); g.setAttribute('stroke-width', w); g.setAttribute('opacity', o * st.a); g.setAttribute('stroke-linecap', 'square');
+    for (const p of st.p) {
+      let e;
+      if (p[0] === 'l') { e = document.createElementNS(SVGNS, 'line'); ['x1', 'y1', 'x2', 'y2'].forEach((k, i) => e.setAttribute(k, p[i + 1])); }
+      else if (p[0] === 'c') { e = document.createElementNS(SVGNS, 'circle'); e.setAttribute('r', p[1]); }
+      else if (p[0] === 'q') { e = document.createElementNS(SVGNS, 'polyline'); e.setAttribute('points', `${p[1]},${p[2]} ${p[3]},${p[4]} ${p[5]},${p[6]}`); }
+      else { e = document.createElementNS(SVGNS, 'circle'); e.setAttribute('r', p[1]); e.setAttribute('fill', 'currentColor'); e.setAttribute('stroke', 'none'); }
+      g.appendChild(e);
+    }
+    el.appendChild(g);
+  }
+  document.querySelectorAll('#retStyles button').forEach(b => b.classList.toggle('on', b.dataset.s === S.retStyle));
+  $('#bRet').classList.toggle('on', S.ret); $('#bRet').classList.toggle('off', !S.ret);
+}
+function drawReticle(c, w, h) {          // composite (photo / recording): same primitives, scaled like the screen
+  if (!S.ret) return;
+  const st = RET[S.retStyle] || RET.classic, k = w / S.W;
+  c.save(); c.translate(w / 2, h / 2); c.scale(k, k); c.strokeStyle = S.fg; c.fillStyle = S.fg; c.lineCap = 'square';
+  for (const [lw, o] of [[4.5, .18], [1.4, 1]]) {
+    c.globalAlpha = o * st.a; c.lineWidth = lw;
+    for (const p of st.p) {
+      c.beginPath();
+      if (p[0] === 'l') { c.moveTo(p[1], p[2]); c.lineTo(p[3], p[4]); c.stroke(); }
+      else if (p[0] === 'c') { c.arc(0, 0, p[1], 0, Math.PI * 2); c.stroke(); }
+      else if (p[0] === 'q') { c.moveTo(p[1], p[2]); c.lineTo(p[3], p[4]); c.lineTo(p[5], p[6]); c.stroke(); }
+      else if (lw < 2) { c.arc(0, 0, p[1], 0, Math.PI * 2); c.fill(); }
+    }
+  }
+  c.restore();
+}
+function toggleRet() { S.ret = !S.ret; lsSet('rt_ret', S.ret ? 1 : 0); renderRet(); }
+function setRetStyle(s) { S.retStyle = s; lsSet('rt_rets', s); if (!S.ret) { S.ret = true; lsSet('rt_ret', 1); } renderRet(); }
+(function () { const box = $('#retStyles'); for (const k of Object.keys(RET)) { const b = mkBtn(RET[k].n, () => setRetStyle(k)); b.dataset.s = k; box.appendChild(b); } })();
+function toggleAuto() {
+  S.autoName = !S.autoName; lsSet('rt_auto', S.autoName ? 1 : 0); $('#bAuto').classList.toggle('on', S.autoName); cardSig = '';
+  log('AUTO-ROZPOZNAWANIE IMION: ' + (S.autoName ? 'WŁĄCZONE' : 'WYŁĄCZONE'), 'warn');
+  if (S.autoName && S.profiles.length) ensureFace().catch(() => {});
+}
+
+/* ====================== v6: zoom (hardware first, then digital; log slider 1x-10x) + adaptive stream resolution ====================== */
+const ZMAX = 10, zoomToP = z => Math.log(z) / Math.log(ZMAX), pToZoom = p => Math.pow(ZMAX, clamp(p, 0, 1));
+const setZoom = z => { S.zt = clamp(z, 1, ZMAX); };
+const camTrack = () => S.stream && S.stream.getVideoTracks()[0];
+function hwCaps() { const tr = camTrack(); try { return tr && tr.getCapabilities ? tr.getCapabilities() : {}; } catch (e) { return {}; } }
+let zoomApplyT = 0, hwBusy = false, lvSig = '', zUiSig = '';
+function layoutVideo() {
+  const W = S.W, H = S.H, rv = S.vrot % 180 !== 0, w = rv ? H : W, h = rv ? W : H;
+  const sig = [w, h, S.vrot, S.mirrored, S.dz.toFixed(3)].join();
+  if (sig === lvSig) return; lvSig = sig;
+  video.style.width = w + 'px'; video.style.height = h + 'px';
+  video.style.transform = `translate(-50%,-50%) scale(${S.mirrored ? -1 : 1},1) rotate(${S.vrot}deg) scale(${S.dz})`;
+}
+async function resTry(tr, w, h) {
+  const before = tr.getSettings().width || 0;
+  try { await tr.applyConstraints({ width: { ideal: w }, height: { ideal: h } }); } catch (e) { return false; }
+  await sleep(400); return (tr.getSettings().width || 0) !== before;
+}
+function resManage(now) {
+  const R = S.res, tr = camTrack(); if (!tr || SRC.kind !== 'cam' || R.busy || tr.readyState !== 'live') return;
+  if (R.level === 0) {
+    if (S.dz > 2) { if (!R.hi) R.hi = now; } else R.hi = 0;
+    if (R.hi && now - R.hi > 700 && now - R.t > 1500 && !R.fail) {            // sustained digital zoom > 2x: ask for 4K once
+      R.busy = true; R.t = now;
+      resTry(tr, 3840, 2160).then(ok => { R.busy = false; if (ok && tr.getSettings().width > 1920) { R.level = 1; log(`STRUMIEŃ: ${tr.getSettings().width}x${tr.getSettings().height} (zoom)`, 'sys-l'); } else R.fail = true; S.camRes = `${video.videoWidth}x${video.videoHeight}`; });
+    }
+  } else {
+    if (S.zc < 1.5) { if (!R.low) R.low = now; } else R.low = 0;
+    if (R.low && now - R.low > 3000 && now - R.t > 1500) {                      // back to the base stream to save battery / heat
+      R.busy = true; R.t = now; R.low = 0;
+      resTry(tr, 1920, 1080).then(() => { R.busy = false; R.level = 0; R.hi = 0; S.camRes = `${video.videoWidth}x${video.videoHeight}`; log(`STRUMIEŃ: ${video.videoWidth}x${video.videoHeight}`, 'sys-l'); });
+    }
+  }
+}
+function zoomStep(now, dt) {
+  S.zc += (S.zt - S.zc) * (1 - Math.exp(-dt * 9)); if (Math.abs(S.zt - S.zc) < .003) S.zc = S.zt;
+  const caps = hwCaps(), tr = camTrack(), zc = caps.zoom;
+  if (zc && zc.max > 1 && tr) {
+    const want = clamp(S.zc, Math.max(1, zc.min || 1), zc.max);
+    if (!hwBusy && Math.abs(want - S.hwReq) > .02 && now - zoomApplyT > 90) { zoomApplyT = now; hwBusy = true; S.hwReq = want; tr.applyConstraints({ advanced: [{ zoom: want }] }).catch(() => {}).then(() => { hwBusy = false; }); }
+    S.hwz = S.hwReq;
+  } else S.hwz = 1;
+  S.dz = Math.max(1, S.zc / S.hwz);
+  layoutVideo();
+  const sig = S.zc.toFixed(2) + S.zt.toFixed(2); if (sig !== zUiSig) { zUiSig = sig; const p = zoomToP(S.zc); $('#zVal').textContent = S.zc.toFixed(1) + 'x'; $('#zThumb').style.bottom = `calc(${p * 100}% - 9px)`; $('#zFill').style.height = p * 100 + '%'; $('#zoom').classList.toggle('dig', S.dz > 1.01); }
+  resManage(now);
+}
+(function zoomUi() {
+  const tr = $('#zTrack'); let drag = false;
+  const fromEv = e => { const [, ly] = clientToLocal(e.clientX, e.clientY); const top = tr.offsetTop + $('#zoom').offsetTop, hh = tr.offsetHeight; return 1 - clamp((ly - top) / hh, 0, 1); };
+  tr.addEventListener('pointerdown', e => { drag = true; tr.setPointerCapture(e.pointerId); setZoom(pToZoom(fromEv(e))); e.preventDefault(); e.stopPropagation(); });
+  tr.addEventListener('pointermove', e => { if (drag) { setZoom(pToZoom(fromEv(e))); e.preventDefault(); } });
+  const up = e => { drag = false; try { tr.releasePointerCapture(e.pointerId); } catch (x) {} };
+  tr.addEventListener('pointerup', up); tr.addEventListener('pointercancel', up);
+  let lt = 0; $('#zVal').addEventListener('pointerdown', e => { const n = performance.now(); if (n - lt < 380) { setZoom(1); lt = 0; } else lt = n; e.stopPropagation(); });
+  $('#zoom').addEventListener('click', e => e.stopPropagation());
+  stage.addEventListener('wheel', e => { e.preventDefault(); setZoom(S.zt * (e.deltaY < 0 ? 1.12 : 1 / 1.12)); }, { passive: false });
+})();
+
+/* ====================== v6: image-source menu (cameras / stream / Bluetooth control) ====================== */
+let srcTab = 'cam';
+function srcShowTab(t) {
+  srcTab = t;
+  [['cam', 'stCam', 'pCam'], ['str', 'stStr', 'pStr'], ['ble', 'stBle', 'pBle']].forEach(([k, b, p]) => { $('#' + b).classList.toggle('on', k === t); $('#' + p).classList.toggle('show', k === t); });
+  if (t === 'cam') renderCams(); else if (t === 'str') renderStream(); else renderBle();
+}
+function renderSrc() { $('#srcCur').textContent = 'AKTUALNE: ' + srcLabel() + (S.camRes ? ' · ' + S.camRes : ''); srcShowTab(srcTab); }
+async function renderCams() {
+  const L = $('#camList'); L.textContent = '';
+  const devs = await refreshDevices(true);
+  L.textContent = '';
+  if (!devs.length) { const d = document.createElement('div'); d.className = 'sm'; d.textContent = navigator.mediaDevices ? 'Nie znaleziono żadnej kamery.' : 'Ta przeglądarka nie udostępnia kamer (potrzebny https).'; L.appendChild(d); }
+  const cur = SRC.kind === 'cam' ? curDeviceId() : '';
+  devs.forEach((d, i) => {
+    const b = mkBtn(`${d.deviceId && d.deviceId === cur ? '● ' : '○ '}${i + 1}. ${d.label || 'Kamera ' + (i + 1)}`, async () => {
+      if (S.rec) { toast('Zatrzymaj nagrywanie przed zmianą źródła.', 2500); return; }
+      SRC.devId = d.deviceId; lsSet('rt_cam', d.deviceId); log('KAMERA: ' + (d.label || i + 1), 'sys-l');
+      try { await startCamera(); } catch (e) {} renderSrc();
+    });
+    b.style.textTransform = 'none'; if (d.deviceId && d.deviceId === cur) b.classList.add('cur'); L.appendChild(b);
+  });
+  $('#srcCur').textContent = 'AKTUALNE: ' + srcLabel() + (S.camRes ? ' · ' + S.camRes : '');
+}
+const MODE_TXT = { auto: 'TYP: AUTO', hls: 'TYP: HLS', whep: 'TYP: WEBRTC (WHEP)' };
+function renderStream() {
+  $('#strMode').textContent = MODE_TXT[SRC.mode] || MODE_TXT.auto;
+  if (!$('#strUrl').value) $('#strUrl').value = SRC.url || '';
+  const R = $('#strRecent'); R.textContent = '';
+  let rec = []; try { rec = JSON.parse(lsGet('rt_urls', '[]')); } catch (e) {}
+  rec.forEach(u => { const b = mkBtn(u, () => { $('#strUrl').value = u; }); b.style.textTransform = 'none'; R.appendChild(b); });
+}
+async function connectStream() {
+  const url = $('#strUrl').value.trim(), st = $('#strStat');
+  if (S.rec) { toast('Zatrzymaj nagrywanie przed zmianą źródła.', 2500); return; }
+  st.textContent = 'Łączę…';
+  try { await setStream(url); st.textContent = 'Połączono. ' + srcLabel() + (S.tainted ? '\n' + TAINT_MSG : ''); closePanels(); if (S.tainted) toast(TAINT_MSG, 7000); }
+  catch (e) {
+    let m = (e && e.message) || String(e);
+    if (e && (e.corsHint || e.cors)) m += '\nPrawdopodobnie serwer nie wysyła nagłówków CORS (Access-Control-Allow-Origin) lub adres jest nieosiągalny/nie jest https.';
+    st.textContent = 'BŁĄD: ' + m; log('BŁĄD STRUMIENIA', 'warn');
+  }
+}
+async function backToCamera() { if (S.rec) { toast('Zatrzymaj nagrywanie przed zmianą źródła.', 2500); return; } try { await startCamera(); } catch (e) {} $('#strStat').textContent = 'Wrócono do kamery.'; renderSrc(); }
+$('#strGo').onclick = connectStream; $('#strCam').onclick = backToCamera; $('#camRef').onclick = renderCams;
+$('#strUrl').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); connectStream(); } });
+$('#strMode').onclick = () => { SRC.mode = SRC.mode === 'auto' ? 'hls' : SRC.mode === 'hls' ? 'whep' : 'auto'; lsSet('rt_smode', SRC.mode); renderStream(); };
+$('#stCam').onclick = () => srcShowTab('cam'); $('#stStr').onclick = () => srcShowTab('str'); $('#stBle').onclick = () => srcShowTab('ble');
+$('#srcX').onclick = () => closePanels();
+async function switchCam() {
+  if (S.rec) { toast('Zatrzymaj nagrywanie przed zmianą kamery.', 2500); return; }
+  if (SRC.kind !== 'cam') { await backToCamera(); return; }
+  const devs = await refreshDevices(false);
+  const caps = hwCaps(), phone = IS_TOUCH && caps.facingMode && caps.facingMode.length > 0;
+  if (phone) { SRC.devId = ''; lsSet('rt_cam', ''); S.facing = S.facing === 'user' ? 'environment' : 'user'; log(`KAMERA: ${S.facing === 'user' ? 'PRZÓD' : 'TYŁ'}`, 'sys-l'); }
+  else {
+    if (devs.length < 2) { toast('To urządzenie ma tylko jedną kamerę.', 2500); return; }
+    const cur = curDeviceId(); let i = devs.findIndex(d => d.deviceId === cur); i = (i + 1) % devs.length;
+    SRC.devId = devs[i].deviceId; lsSet('rt_cam', SRC.devId); log(`KAMERA ${i + 1}/${devs.length}: ${devs[i].label || ''}`, 'sys-l');
+  }
+  try { await startCamera(); } catch (e) {}
+}
+
+/* Bluetooth (Web Bluetooth) – CONTROL ONLY, no video */
+const BLE = { dev: null, server: null, fmt: 'hex', chars: [], notif: new Set(), out: [] };
+const bleAvail = () => !!(navigator.bluetooth && navigator.bluetooth.requestDevice);
+const BLE_COMMON = ['battery_service', 'device_information', 'generic_access', 'generic_attribute'];
+function normUuid(s) {
+  s = s.trim().toLowerCase();
+  if (/^0x[0-9a-f]{1,8}$/.test(s) || /^[0-9a-f]{4}$/.test(s)) return parseInt(s, 16);
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(s)) return s;
+  throw new Error('Nieprawidłowy UUID (16-bitowy hex, np. 180f, albo pełny 128-bitowy)');
+}
+const hexOf = dv => Array.from(new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+const txtOf = dv => { try { const s = new TextDecoder().decode(dv); return /^[\x20-\x7e]*$/.test(s) ? s : ''; } catch (e) { return ''; } };
+function bleOut(msg) { BLE.out.push(`[${stamp()}] ${msg}`); if (BLE.out.length > 5) BLE.out.shift(); $('#bleOut').textContent = BLE.out.join('\n'); log('BLE: ' + msg.slice(0, 60), 'sys-l'); }
+function renderBle() {
+  const ok = bleAvail(), off = $('#bleOff');
+  off.style.display = ok ? 'none' : ''; off.textContent = ok ? '' : 'Na iPhonie i w Safari Web Bluetooth nie jest dostępny; można użyć przeglądarki Bluefy lub rozszerzenia iOSWebBLE, albo Chrome na Androidzie/komputerze. (Firefox też go nie obsługuje.)';
+  $('#bleNote').textContent = 'Bluetooth służy tylko do sterowania – obraz nie przechodzi przez BLE.';
+  document.querySelectorAll('#bleOn button,#bleOn input').forEach(e => { e.disabled = !ok || ((e.id === 'bleDisc') && !BLE.server); });
+  $('#bleOn').style.opacity = ok ? '' : '.4';
+  if (!ok) $('#bleInfo').textContent = 'Niedostępne w tej przeglądarce.';
+}
+async function bleConnect() {
+  const opt = [...BLE_COMMON];
+  try { const cu = $('#bleUuid').value.trim(); if (cu) opt.push(normUuid(cu)); } catch (e) { $('#bleInfo').textContent = e.message; return; }
+  try {
+    BLE.dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: opt });
+    BLE.dev.addEventListener('gattserverdisconnected', () => { bleOut('rozłączono'); BLE.server = null; BLE.notif.clear(); $('#bleDisc').disabled = true; $('#bleInfo').textContent = 'Rozłączono: ' + (BLE.dev && BLE.dev.name || ''); });
+    $('#bleInfo').textContent = 'Łączę z ' + (BLE.dev.name || BLE.dev.id) + '…';
+    BLE.server = await BLE.dev.gatt.connect(); $('#bleDisc').disabled = false;
+    let bat = ''; const rows = []; BLE.chars = [];
+    let svcs = []; try { svcs = await BLE.server.getPrimaryServices(); } catch (e) { bleOut('usługi niedostępne: ' + e.message); }
+    for (const sv of svcs) {
+      let chs = []; try { chs = await sv.getCharacteristics(); } catch (e) {}
+      for (const ch of chs) {
+        BLE.chars.push(ch);
+        if (sv.uuid.startsWith('0000180f') && ch.uuid.startsWith('00002a19')) { try { bat = ' · bateria ' + (await ch.readValue()).getUint8(0) + '%'; } catch (e) {} }
+      }
+    }
+    $('#bleInfo').textContent = `Połączono: ${BLE.dev.name || '(bez nazwy)'}${bat} · usług ${svcs.length}, charakterystyk ${BLE.chars.length}`;
+    bleOut('połączono: ' + (BLE.dev.name || BLE.dev.id));
+    renderBleList();
+  } catch (e) { $('#bleInfo').textContent = 'BŁĄD: ' + ((e && e.message) || e); bleOut('błąd: ' + ((e && e.message) || e)); }
+}
+function renderBleList() {
+  const L = $('#bleList'); L.textContent = '';
+  const short = u => u.replace(/^0000([0-9a-f]{4})-0000-1000-8000-00805f9b34fb$/, '$1');
+  BLE.chars.forEach(ch => {
+    const p = ch.properties, row = document.createElement('div'); row.className = 'prow'; row.style.flexWrap = 'wrap';
+    const nm = document.createElement('div'); nm.className = 'sub'; nm.style.flex = '1 1 100%'; nm.textContent = `${short(ch.service.uuid)} / ${short(ch.uuid)}  [${['read', 'write', 'writeWithoutResponse', 'notify', 'indicate'].filter(k => p[k]).join(',')}]`; row.appendChild(nm);
+    if (p.read) row.appendChild(mkBtn('Odczyt', async () => { try { const v = await ch.readValue(); bleOut(`${short(ch.uuid)} = ${hexOf(v)}${txtOf(v) ? ' "' + txtOf(v) + '"' : ''}`); } catch (e) { bleOut('odczyt: ' + e.message); } }));
+    if (p.write || p.writeWithoutResponse) row.appendChild(mkBtn('Zapis', async () => {
+      try {
+        const raw = $('#bleVal').value; let bytes;
+        if (BLE.fmt === 'hex') { const h = raw.replace(/0x|[\s,:-]/gi, ''); if (!h || h.length % 2 || /[^0-9a-f]/i.test(h)) throw new Error('HEX: parzysta liczba cyfr 0-9 a-f'); bytes = Uint8Array.from(h.match(/../g).map(x => parseInt(x, 16))); }
+        else bytes = new TextEncoder().encode(raw);
+        if (p.write) await ch.writeValueWithResponse(bytes); else await ch.writeValueWithoutResponse(bytes);
+        bleOut(`${short(ch.uuid)} ← ${Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+      } catch (e) { bleOut('zapis: ' + e.message); }
+    }));
+    if (p.notify || p.indicate) { const nb = mkBtn(BLE.notif.has(ch) ? 'Powiad. WŁ' : 'Powiadom', async () => {
+      try {
+        if (BLE.notif.has(ch)) { await ch.stopNotifications(); ch.removeEventListener('characteristicvaluechanged', onNotif); BLE.notif.delete(ch); }
+        else { ch.addEventListener('characteristicvaluechanged', onNotif); await ch.startNotifications(); BLE.notif.add(ch); }
+        renderBleList();
+      } catch (e) { bleOut('powiadomienia: ' + e.message); }
+    }); row.appendChild(nb); }
+    L.appendChild(row);
+  });
+}
+function onNotif(e) { const v = e.target.value; bleOut(`⇦ ${e.target.uuid.slice(4, 8)}: ${hexOf(v)}${txtOf(v) ? ' "' + txtOf(v) + '"' : ''}`); }
+$('#bleConn').onclick = bleConnect;
+$('#bleDisc').onclick = () => { try { if (BLE.dev && BLE.dev.gatt.connected) BLE.dev.gatt.disconnect(); } catch (e) {} };
+$('#bleFmt').onclick = () => { BLE.fmt = BLE.fmt === 'hex' ? 'text' : 'hex'; $('#bleFmt').textContent = BLE.fmt === 'hex' ? 'HEX' : 'TEKST'; };
+/* ====================== v6: offline (service worker, model cache, online/offline status) ====================== */
+const MODELS_CACHE = 'rt-models-v1';
+const MSETS = {
+  det: { n: 'WYKRYWANIE', files: [['model/model.json', 256443], ['model/group1-shard1of3', 4194304], ['model/group1-shard2of3', 4194304], ['model/group1-shard3of3', 644842]] },
+  face: { n: 'TWARZE', files: [['facemodel/tiny_face_detector_model-weights_manifest.json', 3219], ['facemodel/tiny_face_detector_model.bin', 193321], ['facemodel/face_landmark_68_model-weights_manifest.json', 8485], ['facemodel/face_landmark_68_model.bin', 356840], ['facemodel/face_recognition_model-weights_manifest.json', 19615], ['facemodel/face_recognition_model.bin', 6444032]] },
+  emb: { n: 'WYGLĄD', files: [['emodel/model.json', 91300], ['emodel/mnv2-shard1of2.bin', 4194304], ['emodel/mnv2-shard2of2.bin', 219784]] }
+};
+const NET = { sw: 'sprawdzam…', reg: null, shell: '', cached: { det: null, face: null, emb: null }, usage: '', dl: null, dlMsg: '', reloading: false };
+const absU = p => new URL(p, location.href).href;
+function needNetErr(k) { const e = new Error('AI: WYMAGA SIECI (MODEL NIE POBRANY)'); e.needNet = true; e.kind = k; return e; }
+const aiBlocked = k => navigator.onLine === false && NET.cached[k] === false;
+async function refreshCached() {
+  try {
+    if (!window.caches) throw new Error('no cache api');
+    const c = await caches.open(MODELS_CACHE);
+    for (const k in MSETS) { let all = true; for (const [f] of MSETS[k].files) if (!(await c.match(absU(f)))) { all = false; break; } NET.cached[k] = all; }
+  } catch (e) { for (const k in MSETS) NET.cached[k] = false; }
+  updNet();
+}
+function aiShort() {
+  if (S.ready) return navigator.onLine === false ? 'AI: OK (LOKALNIE)' : 'AI: OK';
+  if (S.aiErr) return /^WYMAGA/.test(S.aiErr) ? 'AI: WYMAGA SIECI' : 'AI: BŁĄD MODELU';
+  return S.started ? 'AI: ŁADOWANIE…' : '';
+}
+let netSig = '';
+function updNet() {
+  const on = navigator.onLine !== false; S.online = on;
+  const a = on ? '● ONLINE' : '○ OFFLINE', b = aiShort(), ok = MSETS && Object.values(NET.cached).every(v => v === true);
+  const sig = a + b + (ok ? 1 : 0) + NET.dlMsg + (NET.dl ? 1 : 0);
+  if (sig === netSig) return; netSig = sig;
+  $('#netA').textContent = a; $('#netB').textContent = b;
+  $('#net').classList.toggle('off', !on); $('#net').classList.toggle('warn', !on && !S.ready && !!S.aiErr);
+  $('#strOff').style.display = on ? 'none' : '';
+  const st = Object.entries(MSETS).map(([k, v]) => `${v.n} ${NET.cached[k] === null ? '…' : NET.cached[k] ? '✓' : '✗'}`).join(' · ');
+  $('#dlStat').textContent = (NET.dlMsg ? NET.dlMsg + '\n' : '') + `Modele offline: ${st}` + (ok ? '\nWszystko pobrane – rozpoznawanie działa bez internetu.' : '\nModele pobierają się też same przy pierwszym użyciu online.');
+  $('#bDl').textContent = NET.dl ? '⇩ POBIERANIE…' : ok ? '✓ MODELE OFFLINE GOTOWE (sprawdź)' : '⇩ POBIERZ MODELE OFFLINE';
+}
+window.addEventListener('online', () => {
+  log('SIEĆ: ONLINE', 'sys-l'); refreshCached().then(() => {
+    if (S.started && !S.ready && !S.modelP) ensureModel().then(() => { S.running = true; S.aiErr = ''; log('SIEĆ NEURONOWA GOTOWA (po powrocie sieci)', 'sys-l'); }).catch(() => {});
+    if (NET.reg) NET.reg.update().catch(() => {});
+  }); updNet();
+});
+window.addEventListener('offline', () => { log('SIEĆ: OFFLINE – kamera i HUD działają; AI tylko z pobranych modeli', 'warn'); refreshCached(); updNet(); });
+async function downloadModels() {
+  if (NET.dl) return;
+  if (!window.caches) { toast('Ta przeglądarka nie obsługuje pamięci offline (wymaga https).', 5000); return; }
+  if (navigator.onLine === false) { toast('Jesteś offline – pobierz modele, gdy wróci internet.', 4500); return; }
+  const files = []; for (const k in MSETS) for (const f of MSETS[k].files) files.push(f);
+  const total = files.reduce((s, f) => s + f[1], 0); let loaded = 0, n = 0;
+  NET.dl = { loaded: 0 }; const bar = $('#dlBar'); bar.style.display = 'block';
+  const upd = () => { bar.firstChild.style.width = Math.min(100, loaded / total * 100) + '%'; NET.dlMsg = `POBIERANIE ${Math.round(Math.min(1, loaded / total) * 100)}% · plik ${Math.min(n + 1, files.length)}/${files.length} · ${(loaded / 1048576).toFixed(1)}/${(total / 1048576).toFixed(1)} MB`; updNet(); };
+  try {
+    const c = await caches.open(MODELS_CACHE);
+    for (const [f, sz] of files) {
+      const url = absU(f);
+      if (!(await c.match(url))) {
+        const r = await fetch(url, { cache: 'no-cache' }); if (!r.ok || !r.body) throw new Error('HTTP ' + r.status + ' ' + f);
+        const rd = r.body.getReader(), chunks = []; let got = 0;
+        for (;;) { const { done, value } = await rd.read(); if (done) break; chunks.push(value); got += value.length; loaded += value.length; upd(); }
+        loaded += sz - got;
+        await c.put(url, new Response(new Blob(chunks), { status: 200, headers: { 'Content-Type': r.headers.get('Content-Type') || 'application/octet-stream' } }));
+      } else loaded += sz;
+      n++; upd();
+    }
+    NET.dlMsg = 'POBRANO WSZYSTKIE MODELE ✓'; log('MODELE OFFLINE: POBRANE', 'sys-l'); toast('Modele pobrane – rozpoznawanie działa teraz offline.', 4000); askPersist();
+  } catch (e) { NET.dlMsg = 'BŁĄD POBIERANIA: ' + ((e && e.message) || e); log('MODELE OFFLINE: ' + NET.dlMsg, 'warn'); toast(NET.dlMsg + '\nSprawdź internet i spróbuj ponownie.', 5000); }
+  NET.dl = null; bar.style.display = 'none'; await refreshCached();
+}
+$('#bDl').onclick = downloadModels;
+function needNetCard(what) {
+  return ncShow({ title: 'AI: WYMAGA SIECI', text: `Model ${what} nie jest pobrany, a jesteś offline.\nPołącz się z internetem (Menu → POBIERZ MODELE OFFLINE) – potem rozpoznawanie działa także bez sieci.\nKamera, radar, zoom i reszta działają normalnie.`, buttons: [{ id: 'ok', label: '[ OK ]' }] });
+}
+// ---- service worker: registration, update flow ("NOWA WERSJA"), diagnostics ----
+const updEl = $('#upd');
+function showUpd(w) { NET.waiting = w; updEl.classList.add('show'); log('NOWA WERSJA APLIKACJI GOTOWA – dotknij, by odświeżyć', 'warn'); }
+updEl.addEventListener('click', e => {
+  e.stopPropagation(); NET.reloading = true;
+  const w = NET.waiting || (NET.reg && NET.reg.waiting);
+  if (w) w.postMessage({ type: 'SKIP_WAITING' }); else location.reload();
+  setTimeout(() => location.reload(), 4000);
+});
+async function refreshNetInfo() {
+  const reg = NET.reg;
+  try {
+    if (!('serviceWorker' in navigator)) NET.sw = 'niedostępny w tej przeglądarce';
+    else if (!/^https?:$/.test(location.protocol)) NET.sw = 'wyłączony (strona nie z http/https)';
+    else if (!reg) NET.sw = NET.swErr ? 'BŁĄD: ' + NET.swErr : 'rejestracja…';
+    else NET.sw = (navigator.serviceWorker.controller ? 'AKTYWNY (steruje stroną)' : reg.active ? 'zainstalowany (przejmie stronę po przeładowaniu)' : reg.installing ? 'instaluje się…' : '—') + (reg.waiting ? ' · CZEKA NOWA WERSJA' : '');
+    NET.shell = window.caches ? (await caches.keys()).filter(k => /^rt-/.test(k)).join(', ') || '—' : 'brak Cache API';
+    if (navigator.storage && navigator.storage.estimate) { const q = await navigator.storage.estimate(); NET.usage = `${((q.usage || 0) / 1048576).toFixed(1)} MB z ${Math.round((q.quota || 0) / 1048576)} MB`; }
+  } catch (e) {}
+  await refreshCached();
+}
+async function initSW() {
+  if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) { refreshNetInfo(); return; }
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (NET.reloading) location.reload(); });
+  try {
+    const reg = await navigator.serviceWorker.register('sw.js', { scope: './' }); NET.reg = reg;
+    if (reg.waiting && navigator.serviceWorker.controller) showUpd(reg.waiting);
+    reg.addEventListener('updatefound', () => { const nw = reg.installing; if (!nw) return; nw.addEventListener('statechange', () => { if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpd(reg.waiting || nw); refreshNetInfo(); }); });
+    const chk = () => { if (navigator.onLine !== false) reg.update().catch(() => {}); };
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) chk(); });
+    setInterval(chk, 30 * 60 * 1000);
+    askPersist();
+  } catch (e) { NET.swErr = (e && e.message) || String(e); }
+  refreshNetInfo();
+}
+setInterval(() => { updNet(); if (S.panel === 'settings') refreshNetInfo(); }, 1000);
+refreshCached(); initSW();
 
 /* ---------- photo & video ---------- */
 const fileStamp = () => { const d = new Date(); return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; };
@@ -1753,6 +2542,7 @@ $('#mediaClose').onclick = () => { $('#media').classList.remove('show'); const p
 function drawComposite(c, w, h, stamped) {
   paintVideo(c, w, h);
   c.drawImage(hud, 0, 0, w, h);
+  drawReticle(c, w, h);
   if (S.radar) { const r = $('#radar'); c.drawImage(r, r.offsetLeft * w / S.W, r.offsetTop * h / S.H, r.offsetWidth * w / S.W, r.offsetHeight * h / S.H); }
   if (stamped) {
     const d = new Date(), fs = Math.round(Math.max(14, h / 38));
@@ -1761,15 +2551,16 @@ function drawComposite(c, w, h, stamped) {
   }
 }
 function snapshot() {
-  if (!video.videoWidth || !S.stream) { toast('Najpierw uruchom kamerę.', 2500); return; }
-  const k = Math.min(2, 1280 / Math.max(S.W, S.H));
+  if (!hasFrames()) { toast('Najpierw uruchom kamerę.', 2500); return; }
+  if (S.tainted) { toast('Zdjęcie niemożliwe: ' + TAINT_MSG, 6000); return; }
+  const k = Math.min(3, 2400 / Math.max(S.W, S.H));
   const w = Math.round(S.W * k), h = Math.round(S.H * k);
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-  drawComposite(cv.getContext('2d'), w, h, true);
+  try { drawComposite(cv.getContext('2d'), w, h, true); } catch (e) { if (isTaintErr(e)) { onTaint(); toast(TAINT_MSG, 6000); return; } throw e; }
   const name = `majsterman-${fileStamp()}.jpg`;
   const f = $('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
   sfx.snap();
-  cv.toBlob(blob => { if (!blob) { toast('Nie udało się zapisać zdjęcia.', 3000); return; } showMedia('photo', blob, name); log('ZDJĘCIE ZROBIONE', 'warn'); }, 'image/jpeg', .92);
+  try { cv.toBlob(blob => { if (!blob) { toast('Nie udało się zapisać zdjęcia.', 3000); return; } showMedia('photo', blob, name); log('ZDJĘCIE ZROBIONE', 'warn'); }, 'image/jpeg', .92); } catch (e) { toast('Zdjęcie niemożliwe: ' + TAINT_MSG, 6000); }
 }
 function pickMime() {
   if (!window.MediaRecorder) return null;
@@ -1779,10 +2570,11 @@ function pickMime() {
 }
 function startRec() {
   if (S.rec) return;
-  if (!video.videoWidth || !S.stream) { toast('Najpierw uruchom kamerę.', 2500); return; }
+  if (!hasFrames()) { toast('Najpierw uruchom kamerę.', 2500); return; }
+  if (S.tainted) { toast('Nagrywanie niemożliwe: ' + TAINT_MSG, 6000); return; }
   const mime = pickMime();
   if (mime === null || !HTMLCanvasElement.prototype.captureStream) { toast('Ta przeglądarka nie obsługuje nagrywania wideo z ekranu.\nUżyj Safari (iOS 14.3+) albo Chrome.', 6000); return; }
-  const k = Math.min(1, 720 / Math.max(S.W, S.H));
+  const k = Math.min(1, (IS_TOUCH ? 960 : 1280) / Math.max(S.W, S.H));
   const rw = Math.max(2, Math.round(S.W * k / 2) * 2), rh = Math.max(2, Math.round(S.H * k / 2) * 2);
   const cv = document.createElement('canvas'); cv.width = rw; cv.height = rh;
   const ctx = cv.getContext('2d');
@@ -1838,6 +2630,7 @@ function syncToggles() {
   $('#bMute').classList.toggle('on', !S.mute); $('#bMute').classList.toggle('off', S.mute);
   $('#bObj').classList.toggle('on', S.objects); $('#bGrid').classList.toggle('on', S.grid); $('#bTrail').classList.toggle('on', S.trails);
   $('#cOw').style.display = S.objects ? '' : 'none';
+  $('#bAuto').classList.toggle('on', S.autoName); $('#bRet').classList.toggle('on', S.ret); $('#bRet').classList.toggle('off', !S.ret);
   $('#bRadar').classList.toggle('on', S.radar); $('#radar').classList.toggle('off', !S.radar);
 }
 function toggleMute() { S.mute = !S.mute; lsSet('rt_mute', S.mute ? 1 : 0); syncToggles(); if (!S.mute) sfx.tick(); }
@@ -1846,16 +2639,9 @@ function togglePalette() { S.palette = S.palette === 'green' ? 'amber' : 'green'
 function toggleRadar() { S.radar = !S.radar; lsSet('rt_radar', S.radar ? 1 : 0); syncToggles(); }
 function toggleGrid() { S.grid = !S.grid; lsSet('rt_grid', S.grid ? 1 : 0); syncToggles(); }
 function toggleTrails() { S.trails = !S.trails; lsSet('rt_trail', S.trails ? 1 : 0); syncToggles(); }
-async function switchCam() {
-  if ($('#bCam').disabled) { toast('To urządzenie ma tylko jedną kamerę.', 2500); return; }
-  if (S.rec) { toast('Zatrzymaj nagrywanie przed zmianą kamery.', 2500); return; }
-  S.facing = S.facing === 'user' ? 'environment' : 'user';
-  log(`KAMERA: ${S.facing === 'user' ? 'PRZÓD' : 'TYŁ'}`, 'sys-l');
-  S.tracks = []; S.sel = null; hideCard();
-  try { await startCamera(); } catch (e) {}
-}
 $('#bMute').onclick = toggleMute; $('#bObj').onclick = toggleObjects; $('#bPal').onclick = togglePalette;
 $('#bShot').onclick = snapshot; $('#bRec').onclick = toggleRec; $('#bCam').onclick = switchCam; $('#bGrid').onclick = toggleGrid;
+$('#bSrc').onclick = () => { S.panel === 'src' ? closePanels() : openPanel('src'); }; $('#bName').onclick = () => nameFlow(); $('#bRet').onclick = toggleRet; $('#bAuto').onclick = toggleAuto;
 $('#bTrail').onclick = toggleTrails; $('#bRadar').onclick = toggleRadar; $('#bFull').onclick = toggleFull;
 $('#bSet').onclick = () => { S.panel === 'settings' ? closePanels() : openPanel('settings'); };
 $('#bBase').onclick = $('#bBase2').onclick = () => openPanel('dbp');
@@ -1869,7 +2655,7 @@ $('#retryBtn').onclick = async () => {
   const camP = startCamera(); camP.catch(() => {});
   if (!S.ready) {
     try { await ensureModel(); S.running = true; log('SIEĆ NEURONOWA GOTOWA', 'sys-l'); }
-    catch (e) { showErr(modelErrMsg(e), ''); return; }
+    catch (e) { if (e && e.needNet) log('AI: WYMAGA SIECI (MODEL NIE POBRANY)', 'warn'); else showErr(modelErrMsg(e), ''); return; }
   }
   try { await camP; } catch (e) {}
 };
@@ -1877,12 +2663,15 @@ document.querySelectorAll('button').forEach(b => b.addEventListener('click', () 
 window.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if ($('#dlg').classList.contains('show')) { if (e.key === 'Escape') dlgDone(null); return; }
+  if (ncEl.classList.contains('show')) { if (e.key === 'Escape') ncDone({ id: 'cancel' }); return; }
   if (e.target && e.target.tagName === 'INPUT') return;
   if (!S.started) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); start(); } else if (e.code === 'KeyH') cycleRot(); return; }
   if (e.key === 'Escape') { if ($('#media').classList.contains('show')) $('#mediaClose').click(); else if (S.panel) closePanels(); else { S.sel = null; hideCard(); } return; }
   switch (e.code) {
     case 'KeyM': toggleMute(); break; case 'KeyO': toggleObjects(); break; case 'KeyT': togglePalette(); break;
     case 'KeyS': snapshot(); break; case 'KeyR': toggleRec(); break; case 'KeyC': switchCam(); break; case 'KeyG': toggleGrid(); break; case 'KeyD': toggleRadar(); break;
+    case 'KeyI': S.panel === 'src' ? closePanels() : openPanel('src'); break; case 'KeyN': nameFlow(); break; case 'KeyX': toggleRet(); break; case 'KeyA': toggleAuto(); break;
+    case 'Equal': case 'NumpadAdd': setZoom(S.zt * 1.25); break; case 'Minus': case 'NumpadSubtract': setZoom(S.zt / 1.25); break;
     case 'KeyL': toggleTrails(); break; case 'KeyF': toggleFull(); break; case 'KeyH': cycleRot(); break;
     case 'KeyV': if (S.rot) cycleVrot(); break; case 'KeyB': S.panel === 'dbp' ? closePanels() : openPanel('dbp'); break;
   }
@@ -1900,19 +2689,19 @@ function updateTop(now) {
   renderCard();
   if (S.panel === 'settings') renderStats();
 }
-let radT = 0, last = performance.now(), rN = 0, rT = last, panelT = 0, hudT = 0, hudDt = 0;
+let hudCost = 0, radT = 0, last = performance.now(), rN = 0, rT = last, panelT = 0, hudT = 0, hudDt = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(.1, (now - last) / 1000); last = now; hudDt += dt;
   // 1) live camera -> screen, every new camera frame (cheap, low-res canvas)
   if (!haveRVFC && video.currentTime !== lastCT) { lastCT = video.currentTime; camFrames++; S.newFrame = true; }
-  if (S.newFrame || !S.stream) { S.newFrame = false; try { paintVideo(vctx, vcanvas.width, vcanvas.height); } catch (e) {} }
+  S.newFrame = false; zoomStep(now, Math.min(dt, .1));
   // 2) detection kicks off in the background (never awaited here)
   if (S.busy && now - S.busyAt > 12000) S.busy = false;
   if (S.ready && S.running && !S.busy && now >= S.nextInfer && video.readyState >= 2 && !document.hidden) infer(now);
   matchTick(now);
   // 3) HUD overlay (30 fps cap on phones)
-  if (!IS_TOUCH || now - hudT > 30) { hudT = now; drawHud(now, hudDt); hudDt = 0; }
+  if (!IS_TOUCH || now - hudT >= (hudCost > 6 ? 30 : 0)) { hudT = now; const h0 = performance.now(); drawHud(now, hudDt); hudDt = 0; hudCost = hudCost * .9 + (performance.now() - h0) * .1; }
   if (!IS_TOUCH || now - radT > 66) { radT = now; drawRadar(); }
   // 4) recording composite (only while recording)
   if (S.rec && now - S.rec.last > 33) { S.rec.last = now; try { drawComposite(S.rec.ctx, S.rec.cv.width, S.rec.cv.height, false); } catch (e) {} }
@@ -1957,17 +2746,17 @@ async function start() {
   await Promise.race([camP.catch(() => {}), sleep(1200)]);
   $('#boot').classList.add('hide');
   try { await modelP; log(`SIEĆ NEURONOWA GOTOWA (${S.backend.toUpperCase()}${S.mode === 'worker' ? ', worker' : ''})`, 'sys-l'); S.running = true; }
-  catch (e) { showErr(modelErrMsg(e), ''); log('BŁĄD SIECI NEURONOWEJ', 'warn'); }
+  catch (e) { if (e && e.needNet) log('AI: WYMAGA SIECI (MODEL NIE POBRANY) – kamera i HUD działają', 'warn'); else { showErr(modelErrMsg(e), ''); log('BŁĄD SIECI NEURONOWEJ', 'warn'); } }
   try { await camP; } catch (e) {}
   if (S.port && S.rot === 0 && IS_TOUCH) toast('Masz blokadę obrotu? Menu → „Obróć HUD”', 6000);
   window.__ready = true;
 }
 $('#startBtn').onclick = start;
 $('#boot').addEventListener('click', e => { /* tap anywhere does nothing: camera needs the explicit button */ });
-applyPalette(); syncToggles(); resize(); introScreen(); loadDb();
+applyPalette(); syncToggles(); renderRet(); resize(); introScreen(); loadDb();
 requestAnimationFrame(frame);
 window.__S = S;
-window.__T = { hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, scanHuman, scanAnimal, matchProfile, ensureFace, faceAt, openPanel, closePanels };
+window.__T = { hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, nameFlow, matchProfile, ensureFace, faceAt, openPanel, closePanels, setZoom, setStream, startCamera, enrollFace, SRC, RET, setRetStyle, toggleRet, ncDone, renderBle, ensureEmbed, NET, MSETS, refreshCached, refreshNetInfo, downloadModels, aiBlocked, updNet };
 if (new URLSearchParams(location.search).has('auto')) start();
 })();
 </script>

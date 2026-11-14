@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Retro Tracker</title>
+  <defs><radialGradient id="g" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#0b2a14"/><stop offset="1" stop-color="#03100a"/></radialGradient>
+  <filter id="gl" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter></defs>
+  <rect width="512" height="512" fill="#030805"/>
+  <g transform="translate(0.00 0.00) scale(1.0)" shape-rendering="crispEdges">
+  <circle cx="256" cy="256" r="228" fill="none" stroke="#33ff66" stroke-opacity=".35" stroke-width="6"/>
+  <circle cx="256" cy="256" r="214" fill="url(#g)" stroke="#33ff66" stroke-width="8"/>
+  <g fill="none" stroke="#33ff66" stroke-opacity=".5" stroke-width="4">
+    <circle cx="256" cy="256" r="142"/><circle cx="256" cy="256" r="71"/>
+  </g>
+  <g stroke="#33ff66" stroke-opacity=".45" stroke-width="4"><path d="M42 256H470M256 42V470"/></g>
+  <path d="M452.0 256.0L470.0 256.0 M453.0 308.8L462.7 311.4 M432.7 358.0L441.3 363.0 M400.2 400.2L407.3 407.3 M358.0 432.7L363.0 441.3 M308.8 453.0L311.4 462.7 M256.0 452.0L256.0 470.0 M203.2 453.0L200.6 462.7 M154.0 432.7L149.0 441.3 M111.8 400.2L104.7 407.3 M79.3 358.0L70.7 363.0 M59.0 308.8L49.3 311.4 M60.0 256.0L42.0 256.0 M59.0 203.2L49.3 200.6 M79.3 154.0L70.7 149.0 M111.8 111.8L104.7 104.7 M154.0 79.3L149.0 70.7 M203.2 59.0L200.6 49.3 M256.0 60.0L256.0 42.0 M308.8 59.0L311.4 49.3 M358.0 79.3L363.0 70.7 M400.2 111.8L407.3 104.7 M432.7 154.0L441.3 149.0 M453.0 203.2L462.7 200.6" stroke="#33ff66" stroke-opacity=".8" stroke-width="4" fill="none"/>
+  <g transform="rotate(-35 256 256)">
+    <animateTransform attributeName="transform" type="rotate" from="-35 256 256" to="325 256 256" dur="4s" repeatCount="indefinite"/>
+    <g filter="url(#gl)" opacity=".9"><path d="M256 256H470" stroke="#33ff66" stroke-width="14"/></g>
+    <path d="M256 256L470.0 256.0A214 214 0 0 0 469.2 237.3Z" fill="#33ff66" fill-opacity="0.550"/>
+    <path d="M256 256L469.2 237.3A214 214 0 0 0 466.7 218.8Z" fill="#33ff66" fill-opacity="0.489"/>
+    <path d="M256 256L466.7 218.8A214 214 0 0 0 462.7 200.6Z" fill="#33ff66" fill-opacity="0.430"/>
+    <path d="M256 256L462.7 200.6A214 214 0 0 0 457.1 182.8Z" fill="#33ff66" fill-opacity="0.374"/>
+    <path d="M256 256L457.1 182.8A214 214 0 0 0 449.9 165.6Z" fill="#33ff66" fill-opacity="0.321"/>
+    <path d="M256 256L449.9 165.6A214 214 0 0 0 441.3 149.0Z" fill="#33ff66" fill-opacity="0.271"/>
+    <path d="M256 256L441.3 149.0A214 214 0 0 0 431.3 133.3Z" fill="#33ff66" fill-opacity="0.225"/>
+    <path d="M256 256L431.3 133.3A214 214 0 0 0 419.9 118.4Z" fill="#33ff66" fill-opacity="0.181"/>
+    <path d="M256 256L419.9 118.4A214 214 0 0 0 407.3 104.7Z" fill="#33ff66" fill-opacity="0.142"/>
+    <path d="M256 256L407.3 104.7A214 214 0 0 0 393.6 92.1Z" fill="#33ff66" fill-opacity="0.106"/>
+    <path d="M256 256L393.6 92.1A214 214 0 0 0 378.7 80.7Z" fill="#33ff66" fill-opacity="0.074"/>
+    <path d="M256 256L378.7 80.7A214 214 0 0 0 363.0 70.7Z" fill="#33ff66" fill-opacity="0.047"/>
+    <path d="M256 256L363.0 70.7A214 214 0 0 0 346.4 62.1Z" fill="#33ff66" fill-opacity="0.024"/>
+    <path d="M256 256L346.4 62.1A214 214 0 0 0 329.2 54.9Z" fill="#33ff66" fill-opacity="0.008"/>
+    <path d="M256 256H470" stroke="#33ff66" stroke-width="8"/>
+  </g>
+  <g fill="#33ff66"><rect x="318" y="176" width="22" height="22"/><rect x="190" y="318" width="18" height="18"/><rect x="332" y="296" width="14" height="14" fill-opacity=".7"/></g>
+  <g fill="#33ff66" fill-opacity=".25"><rect x="308" y="166" width="42" height="42"/><rect x="181" y="309" width="36" height="36"/></g>
+  <rect x="248" y="248" width="16" height="16" fill="#33ff66"/>
+  </g>
+</svg>
