@@ -5,7 +5,7 @@
  * AI-runtime cache (rt-ai-v1, kept across releases, filled on first use of the chat): lib/webllm/ + lib/wllama/ (≈14 MB of JS/WASM for the local AI chat). The AI *weights* are NOT here:
  *   WebLLM keeps them in the Cache API ('webllm/*'), wllama in OPFS — both written by the library after the user's explicit consent, and never touched by this worker (cross-origin goes straight through).
  * Update flow: a new version installs in the background and WAITS; the app shows "NOWA WERSJA — DOTKNIJ, BY ODŚWIEŻYĆ" and sends SKIP_WAITING. */
-const VERSION = 'v6-23c7950f';
+const VERSION = 'v6-d6c02444';
 const SHELL = 'rt-shell-' + VERSION, MODELS = 'rt-models-v1', AIRT = 'rt-ai-v1';
 const PRECACHE = [
   './', 'index.html', 'manifest.webmanifest',

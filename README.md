@@ -87,3 +87,10 @@ Zakładka **CZAT AI** (Menu → „CZAT AI”). Model językowy działa w cało�
 - Dźwięk „terminala” (pętla ~5,4 s, bez szwu), gra **tylko gdy na ekranie widać tokeny odpowiedzi** (start przy pierwszym widocznym tokenie, wyciszenie ~100 ms po końcu/stopie/błędzie), przełącznik „Dźwięk AI” (domyślnie wł., `rt_aisnd`). Brak dźwięku przy pisaniu wiadomości. Plik: `sounds/ai-terminal.wav` (w cache SW).
 - Dźwięk: „Sci-Fi Computer Terminal” by unfa, freesound.org/s/543968, licencja CC0 (domena publiczna; przycięty do równej części, pętla z crossfade, normalizacja).
 - Licencje: WebLLM Apache-2.0, wllama MIT, Qwen2.5-0.5B Apache-2.0.
+
+## v6.6-games
+Menu → **GRY**: Snake, Pong (vs AI, do 7 pkt), Breakout, Tetris, Space Invaders, Asteroids. Canvas 2D w stylu zielonego CRT (skanlinie), wybór gry na ekranie głównym zakładki, rekord każdej gry w `localStorage` (`rt_hi_<gra>`).
+- Sterowanie dotykiem: Snake — gest przeciągnięcia (+ ◀▲▼▶); Pong i Breakout — przeciąganie paletki (+ ◀ ▶, stuknięcie = start); Tetris — stuknięcie obraca, przeciągnięcie w bok/w dół przesuwa, szybki ruch w dół = upuszczenie (+ przyciski); Space Invaders — przeciąganie statku, strzela przy dotyku (+ ◀ ▶ STRZEL); Asteroids — ⟲ ⟳ ▲ ● (stuknięcie w planszę = ogień). Na komputerze: strzałki/WASD, spacja, P = pauza, Enter = od nowa.
+- Pauza / od nowa / powrót do listy gier; auto-pauza po zamknięciu panelu lub ukryciu karty. Kamera i detekcja są wstrzymane przy otwartym panelu GRY (jak przy czacie AI).
+- Dźwięki WebAudio (beepy) z przełącznikiem „Dźwięk gier” (`rt_gsnd`, domyślnie wł.; respektuje też globalne wyciszenie).
+- Pionowy i poziomy układ, safe areas, działa offline (kod jest w `index.html` w cache SW).
