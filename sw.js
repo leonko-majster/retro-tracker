@@ -3,7 +3,7 @@
  * MODELS cache (rt-models-v1, kept across releases): model/ emodel/ facemodel/ – cache-first, filled on the first successful load
  *   or by the in-app "POBIERZ MODELE OFFLINE" button. Everything the AI needs runs locally, so cached models => AI works offline.
  * Update flow: a new version installs in the background and WAITS; the app shows "NOWA WERSJA — DOTKNIJ, BY ODŚWIEŻYĆ" and sends SKIP_WAITING. */
-const VERSION = 'v6-e6957e14';
+const VERSION = 'v6-58b4f7f8';
 const SHELL = 'rt-shell-' + VERSION, MODELS = 'rt-models-v1';
 const PRECACHE = [
   './', 'index.html', 'manifest.webmanifest',
