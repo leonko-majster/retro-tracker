@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="app-version" content="2026-11-15-v6.7-ai-polish">
+<meta name="app-version" content="2026-11-15-v6.8-ai-helpful">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tracker">
@@ -186,7 +186,8 @@ input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;bor
 #chModels{flex:none;display:flex;gap:6px}
 #chModels button{flex:1 1 0;min-width:0;font-size:17px;line-height:1.05;padding:3px 2px;white-space:pre-line}
 #chModels button.on{border-color:var(--fg);background:rgba(var(--fg-rgb,51,255,102),.18);box-shadow:0 0 8px rgba(var(--fg-rgb,51,255,102),.5)}
-#chat.kb #chModels{display:none}
+#chHint{flex:none;font-size:18px;line-height:1.15;padding:6px 8px;border:1px solid var(--fg);background:rgba(var(--fg-rgb,51,255,102),.14);color:var(--fg);text-align:left;white-space:pre-line}
+#chat.kb #chHint,#chat.kb #chModels{display:none !important}
 #chDl{flex:none;display:flex;flex-direction:column;gap:6px;max-height:46%;overflow-y:auto}
 #chInfo{font-size:19px;line-height:1.12;color:var(--fg);border:1px solid var(--faint);padding:5px 8px;white-space:pre-line}
 #chGet{width:100%;font-size:23px;padding:8px 6px;border-color:var(--fg);background:rgba(var(--fg-rgb,51,255,102),.1)}
@@ -450,6 +451,7 @@ body.gh #bCatch{display:flex}
     <h2><span>CZAT AI</span><span class="hb"><button id="chClear">[ Wyczyść ]</button><button id="chX">[ Zamknij ]</button></span></h2>
     <div id="chStat"></div>
     <div id="chModels"><button data-k="lite">LITE</button><button data-k="std">STANDARD</button></div>
+    <button id="chHint" type="button" style="display:none"></button>
     <div id="chDl">
       <div id="chInfo"></div>
       <button id="chGet">⇩ POBIERZ MODEL AI</button>
@@ -2100,7 +2102,7 @@ function renderStats() {
     `STRUMIEŃ WIDEO: ${video.videoWidth || 0}x${video.videoHeight || 0} · poziom ${S.res.level ? 'WYSOKI (zoom)' : 'bazowy'}${S.res.fail ? ' · wyższa rozdzielczość niedostępna' : ''} · wyświetlanie: pełna rozdzielczość (<video> + CSS)\n` +
     `WYKRYWANIE: ${S.backend ? S.backend.toUpperCase() + (S.mode === 'worker' ? ' (worker)' : '') : '—'} · ${S.nnFps ? S.nnFps.toFixed(1) : '—'}/s · ${S.infMs ? Math.round(S.infMs) : '—'} ms\n` +
     `BAZA: ${S.profiles.length} twarzy · ${S.animals.length} zwierząt · ${S.dbOk ? 'IndexedDB' : 'pamięć tymczasowa'} · trwałe: ${D.persisted}\n` +
-    `Wersja: v6.7-ai-polish · ŹRÓDŁO: ${srcLabel()}${S.tainted ? ' (BEZ CORS: analiza wyłączona)' : ''} · zoom ${(S.zc || 1).toFixed(1)}x (sprzęt ${(S.hwz || 1).toFixed(1)}x + cyfrowy ${(S.dz || 1).toFixed(1)}x)\n\nDIAGNOSTYKA\n` +
+    `Wersja: v6.8-ai-helpful · ŹRÓDŁO: ${srcLabel()}${S.tainted ? ' (BEZ CORS: analiza wyłączona)' : ''} · zoom ${(S.zc || 1).toFixed(1)}x (sprzęt ${(S.hwz || 1).toFixed(1)}x + cyfrowy ${(S.dz || 1).toFixed(1)}x)\n\nDIAGNOSTYKA\n` +
     `SIEĆ: ${navigator.onLine === false ? 'OFFLINE' : 'online'} · SERWIS WORKER: ${NET.sw} · pamięć aplikacji: ${NET.shell || '—'}\n` +
     `MODELE OFFLINE: ${Object.entries(MSETS).map(([k, v]) => `${v.n} ${NET.cached[k] === null ? '…' : NET.cached[k] ? 'POBRANE' : 'brak'}`).join(' · ')} · zajęte ${NET.usage || '—'}\n` +
     `${aiShort() || 'AI: —'}${S.aiErr ? ' (' + S.aiErr + ')' : ''}\n` +
@@ -3170,7 +3172,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) catch
 $('#bGhSens').onclick = () => ghRequestSensors();
 if (GH.on) { ghSetOn(true, false); } else ghUi();
 /* =====================================================================
-   v6.5/6.7  CZAT AI  —  lokalny model językowy, zero serwerów czatu.
+   v6.5/6.8  CZAT AI  —  lokalny model językowy, zero serwerów czatu.
    WebGPU (Safari 26 / Chrome): WebLLM + Gemma-2-2B-it q4f16 (domyślnie, ~1,4 GB) albo LITE Qwen2.5-0.5B (~290 MB).
    Bez WebGPU: wllama (llama.cpp → WebAssembly, CPU) + te same modele jako GGUF (Q4_K_M / Q4_0).
    Biblioteki leżą w lib/webllm i lib/wllama (hostowane tutaj). Wagi modelu pobierane JEDNORAZOWO z Hugging Face
@@ -3192,7 +3194,11 @@ const AI = {
   kind: null, f16: true, why: '', state: 'init', inst: null, lib: null, busy: false, ctl: null, stopReq: false, relT: 0, msgs: [], progress: 0, progText: '', err: '', dlCtl: null, opened: false
 };
 try { AI.msgs = JSON.parse(lsGet('rt_aichat', '[]')).filter(m => m && (m.r === 'u' || m.r === 'a') && typeof m.t === 'string').slice(-40); } catch (e) { AI.msgs = []; }
-const aiEl = { p: $('#chat'), stat: $('#chStat'), log: $('#chLog'), tx: $('#chTx'), send: $('#chSend'), get: $('#chGet'), cancel: $('#chCancel'), bar: $('#chBar'), barT: $('#chBarT'), info: $('#chInfo'), dl: $('#chDl'), snd: $('#chSnd'), eng: $('#chEng'), models: $('#chModels'), del: $('#chDel'), clr: $('#chClear') };
+const aiEl = { p: $('#chat'), stat: $('#chStat'), log: $('#chLog'), tx: $('#chTx'), send: $('#chSend'), get: $('#chGet'), cancel: $('#chCancel'), bar: $('#chBar'), barT: $('#chBarT'), info: $('#chInfo'), dl: $('#chDl'), snd: $('#chSnd'), eng: $('#chEng'), models: $('#chModels'), del: $('#chDel'), clr: $('#chClear'), hint: $('#chHint') };
+if (lsGet('rt_ai_v68_gpu', '') !== '1') {                                       // v6.8: older versions may have left the phone on manual CPU; probe WebGPU again once
+  lsSet('rt_ai_v68_gpu', '1');
+  if (AI.pref === 'wasm') { AI.pref = 'auto'; lsSet('rt_ai_engine', 'auto'); AI.reprobe = true; }
+}
 const aiAbs = p => new URL(p, document.baseURI).href;
 const aiMB = b => Math.round(b / 1048576) + ' MB';
 
@@ -3235,14 +3241,13 @@ async function aiDetect() {
   if (AI.kind) return AI.kind;
   const nowasm = typeof WebAssembly !== 'object';
   let wg = false, why = '';
-  if (AI.pref !== 'wasm') {
-    try {
-      if (!navigator.gpu) why = 'brak WebGPU w tej przeglądarce';
-      else { const ad = await navigator.gpu.requestAdapter(); if (!ad) why = 'brak adaptera WebGPU'; else { wg = true; AI.f16 = ad.features.has('shader-f16'); } }
-    } catch (e) { why = 'WebGPU zgłosiło błąd'; }
-  } else why = 'wybrano tryb CPU';
-  AI.why = why;
-  if (wg) AI.kind = 'webgpu'; else if (!nowasm) AI.kind = 'wasm'; else AI.kind = 'none';
+  try {
+    if (!navigator.gpu) why = 'brak WebGPU w tej przeglądarce';
+    else { const ad = await navigator.gpu.requestAdapter(); if (!ad) why = 'brak adaptera WebGPU'; else { wg = true; AI.f16 = ad.features.has('shader-f16'); } }
+  } catch (e) { why = 'WebGPU zgłosiło błąd' + (e && e.message ? ': ' + String(e.message).slice(0, 100) : ''); }
+  AI.gpuOk = wg;
+  if (AI.pref === 'wasm') { AI.why = wg ? 'wybrano tryb CPU' : (why || 'wybrano tryb CPU'); AI.kind = nowasm ? 'none' : 'wasm'; }
+  else { AI.why = wg ? '' : why; AI.kind = wg ? 'webgpu' : (nowasm ? 'none' : 'wasm'); }
   return AI.kind;
 }
 const aiM = k => AI_MODELS[k || AI.model];
@@ -3252,13 +3257,21 @@ const aiModelInfo = k => { const m = aiM(k), w = AI.kind === 'webgpu'; return { 
 const aiFlagKey = k => { k = k || AI.model; return 'rt_ai_ready_' + AI.kind + (AI.kind === 'webgpu' && !AI.f16 ? '32' : '') + (k === 'lite' ? '' : '_' + k); };   // "lite" keeps the v6.5 key → old downloads are recognised
 const aiCached = k => lsGet(aiFlagKey(k), '0') === '1';
 
-/* ---------- system prompt (v6.7) ----------
-   The v6.5 prompt was a long list of rules + app features + live stats, sent with EVERY question. A small model treats such text as something to
-   paraphrase: it opened replies with rule-like boilerplate ("musi zawsze być zgodny z prawem…"), echoed the feature list and mixed app facts into
-   unrelated answers (a pancake recipe turned into "Ania jest zimna…"). Now: a one-sentence persona with NO rules/prohibitions, and the app facts
-   + live counters are added ONLY when the question is about the app. */
+/* ---------- system prompt (v6.8) ----------
+   v6.7 shortened the persona and dropped rule-lists (those were paraphrased as "musi być zgodny z prawem").
+   v6.8: LITE (0.5B) still refused capability / help questions ("nie mogę robić anythinggo") — "asystent" primed
+   safety refusals, and questions like "co możesz robić" never received the app block (no keyword match).
+   Now: a short positive persona (no prohibitions), on-device intent detection with curated Polish help
+   (used directly for app-help questions), a refusal guard, and LITE-only few-shot examples when generating. */
 const AI_APP_RE = /aplikacj|tracker|radar|kadr|kamer|duch|duszk|ŁAP|łap|imi[eę]|zoom|przybli|zdj[eę]c|nagra|\bgr[yaęi]\b|gier|czat|offline|model\b|ile (osób|ludzi|zwierz|duch)|rozpozn|wykry|skan|menu|ustawieni/i;
-const AI_BASE_SYS = 'Jesteś pomocnym asystentem. Rozmawiasz po polsku — poprawną, naturalną polszczyzną. Odpowiadasz konkretnie i na temat, zwykłym tekstem (bez Markdown i emoji).';
+const AI_BASE_SYS = 'Jesteś pomocnym rozmówcą. Rozmawiasz po polsku — poprawną, naturalną polszczyzną. Odpowiadasz konkretnie i z pomocą, zwykłym tekstem (bez Markdown i emoji).';
+const AI_RETRY_SYS = 'Użytkownik prosi o pomoc. Odpowiedz po polsku, krótko, konkretnie i życzliwie. Podaj praktyczne wskazówki.';
+const AI_SHOTS = [
+  { role: 'user', content: 'Co możesz robić?' },
+  { role: 'assistant', content: 'Mogę rozmawiać po polsku i pomagać w Retro Trackerze: wykrywanie ludzi i zwierząt, imiona, radar, zdjęcia i nagrania, zoom do 10x, detektor duchów (ŁAP) i gry retro. O co chcesz zapytać?' },
+  { role: 'user', content: 'Pomóż mi łapać duchy.' },
+  { role: 'assistant', content: 'W menu włącz DETEKTOR DUCHÓW, namierz ducha celownikiem albo stuknij w niego i przytrzymaj ŁAP, aż pierścień się zapełni. Jeśli puścisz za wcześnie, duch ucieknie.' }
+];
 function aiState() {
   let o = { H: 0, A: 0, names: [], ghosts: 0 };
   try {
@@ -3270,21 +3283,54 @@ function aiState() {
   return o;
 }
 const aiPl = (n, a, b, c) => n === 1 ? a : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 > 20)) ? b : c;
-const aiAppQ = txt => AI_APP_RE.test(txt || '');
+const aiLive = st => `Teraz w kadrze: ${st.H} ${aiPl(st.H, 'osoba', 'osoby', 'osób')}, ${st.A} ${aiPl(st.A, 'zwierzę', 'zwierzęta', 'zwierząt')}` + (st.names.length ? `; znane z imienia: ${st.names.join(', ')}` : '') + `; złapane duchy: ${st.ghosts}.`;
+const AI_HELP = {
+  caps: st => 'Tak, chętnie pomogę. Mogę z tobą rozmawiać po polsku i wyjaśniać Retro Trackera. Aplikacja potrafi:\n\n• Wykrywać ludzi i zwierzęta na kamerze i pokazywać ich na radarze z przybliżoną odległością.\n• Zapamiętywać imiona: wybierz cel i stuknij IMIĘ (albo klawisz N).\n• Robić zdjęcia i nagrania z dźwiękiem (przyciski na ekranie; w poziomie po prawej).\n• Płynny zoom do 10x (suwak; podwójne stuknięcie wraca do 1x).\n• Tryb zabawy: detektor duchów — namierz ducha i przytrzymaj ŁAP.\n• Gry retro w menu: Snake, Pong, Breakout, Tetris, Space Invaders i Asteroids.\n• Ten czat działa na telefonie, bez internetu (po jednorazowym pobraniu modelu).\n\n' + aiLive(st) + '\nO co chcesz zapytać? Na przykład o duchy, gry, zoom, imiona albo nagrywanie.',
+  ghosts: st => 'Tak. Łapanie duchów to tryb zabawy — duchy są symulowane, nie prawdziwe.\n\n1. W menu włącz „DETEKTOR DUCHÓW”.\n2. Namierz ducha celownikiem albo po prostu w niego stuknij.\n3. Przytrzymaj przycisk ŁAP, aż pierścień się zapełni.\n4. Jeśli puścisz za wcześnie, duch ucieknie i trzeba zacząć od nowa.\n5. Złapane duchy widać przy liczniku ZŁAPANE.\n\n' + aiLive(st),
+  games: st => 'W menu jest zakładka GRY, ze sterowaniem dotykiem i w zielonym stylu aplikacji. Dostępne gry: Snake, Pong, Breakout, Tetris, Space Invaders i Asteroids. Każda zapamiętuje rekord, ma pauzę, grę od nowa i dźwięki do wyłączenia. Na czas gry kamera i detekcja są wstrzymane. Gry działają też offline.',
+  zoom: st => 'Zoom jest na suwaku, do 10x, płynny (logarytmiczny). Podwójne stuknięcie w obraz wraca do 1x. Przy większym zbliżeniu aplikacja korzysta z wyższej rozdzielczości, żeby obraz był ostrzejszy. To połączenie zoomu sprzętowego (jeśli telefon go ma) i cyfrowego.',
+  names: st => 'Żeby zapisać imię, wybierz osobę albo zwierzę (albo namierz celownikiem) i stuknij IMIĘ (klawisz N). Potwierdzasz „TO JEST: Imię?” albo wpisujesz imię. Rozpoznawanie działa lokalnie, na telefonie. Automatyczne podpisywanie imion jest w menu, domyślnie wyłączone — możesz je włączyć. W słabym świetle albo z profilu model może się pomylić.',
+  record: st => 'Zdjęcie robisz przyciskiem aparatu, film — przyciskiem nagrywania. W poziomie te przyciski są po prawej stronie, na środku krawędzi. Nagrywanie może mieć dźwięk z mikrofonu: w menu jest przełącznik „Nagrywaj dźwięk”. Na wskaźniku widać wtedy REC + MIC.',
+  radar: st => 'Radar pokazuje przybliżony kierunek i odległość celów z kamery. Kierunek wynika z położenia w kadrze i typowego kąta widzenia obiektywu, a odległość z wysokości ramki (człowiek ≈ 1,7 m, zwierzęta wg typowych rozmiarów). To SZACUNEK — błąd może sięgać kilkudziesięciu procent. Nie myli się z radarem duchów w trybie zabawy.'
+};
+const AI_INTENT_RE = [
+  ['ghosts', /duch|duszk|łapa|lapaniu|\błap\b|detektor/i],
+  ['games', /\bgr[yaęi]\b|gier|snake|pong|tetris|breakout|arkanoid|invaders|asteroid/i],
+  ['zoom', /zoom|przybli[żz]|powiększ|10\s*x|suwak/i],
+  ['names', /imi[eę]|nazyw|rozpozna[ćc] (twarz|imi|osob)|zapamięt|przycisk imi|auto-imion/i],
+  ['record', /nagra[ćc]|nagrani|mikrofon|zdj[eę]c|foto|fotograf|robić zdj/i],
+  ['radar', /radar|odległ|jak daleko/i],
+  ['caps', /co (ty )?(potrafisz|możesz|umiesz)|czego (potrafisz|możesz)|przykład\w* (rzeczy|tego,?\s+co)|rzeczy[,\s]+kt[oó]re (możesz|potrafisz)|do czego (służysz|jesteś)|czym (jesteś|się zajmujesz)|kim jesteś|co (ty )?robisz|jak(ie)? (mi )?(możesz )?pom[oó]c|czy (możesz|potrafisz|umiesz)( mi)? pom[oó]c|pom[oó]ż mi|co potrafi (ta )?aplikacj|jakie (masz )?(funkcj|możliwo)|jak (działa|uży[ćc]|się używa) (ta |tej )?aplikacj/i]
+];
+function aiIntent(txt) {
+  const s = String(txt || ''); if (!s.trim()) return null;
+  for (const [id, re] of AI_INTENT_RE) if (re.test(s)) return id;
+  return null;
+}
+const aiHelp = (id, st) => (AI_HELP[id] || AI_HELP.caps)(st || aiState());
+const aiAppQ = txt => AI_APP_RE.test(txt || '') || !!aiIntent(txt);
 function aiSystem(userText) {
   if (!aiAppQ(userText)) return AI_BASE_SYS;
-  const st = aiState();
   return AI_BASE_SYS + '\nRozmawiasz w aplikacji Retro Tracker (zielony retro radar z kamerą, działa offline na telefonie). Aplikacja wykrywa ludzi i zwierzęta, zapamiętuje imiona (przycisk IMIĘ), pokazuje radar z przybliżoną odległością, robi zdjęcia i nagrania, ma zoom do 10x, tryb zabawy z symulowanymi duchami (przycisk ŁAP), gry retro i ten czat.' +
-    `\nTeraz w kadrze: ${st.H} ${aiPl(st.H, 'osoba', 'osoby', 'osób')}, ${st.A} ${aiPl(st.A, 'zwierzę', 'zwierzęta', 'zwierząt')}` + (st.names.length ? `; znane z imienia: ${st.names.join(', ')}` : '') + `; złapane duchy: ${st.ghosts}.`;
+    '\n' + aiLive(aiState());
 }
 /* guards: a reply that opens with rule-like boilerplate or copies the start of the system prompt is regenerated once without the app block */
 const AI_BOILER_RE = /^\s*[«"„'(\[]*\s*(zgoda\b|oczywiście,?\s+(jako|muszę|zawsze)|jako (asystent|model|sztuczn|ai\b)|(muszę|musi|musisz|należy|powinien|powinna|powinienem)\s+(zawsze|być|odpowiada|przestrzega|działa)|zawsze\s+(muszę|musi|należy|odpowiada|być)|odpowiadam(y)? (zawsze )?po polsku|odpowiadaj po polsku|zgodnie z (zasadami|instrukcj|zasad|prawem|wytycznymi|poleceniem)|(zasady|instrukcje|wytyczne)\s*:|system(owy)? prompt|jestem (pomocnym )?asystentem[^.!?]{0,40}(rozmawiam|odpowiadam))/i;
+const AI_REFUSE_RE = /nie mog[ęe](\s+\w+){0,4}\s+(nic|robić|pom[oó]c|odpowiedzie|wykonać|tego|cię|ci\b|niczego)|jako asystent|as an assistant|I(?:['’]m| am) (?:just |an |a )?(?:assistant|AI)|I cannot|I can['’]t|\banything|\bcan(?:not|['’]t)\s+(?:help|do)|przepraszam za niepok[oó]j|nie jestem w stanie|I(?:['’]m| am) unable|cannot help|jestem tylko (modelem|asystentem|sztuczn)|I apologize|\bsorry\b|\bunable to\b/i;
 const aiNorm = t => String(t || '').toLowerCase().replace(/[^a-ząćęłńóśźż0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 function aiBoiler(out, sys) {
   if (AI_BOILER_RE.test(out || '')) return true;
   const w = aiNorm(out).split(' ').slice(0, 6); if (w.length < 6) return false;
   return !!sys && aiNorm(sys).includes(w.join(' '));                          // the first six words are a verbatim slice of the system prompt
 }
+function aiRefuse(t) {
+  const s = String(t || '');
+  if (AI_REFUSE_RE.test(s)) return true;
+  if (/\b(anything|something|everything|cannot|can['’]?t|unable|assistant)\b/i.test(s)) return true;
+  return false;
+}
+const AI_FALLBACK = 'Jasne, chętnie pomogę. Napisz proszę trochę konkretniej, o co chodzi — mogę rozmawiać albo wyjaśnić funkcje Retro Trackera (duchy, gry, zoom, imiona, zdjęcia i nagrania).';
+
 function aiTrimSentence(t) {                                                    // cut a length-truncated reply back to its last complete sentence
   const m = t.match(/^([\s\S]*[.!?…)»"”](?=\s|$))/); const cut = m ? m[1] : '';
   return cut.length >= 12 ? cut.trim() : t.replace(/\s+\S*$/, '').trim() + '…';
@@ -3313,7 +3359,12 @@ function aiRender() {
   const mi = AI.kind ? aiModelInfo() : null;
   const eng = AI.kind === 'webgpu' ? `WebGPU · WebLLM · ${mi.name}` : AI.kind === 'wasm' ? `CPU/WASM · wllama · ${mi.name}` : '—';
   aiRenderModels();
-  aiEl.stat.textContent = `SILNIK: ${eng}\nSTAN: ${aiStateTxt()}` + (AI.kind === 'wasm' && AI.why && AI.pref !== 'wasm' ? `\n(WebGPU niedostępne: ${AI.why})` : '');
+  let whyL = '';
+  if (AI.kind === 'wasm') {
+    if (AI.pref === 'wasm' && AI.gpuOk) whyL = '\n(Tryb CPU wybrany ręcznie. WebGPU jest dostępne — stuknij „Użyj WebGPU”, działa szybciej.)';
+    else if (!AI.gpuOk && AI.why) whyL = `\n(WebGPU niedostępne: ${AI.why})`;
+  }
+  aiEl.stat.textContent = `SILNIK: ${eng}\nSTAN: ${aiStateTxt()}` + whyL;
   const needDl = AI.state === 'nomodel' || AI.state === 'error' || AI.state === 'downloading' || AI.state === 'loading';
   aiEl.dl.style.display = AI.state === 'unsupported' || AI.state === 'nomodel' || AI.state === 'downloading' || AI.state === 'loading' || AI.state === 'error' ? '' : 'none';
   aiEl.get.style.display = AI.state === 'nomodel' || AI.state === 'error' ? '' : 'none';
@@ -3331,8 +3382,15 @@ function aiRender() {
   aiEl.tx.disabled = !ready; aiEl.tx.placeholder = ready ? 'Napisz do AI…' : 'Model nie jest gotowy';
   aiEl.send.disabled = !ready; aiEl.send.textContent = AI.busy ? '■ Stop' : 'Wyślij'; aiEl.send.classList.toggle('on', AI.busy);
   aiEl.del.style.display = (AI.kind && aiCached()) ? '' : 'none'; aiEl.del.textContent = '✕ Usuń model ' + aiM().tag;
-  aiEl.eng.style.display = AI.kind === 'webgpu' || (AI.kind === 'wasm' && AI.pref === 'wasm') ? '' : 'none';
-  aiEl.eng.textContent = AI.kind === 'webgpu' ? '⇄ Tryb CPU' : '⇄ Użyj WebGPU';
+  aiEl.eng.style.display = (AI.kind === 'webgpu' || AI.kind === 'wasm') ? '' : 'none';
+  aiEl.eng.textContent = AI.kind === 'webgpu' ? '⇄ Tryb CPU' : (AI.gpuOk ? '⇄ Użyj WebGPU' : '⇄ Spróbuj ponownie WebGPU');
+  if (aiEl.hint) {
+    const show = AI.model === 'lite' && AI.state !== 'unsupported';
+    const stdMb = (AI.kind === 'webgpu' ? AI_MODELS.std.wg.mb : AI_MODELS.std.wa.mb);
+    const gb = (stdMb / 1000).toFixed(1).replace('.', ',');
+    aiEl.hint.textContent = 'LITE słabo zna polski — pobierz STANDARD (' + gb + ' GB, Wi‑Fi)';
+    aiEl.hint.style.display = show ? '' : 'none';
+  }
   aiEl.snd.classList.toggle('on', AI.sound); aiEl.snd.classList.toggle('off', !AI.sound);
 }
 function aiErrMsg(e) {
@@ -3481,24 +3539,36 @@ async function aiSend() {
   const el = am.el.querySelector('.tx'), cur = document.createElement('span'); cur.className = 'cur'; cur.textContent = '█';
   const paint = t => { el.textContent = t; el.appendChild(cur); aiScroll(false); };
   paint('');
-  const M = aiM(), hist = aiHistory(M.histChars);
-  AI.busy = true; AI.stopReq = false; AI.state = 'busy'; aiRender();
+  const M = aiM(), intent = aiIntent(txt);
+  let hist = aiHistory(M.histChars);
+  if (M.key === 'lite' && !intent) hist = [...AI_SHOTS, ...hist];
+  AI.busy = true; AI.stopReq = false; AI.state = 'busy'; AI.lastIntent = intent || ''; aiRender();
   let out = '', failed = null, cut = false;
   try {
-    let sys = aiSystem(txt);
-    let r = await aiGenerate(aiMessages(sys, hist, M), M, { temp: .4, rp: 1.1, paint });
-    AI.lastSys = sys;
-    if (!AI.stopReq && aiBoiler(r.text, sys)) {                                 // boilerplate / echoed prompt → one retry, plain persona, a bit more randomness
-      AI.retries = (AI.retries || 0) + 1; paint('');
-      sys = AI_BASE_SYS; r = await aiGenerate(aiMessages(sys, hist, M), M, { temp: .6, rp: 1.15, paint });
+    if (intent) {                                                               // app-help intents: curated Polish text, no model (LITE used to refuse these)
+      out = aiHelp(intent); AI.lastSys = ''; AI.lastCurated = true; paint(out);
+    } else {
+      AI.lastCurated = false;
+      let sys = aiSystem(txt);
+      let r = await aiGenerate(aiMessages(sys, hist, M), M, { temp: .4, rp: 1.1, paint });
+      AI.lastSys = sys;
+      if (!AI.stopReq && aiBoiler(r.text, sys)) {                               // boilerplate / echoed prompt → one retry, plain persona, a bit more randomness
+        AI.retries = (AI.retries || 0) + 1; paint('');
+        sys = AI_BASE_SYS; r = await aiGenerate(aiMessages(sys, hist, M), M, { temp: .6, rp: 1.15, paint });
+      }
+      if (!AI.stopReq && aiRefuse(r.text)) {                                    // "nie mogę robić anythinggo" etc. → one stricter retry, then a helpful fallback
+        AI.retries = (AI.retries || 0) + 1; paint('');
+        r = await aiGenerate(aiMessages(AI_RETRY_SYS, hist, M), M, { temp: .55, rp: 1.12, paint });
+        if (aiRefuse(r.text)) { r = { text: AI_FALLBACK, length: false }; paint(r.text); AI.lastCurated = true; }
+      }
+      out = r.text; cut = r.length;
     }
-    out = r.text; cut = r.length;
   } catch (e) { if (!(AI.stopReq || (e && (e.name === 'WllamaAbortError' || e.name === 'AbortError')))) failed = e; }
   aiSnd.stop();                                                                // sound fades out (~100 ms) the moment streaming ends, fails or is stopped
   AI.ctl = null; AI.busy = false; AI.state = AI.inst ? 'ready' : 'nomodel';
   cur.remove(); out = aiClean(out).trim();
   if (!out && !failed && !AI.stopReq) { out = ''; }
-  if (cut && out && !failed && !AI.stopReq) { out = aiTrimSentence(out) + '\n[odpowiedź skrócona do ostatniego pełnego zdania — napisz „dalej”, aby kontynuować]'; }
+  if (cut && out && !failed && !AI.stopReq && !AI.lastCurated) { out = aiTrimSentence(out) + '\n[odpowiedź skrócona do ostatniego pełnego zdania — napisz „dalej”, aby kontynuować]'; }
   if (failed) { console.warn('AI generation failed', failed); out = (out ? out + '\n' : '') + '[BŁĄD: ' + aiErrMsg(failed).slice(0, 260) + ']'; }
   else if (AI.stopReq) out = (out || '') + (out ? ' ' : '') + '[przerwano]';
   else if (!out) out = '[brak odpowiedzi]';
@@ -3545,6 +3615,7 @@ aiEl.clr.onclick = aiClear;
 aiEl.del.onclick = aiDelete;
 for (const b of aiEl.models.children) b.onclick = () => aiSelect(b.dataset.k);
 aiEl.eng.onclick = aiSwitchEngine;
+if (aiEl.hint) aiEl.hint.onclick = () => { if (AI.model !== 'std') aiSelect('std'); };
 $('#chX').onclick = () => closePanels();
 $('#bChat').onclick = () => { aiSnd.unlock(); openPanel('chat'); };
 /* =====================================================================
@@ -4191,7 +4262,7 @@ $('#boot').addEventListener('click', e => { /* tap anywhere does nothing: camera
 applyPalette(); syncToggles(); renderRet(); resize(); introScreen(); loadDb();
 requestAnimationFrame(frame);
 window.__S = S;
-window.__T = { GM, GAMES, gOpenGame, gToPicker, gRestart, gPause, gOver, AI, aiSnd, aiSystem, aiErrMsg, aiDetect, aiStart, aiSend, aiClear, AI_MODELS, AI_BASE_SYS, AI_APP_RE, aiBoiler, aiHistory, aiFormat, aiMessages, aiTrimSentence, aiSelect, aiPurge, aiM, aiFlagKey, GH, ghCatchStep, ghTarget, ghTap, ghCatch, ghEscape, ghFbText, GCATCH_R, ghBuildSprites, viewFov, ghLum, ghLumK, ghostMove, ghSpawn, ghRange, ghostSpawnPoint, ghostOccluders, drawGhostsHud, ghSetOn, ghRequestSensors, ghAlpha, ghostTick, ghUi, startRec, toggleRec, hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, nameFlow, matchProfile, ensureFace, faceAt, openPanel, closePanels, setZoom, setStream, startCamera, enrollFace, SRC, RET, setRetStyle, toggleRet, ncDone, ncShow, renderBle, ensureEmbed, NET, MSETS, refreshCached, refreshNetInfo, downloadModels, aiBlocked, updNet };
+window.__T = { GM, GAMES, gOpenGame, gToPicker, gRestart, gPause, gOver, AI, aiSnd, aiSystem, aiErrMsg, aiDetect, aiStart, aiSend, aiClear, AI_MODELS, AI_BASE_SYS, AI_RETRY_SYS, AI_APP_RE, AI_HELP, AI_SHOTS, AI_FALLBACK, aiIntent, aiHelp, aiRefuse, aiLive, aiBoiler, aiHistory, aiFormat, aiMessages, aiTrimSentence, aiSelect, aiPurge, aiM, aiFlagKey, GH, ghCatchStep, ghTarget, ghTap, ghCatch, ghEscape, ghFbText, GCATCH_R, ghBuildSprites, viewFov, ghLum, ghLumK, ghostMove, ghSpawn, ghRange, ghostSpawnPoint, ghostOccluders, drawGhostsHud, ghSetOn, ghRequestSensors, ghAlpha, ghostTick, ghUi, startRec, toggleRec, hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, nameFlow, matchProfile, ensureFace, faceAt, openPanel, closePanels, setZoom, setStream, startCamera, enrollFace, SRC, RET, setRetStyle, toggleRet, ncDone, ncShow, renderBle, ensureEmbed, NET, MSETS, refreshCached, refreshNetInfo, downloadModels, aiBlocked, updNet };
 if (new URLSearchParams(location.search).has('auto')) start();
 })();
 </script>
