@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="app-version" content="2026-11-15-v6.4-ghosts-catch">
+<meta name="app-version" content="2026-11-15-v6.5-ai-chat">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tracker">
@@ -148,6 +148,37 @@ input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;bor
 .screen{position:absolute;inset:0;background:#000;z-index:40;display:flex;flex-direction:column;overflow:auto;gap:10px;padding:max(14px,var(--sat)) max(18px,var(--sar)) max(14px,var(--sab)) max(18px,var(--sal))}
 .sheet{position:absolute;inset:0;z-index:35;background:rgba(0,0,0,.9);display:none;flex-direction:column;overflow:auto;padding:max(12px,var(--sat)) max(16px,var(--sar)) max(12px,var(--sab)) max(16px,var(--sal));gap:10px}
 .sheet.show{display:flex}
+/* v6.5 CZAT AI */
+#settings h2{position:sticky;top:max(12px,var(--sat));z-index:2;flex:none}
+#settings{scroll-padding-top:44px}
+#chat{overflow:hidden;gap:6px;bottom:var(--kb,0px);z-index:36;background:rgba(0,0,0,.965)}
+#chat.kb{padding-bottom:6px}
+#chat h2 .hb{display:flex;gap:4px}
+#chStat{font-size:16px;line-height:1.1;color:var(--dim);border:1px dashed var(--faint);padding:3px 6px;white-space:pre-line;flex:none;word-break:break-word}
+#chDl{flex:none;display:flex;flex-direction:column;gap:6px;max-height:46%;overflow-y:auto}
+#chInfo{font-size:19px;line-height:1.12;color:var(--fg);border:1px solid var(--faint);padding:5px 8px;white-space:pre-line}
+#chGet{width:100%;font-size:23px;padding:8px 6px;border-color:var(--fg);background:rgba(var(--fg-rgb,51,255,102),.1)}
+#chBar{height:14px;border:1px solid var(--fg);padding:1px;display:none}
+#chBar i{display:block;height:100%;width:0;background:var(--fg);box-shadow:0 0 8px var(--fg);transition:width .2s linear}
+#chBarT{font-size:17px;color:var(--dim)}
+#chLog{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;border:1px solid var(--faint);padding:6px 8px;display:flex;flex-direction:column;gap:7px;font-size:21px;line-height:1.14;background:rgba(0,0,0,.4)}
+.cm{white-space:pre-wrap;word-break:break-word;max-width:92%;padding:3px 8px 4px;border:1px solid var(--faint);text-shadow:var(--glow)}
+.cm .who{display:block;font-size:14px;letter-spacing:2px;color:var(--dim)}
+.cm.u{align-self:flex-end;border-color:var(--fg);background:rgba(51,255,102,.1)}
+.cm.u .who{text-align:right}
+.cm.a{align-self:flex-start}
+.cm.sys{align-self:center;max-width:100%;color:var(--dim);border-style:dashed;font-size:18px;text-align:center}
+.cm .cur{display:inline-block;margin-left:2px;animation:blink .9s steps(1) infinite}
+#chIn{flex:none;display:flex;gap:6px;align-items:flex-end}
+#chTx{flex:1;min-width:0;height:42px;max-height:112px;resize:none;font:inherit;font-size:21px;line-height:1.15;color:var(--fg);background:rgba(0,0,0,.75);border:1px solid var(--fg);padding:7px 8px;border-radius:0;outline:none;-webkit-appearance:none;-webkit-user-select:text;user-select:text;text-shadow:var(--glow)}
+#chTx:disabled{opacity:.5;border-color:var(--faint)}
+#chSend{flex:none;height:42px;padding:0 12px}
+#chSend:disabled{opacity:.4}
+#chFoot{flex:none;display:flex;gap:6px;flex-wrap:wrap}
+#chFoot button{flex:1 1 30%;font-size:18px;padding:3px 4px}
+#chat.kb #chStat,#chat.kb #chFoot{display:none}
+.lay-land #chStat{font-size:14px}.lay-land .cm{font-size:19px}.lay-land #chat h2{font-size:22px}
+
 .sheet h2{font-weight:normal;font-size:28px;letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--fg);color:#000;padding:0 8px;text-shadow:none}
 .sheet h2 button{border-color:#000;color:#000;background:transparent;padding:0 10px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -367,9 +398,25 @@ body.gh #bCatch{display:flex}
     <button class="cb" id="bSet"><span class="g">≡</span><span>MENU</span></button>
   </div>
 
+  <!-- v6.5 CZAT AI -->
+  <div class="sheet" id="chat">
+    <h2><span>CZAT AI</span><span class="hb"><button id="chClear">[ Wyczyść ]</button><button id="chX">[ Zamknij ]</button></span></h2>
+    <div id="chStat"></div>
+    <div id="chDl">
+      <div id="chInfo"></div>
+      <button id="chGet">⇩ POBIERZ MODEL AI</button>
+      <div id="chBar"><i></i></div><div id="chBarT"></div>
+      <button id="chCancel" style="display:none">[ Przerwij pobieranie ]</button>
+    </div>
+    <div id="chLog" aria-live="polite"></div>
+    <div id="chIn"><textarea id="chTx" rows="1" maxlength="1500" placeholder="Napisz do AI…" enterkeyhint="send" autocomplete="off" autocorrect="on" autocapitalize="sentences" spellcheck="false" aria-label="Wiadomość do AI"></textarea><button id="chSend">Wyślij</button></div>
+    <div id="chFoot"><button id="chSnd" class="on"><b>[♪]</b> Dźwięk AI</button><button id="chEng">⇄ Tryb CPU</button><button id="chDel">✕ Usuń model</button></div>
+  </div>
+
   <!-- settings drawer -->
   <div class="sheet" id="settings">
     <h2><span>USTAWIENIA</span><button id="setX">[ Zamknij ]</button></h2>
+    <button id="bChat" style="width:100%;font-size:26px;padding:8px;border-color:var(--fg)"><b>◈</b> CZAT AI (lokalny, offline)</button>
     <div class="grid2">
       <button id="bObj"><b>[O]</b> Obiekty</button>
       <button id="bTrail" class="on"><b>[L]</b> Ślady</button>
@@ -1942,9 +1989,9 @@ stage.addEventListener('click', e => onTap(e.clientX, e.clientY));
 function openPanel(id) {
   closePanels(true);
   S.panel = id; $('#' + id).classList.add('show');
-  if (id === 'dbp') renderDb(); else if (id === 'src') renderSrc(); else { renderStats(); refreshNetInfo(); }
+  if (id === 'chat') chatOpened(); else if (id === 'dbp') renderDb(); else if (id === 'src') renderSrc(); else { renderStats(); refreshNetInfo(); }
 }
-function closePanels(silent) { S.panel = ''; document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show')); }
+function closePanels(silent) { if (S.panel === 'chat') chatClosed(); S.panel = ''; document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show')); }
 let dbTab = 'F';
 const fmtDate = ms => { const d = new Date(ms); return `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 function mkBtn(txt, fn) { const b = document.createElement('button'); b.textContent = txt; b.onclick = fn; return b; }
@@ -2005,7 +2052,7 @@ function renderStats() {
     `STRUMIEŃ WIDEO: ${video.videoWidth || 0}x${video.videoHeight || 0} · poziom ${S.res.level ? 'WYSOKI (zoom)' : 'bazowy'}${S.res.fail ? ' · wyższa rozdzielczość niedostępna' : ''} · wyświetlanie: pełna rozdzielczość (<video> + CSS)\n` +
     `WYKRYWANIE: ${S.backend ? S.backend.toUpperCase() + (S.mode === 'worker' ? ' (worker)' : '') : '—'} · ${S.nnFps ? S.nnFps.toFixed(1) : '—'}/s · ${S.infMs ? Math.round(S.infMs) : '—'} ms\n` +
     `BAZA: ${S.profiles.length} twarzy · ${S.animals.length} zwierząt · ${S.dbOk ? 'IndexedDB' : 'pamięć tymczasowa'} · trwałe: ${D.persisted}\n` +
-    `Wersja: v6.4-ghosts-catch · ŹRÓDŁO: ${srcLabel()}${S.tainted ? ' (BEZ CORS: analiza wyłączona)' : ''} · zoom ${(S.zc || 1).toFixed(1)}x (sprzęt ${(S.hwz || 1).toFixed(1)}x + cyfrowy ${(S.dz || 1).toFixed(1)}x)\n\nDIAGNOSTYKA\n` +
+    `Wersja: v6.5-ai-chat · ŹRÓDŁO: ${srcLabel()}${S.tainted ? ' (BEZ CORS: analiza wyłączona)' : ''} · zoom ${(S.zc || 1).toFixed(1)}x (sprzęt ${(S.hwz || 1).toFixed(1)}x + cyfrowy ${(S.dz || 1).toFixed(1)}x)\n\nDIAGNOSTYKA\n` +
     `SIEĆ: ${navigator.onLine === false ? 'OFFLINE' : 'online'} · SERWIS WORKER: ${NET.sw} · pamięć aplikacji: ${NET.shell || '—'}\n` +
     `MODELE OFFLINE: ${Object.entries(MSETS).map(([k, v]) => `${v.n} ${NET.cached[k] === null ? '…' : NET.cached[k] ? 'POBRANE' : 'brak'}`).join(' · ')} · zajęte ${NET.usage || '—'}\n` +
     `${aiShort() || 'AI: —'}${S.aiErr ? ' (' + S.aiErr + ')' : ''}\n` +
@@ -3074,6 +3121,281 @@ bCatch.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('visibilitychange', () => { if (document.hidden) catchOff(); });
 $('#bGhSens').onclick = () => ghRequestSensors();
 if (GH.on) { ghSetOn(true, false); } else ghUi();
+/* =====================================================================
+   v6.5  CZAT AI  —  lokalny model językowy, zero serwerów czatu.
+   WebGPU (Safari 26 / Chrome): WebLLM + Qwen2.5-0.5B-Instruct q4f16 (~290 MB).
+   Bez WebGPU: wllama (llama.cpp → WebAssembly, CPU) + Qwen2.5-0.5B-Instruct Q4_0 GGUF (~430 MB).
+   Biblioteki leżą w lib/webllm i lib/wllama (hostowane tutaj). Wagi modelu pobierane JEDNORAZOWO z Hugging Face
+   po wyraźnej zgodzie i zapisywane na stałe (Cache API / OPFS) — potem czat działa bez internetu.
+   Rozmowy nie opuszczają telefonu.
+   ===================================================================== */
+const AI_WG = { id: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC', name: 'Qwen2.5-0.5B-Instruct (q4f16)', mb: 290, repo: 'https://huggingface.co/mlc-ai/Qwen2.5-0.5B-Instruct-q4f16_1-MLC', lib: 'lib/webllm/Qwen2-0.5B-Instruct-q4f16_1_cs1k-webgpu.wasm' };
+const AI_WG32 = { id: 'Qwen2.5-0.5B-Instruct-q4f32_1-MLC', name: 'Qwen2.5-0.5B-Instruct (q4f32)', mb: 290, repo: 'https://huggingface.co/mlc-ai/Qwen2.5-0.5B-Instruct-q4f32_1-MLC', lib: 'lib/webllm/Qwen2-0.5B-Instruct-q4f32_1_cs1k-webgpu.wasm' };   // same weights, f32 shaders: for GPUs without shader-f16
+const AI_WA = { name: 'Qwen2.5-0.5B-Instruct (Q4_0)', mb: 430, url: 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_0.gguf' };
+const AI = {
+  pref: lsGet('rt_ai_engine', 'auto'), sound: lsGet('rt_aisnd', '1') === '1',
+  kind: null, f16: true, why: '', state: 'init', inst: null, lib: null, busy: false, ctl: null, stopReq: false, relT: 0, msgs: [], progress: 0, progText: '', err: '', dlCtl: null, opened: false
+};
+try { AI.msgs = JSON.parse(lsGet('rt_aichat', '[]')).filter(m => m && (m.r === 'u' || m.r === 'a') && typeof m.t === 'string').slice(-40); } catch (e) { AI.msgs = []; }
+const aiEl = { p: $('#chat'), stat: $('#chStat'), log: $('#chLog'), tx: $('#chTx'), send: $('#chSend'), get: $('#chGet'), cancel: $('#chCancel'), bar: $('#chBar'), barT: $('#chBarT'), info: $('#chInfo'), dl: $('#chDl'), snd: $('#chSnd'), eng: $('#chEng'), del: $('#chDel'), clr: $('#chClear') };
+const aiAbs = p => new URL(p, document.baseURI).href;
+const aiMB = b => Math.round(b / 1048576) + ' MB';
+
+/* ---------- "AI is writing" sound: CC0 sample (unfa, "Sci-Fi Computer Terminal", freesound 543968), the even 5.4 s part, baked into a sample-exact
+   loop (sounds/ai-terminal.wav, 120 ms equal-power crossfade at the seam, peak −1 dBFS). Plays ONLY while reply tokens are visible on screen:
+   starts at the first displayed token (not during download / model load / prefill), fades out in ~100 ms when streaming ends, is stopped or fails. ---------- */
+const aiSnd = {
+  buf: null, loading: null, src: null, m: null, an: null, on: false, want: false, stats: { starts: 0, stops: 0 }, GAIN: .85,
+  unlock() { const a = audio(); if (a) this.load(); },                          // first user gesture: unlock the AudioContext + decode the sample
+  load() {
+    if (this.buf || this.loading || !actx) return;
+    this.loading = fetch(aiAbs('sounds/ai-terminal.wav')).then(r => { if (!r.ok) throw new Error('snd ' + r.status); return r.arrayBuffer(); })
+      .then(ab => new Promise((res, rej) => { const p = actx.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); }))
+      .then(b => { this.buf = b; this.loading = null; if (this.want && AI.busy) this.start(); }).catch(e => { this.loading = null; console.warn('AI sound load failed', e); });
+  },
+  start() {
+    this.want = true;
+    if (this.on || !AI.sound || S.mute) return;
+    const a = audio(); if (!a) return;
+    if (!this.buf) { this.load(); return; }
+    try {
+      const src = a.createBufferSource(), m = a.createGain(), an = a.createAnalyser(); an.fftSize = 256;
+      src.buffer = this.buf; src.loop = true; src.loopStart = 0; src.loopEnd = this.buf.duration;
+      const t = a.currentTime; m.gain.setValueAtTime(0, t); m.gain.linearRampToValueAtTime(this.GAIN, t + .03);
+      src.connect(m); m.connect(an); an.connect(a.destination); src.start(t);
+      this.src = src; this.m = m; this.an = an; this.on = true; this.stats.starts++;
+    } catch (e) { this.on = false; }
+  },
+  stop() {
+    this.want = false;
+    if (!this.on) return; this.on = false; this.stats.stops++;
+    const a = actx, src = this.src, m = this.m, an = this.an; this.src = this.m = null;
+    try { const t = a.currentTime; m.gain.cancelScheduledValues(t); m.gain.setValueAtTime(m.gain.value, t); m.gain.linearRampToValueAtTime(0, t + .1); src.stop(t + .12); setTimeout(() => { try { src.disconnect(); m.disconnect(); an.disconnect(); } catch (e) {} }, 300); } catch (e) {}
+  },
+  level() { if (!this.an) return 0; const d = new Uint8Array(this.an.fftSize); this.an.getByteTimeDomainData(d); let mx = 0; for (const v of d) mx = Math.max(mx, Math.abs(v - 128)); return mx; }
+};
+
+/* ---------- engine detection ---------- */
+async function aiDetect() {
+  if (AI.kind) return AI.kind;
+  const nowasm = typeof WebAssembly !== 'object';
+  let wg = false, why = '';
+  if (AI.pref !== 'wasm') {
+    try {
+      if (!navigator.gpu) why = 'brak WebGPU w tej przeglądarce';
+      else { const ad = await navigator.gpu.requestAdapter(); if (!ad) why = 'brak adaptera WebGPU'; else { wg = true; AI.f16 = ad.features.has('shader-f16'); } }
+    } catch (e) { why = 'WebGPU zgłosiło błąd'; }
+  } else why = 'wybrano tryb CPU';
+  AI.why = why;
+  if (wg) AI.kind = 'webgpu'; else if (!nowasm) AI.kind = 'wasm'; else AI.kind = 'none';
+  return AI.kind;
+}
+const aiWg = () => AI.f16 ? AI_WG : AI_WG32;
+const aiModelInfo = () => AI.kind === 'webgpu' ? aiWg() : AI_WA;
+const aiFlagKey = () => 'rt_ai_ready_' + AI.kind + (AI.kind === 'webgpu' && !AI.f16 ? '32' : '');
+
+/* ---------- context for the system prompt (cheap: counters, names, ghosts caught) ---------- */
+function aiSystem() {
+  let ctx = '';
+  try {
+    const t = S.tracks.filter(x => x.confirmed), H = t.filter(x => x.g === 'H').length, A = t.filter(x => x.g === 'A').length;
+    const names = t.filter(x => x.g !== 'O' && x.person && (x.person.manual || x.person.state === 'known')).map(x => { const p = profOf(x); return p && p.name; }).filter(Boolean).slice(0, 5);
+    ctx = `\nAktualny stan aplikacji: w kadrze ${H} ${H === 1 ? 'człowiek' : 'ludzi'} i ${A} zwierząt` + (names.length ? `; rozpoznani z imienia: ${names.join(', ')}` : '') + `; złapane duchy (tryb zabawy): ${GH.caught || 0}.`;
+  } catch (e) {}
+  return 'Jesteś asystentem aplikacji Retro Tracker: zielonego, retro radaru z kamerą działającego w całości na telefonie, bez internetu. ' +
+    'Odpowiadasz po polsku, krótko (1–4 zdania), prosto i uprzejmie. Gdy nie wiesz, mówisz to wprost i nie zmyślasz. ' +
+    'Funkcje aplikacji: wykrywanie ludzi i zwierząt, imiona (przycisk IMIĘ), radar z szacunkową odległością, zoom do 10x, zdjęcia i nagrywanie z dźwiękiem, tryb zabawy z symulowanymi duchami (łapanie przyciskiem ŁAP), praca offline, ten czat AI.' + ctx;
+}
+
+/* ---------- UI ---------- */
+function aiSave() { lsSet('rt_aichat', JSON.stringify(AI.msgs.slice(-40))); }
+function aiBubble(m) {
+  const d = document.createElement('div'); d.className = 'cm ' + (m.r === 'u' ? 'u' : m.r === 's' ? 'sys' : 'a');
+  if (m.r !== 's') { const w = document.createElement('span'); w.className = 'who'; w.textContent = m.r === 'u' ? 'TY' : 'AI'; d.appendChild(w); }
+  const t = document.createElement('span'); t.className = 'tx'; t.textContent = m.t; d.appendChild(t); m.el = d; return d;
+}
+function aiRenderLog() {
+  aiEl.log.textContent = '';
+  if (!AI.msgs.length) aiEl.log.appendChild(aiBubble({ r: 's', t: 'Zapytaj o aplikację albo po prostu pogadaj. Model działa lokalnie na tym telefonie — rozmowa nie jest nigdzie wysyłana.' }));
+  for (const m of AI.msgs) aiEl.log.appendChild(aiBubble(m));
+  aiEl.log.scrollTop = aiEl.log.scrollHeight;
+}
+function aiScroll(force) { const l = aiEl.log; if (force || l.scrollHeight - l.scrollTop - l.clientHeight < 80) l.scrollTop = l.scrollHeight; }
+const aiStateTxt = () => ({
+  init: 'SPRAWDZAM URZĄDZENIE…', idle: 'MODEL ZWOLNIONY Z PAMIĘCI (pobrany na dysku)', nomodel: 'MODEL AI NIE JEST POBRANY', downloading: 'POBIERANIE MODELU…', loading: 'ŁADOWANIE MODELU…', ready: 'GOTOWY — działa lokalnie, bez internetu', busy: 'AI PISZE…', error: 'BŁĄD', unsupported: 'URZĄDZENIE NIE OBSŁUGUJE LOKALNEGO AI'
+}[AI.state] || '');
+function aiRender() {
+  const mi = AI.kind ? aiModelInfo() : null;
+  const eng = AI.kind === 'webgpu' ? `WebGPU · WebLLM · ${mi.name}` : AI.kind === 'wasm' ? `CPU/WASM · wllama · ${mi.name}` : '—';
+  aiEl.stat.textContent = `SILNIK: ${eng}\nSTAN: ${aiStateTxt()}` + (AI.kind === 'wasm' && AI.why && AI.pref !== 'wasm' ? `\n(WebGPU niedostępne: ${AI.why})` : '');
+  const needDl = AI.state === 'nomodel' || AI.state === 'error' || AI.state === 'downloading' || AI.state === 'loading';
+  aiEl.dl.style.display = AI.state === 'unsupported' || AI.state === 'nomodel' || AI.state === 'downloading' || AI.state === 'loading' || AI.state === 'error' ? '' : 'none';
+  aiEl.get.style.display = AI.state === 'nomodel' || AI.state === 'error' ? '' : 'none';
+  aiEl.get.textContent = AI.state === 'error' ? '↻ SPRÓBUJ PONOWNIE' : `⇩ POBIERZ MODEL AI (~${mi ? mi.mb : '?'} MB)`;
+  aiEl.cancel.style.display = AI.state === 'downloading' && AI.kind === 'wasm' ? '' : 'none';
+  aiEl.bar.style.display = AI.state === 'downloading' || AI.state === 'loading' ? '' : 'none';
+  aiEl.bar.firstElementChild.style.width = Math.round(AI.progress * 100) + '%';
+  aiEl.barT.style.display = aiEl.bar.style.display; aiEl.barT.textContent = AI.progText;
+  let info = '';
+  if (AI.state === 'unsupported') info = 'Ta przeglądarka nie obsługuje WebGPU ani WebAssembly, więc lokalny czat AI nie może tu działać.';
+  else if (AI.state === 'nomodel') info = `Czat AI działa w całości na tym telefonie. Model (${mi ? mi.name : ''}, ok. ${mi ? mi.mb : '?'} MB) zostanie pobrany JEDEN raz z Hugging Face (potrzebny internet, najlepiej Wi‑Fi), zapisany w pamięci przeglądarki, a potem czat działa bez internetu. Rozmowy nigdzie nie są wysyłane.`;
+  else if (AI.state === 'error') info = AI.err;
+  aiEl.info.textContent = info; aiEl.info.style.display = info ? '' : 'none';
+  const ready = AI.state === 'ready' || AI.state === 'busy';
+  aiEl.tx.disabled = !ready; aiEl.tx.placeholder = ready ? 'Napisz do AI…' : 'Model nie jest gotowy';
+  aiEl.send.disabled = !ready; aiEl.send.textContent = AI.busy ? '■ Stop' : 'Wyślij'; aiEl.send.classList.toggle('on', AI.busy);
+  aiEl.del.style.display = (AI.kind && lsGet(aiFlagKey(), '0') === '1') ? '' : 'none';
+  aiEl.eng.style.display = AI.kind === 'webgpu' || (AI.kind === 'wasm' && AI.pref === 'wasm') ? '' : 'none';
+  aiEl.eng.textContent = AI.kind === 'webgpu' ? '⇄ Tryb CPU' : '⇄ Użyj WebGPU';
+  aiEl.snd.classList.toggle('on', AI.sound); aiEl.snd.classList.toggle('off', !AI.sound);
+}
+function aiErrMsg(e) {
+  const m = String((e && e.message) || e || '');
+  if (/out of memory|oom|allocation failed|alloc|memory access|RangeError|Array buffer allocation/i.test(m)) return 'ZA MAŁO PAMIĘCI: zamknij inne karty i aplikacje (albo zrestartuj przeglądarkę) i spróbuj ponownie. Jeśli to się powtarza, spróbuj trybu CPU.';
+  if (/quota|storage|QuotaExceeded|disk/i.test(m)) return 'BRAK MIEJSCA NA DYSKU: zwolnij miejsce w telefonie (model potrzebuje ok. ' + (aiModelInfo().mb + 100) + ' MB) i spróbuj ponownie.';
+  if (/network|fetch|failed to|load failed|offline|abort|ERR_|timeout|download/i.test(m)) return 'POBIERANIE PRZERWANE (sieć). Sprawdź internet i stuknij „Spróbuj ponownie” — już pobrane części zostaną wykorzystane tam, gdzie to możliwe.';
+  if (/webgpu|gpu|adapter|device|shader|wgsl/i.test(m)) return 'WebGPU nie zadziałało na tym urządzeniu (' + m.slice(0, 90) + '). Spróbuj trybu CPU (przycisk „Tryb CPU”).';
+  return 'Nie udało się uruchomić modelu: ' + m.slice(0, 120) + (AI.kind === 'webgpu' ? ' — spróbuj trybu CPU (przycisk „⇄ Tryb CPU”).' : '');
+}
+
+/* ---------- engine: load / download ---------- */
+async function aiLoadLib() {
+  if (AI.lib) return AI.lib;
+  AI.lib = AI.kind === 'webgpu' ? await import(aiAbs('lib/webllm/web-llm.js')) : await import(aiAbs('lib/wllama/index.js'));
+  return AI.lib;
+}
+const aiWgConfig = () => ({ useIndexedDBCache: false, model_list: [{ model: aiWg().repo, model_id: aiWg().id, model_lib: aiAbs(aiWg().lib), vram_required_MB: 945, low_resource_required: true, overrides: { context_window_size: 2048 } }] });
+async function aiStart(fromTap) {                                              // download (if needed) + load the model
+  if (AI.state === 'downloading' || AI.state === 'loading' || AI.state === 'ready' || AI.state === 'busy') return;
+  AI.err = ''; AI.progress = 0; AI.progText = '';
+  const cached = lsGet(aiFlagKey(), '0') === '1';
+  AI.state = cached ? 'loading' : 'downloading'; aiRender();
+  if (fromTap) { aiSnd.unlock(); try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {} }
+  try {
+    const lib = await aiLoadLib();
+    if (AI.kind === 'webgpu') {
+      const cfg = aiWgConfig();
+      if (!cached) { try { if (await lib.hasModelInCache(aiWg().id, cfg)) AI.state = 'loading'; } catch (e) {} }
+      AI.inst = await lib.CreateMLCEngine(aiWg().id, { appConfig: cfg, initProgressCallback: r => {
+        const txt = r.text || '', fetching = /Fetching|fetched|Fetch/i.test(txt);
+        if (fetching) AI.state = 'downloading'; else if (AI.state === 'downloading' && r.progress >= .999) AI.state = 'loading';
+        AI.progress = r.progress || 0; AI.progText = (fetching ? `POBIERANIE ${Math.round((r.progress || 0) * 100)}% (~${Math.round((r.progress || 0) * aiWg().mb)} / ${aiWg().mb} MB)` : /cache/i.test(txt) ? `ŁADOWANIE Z PAMIĘCI ${Math.round((r.progress || 0) * 100)}%` : `PRZYGOTOWANIE GPU ${Math.round((r.progress || 0) * 100)}%`); aiRender();
+      } });
+    } else {
+      const w = new lib.Wllama({ 'single-thread/wllama.wasm': aiAbs('lib/wllama/single-thread/wllama.wasm') }, { allowOffline: true, logger: { debug() {}, log() {}, warn() {}, error: (...a) => console.warn(...a) } });
+      const mm = w.modelManager; let model = null;
+      try { model = (await mm.getModels()).find(m => m.url === AI_WA.url) || null; } catch (e) {}
+      if (!model) {
+        AI.state = 'downloading'; AI.dlCtl = new AbortController(); aiRender();
+        model = await mm.downloadModel(AI_WA.url, { signal: AI.dlCtl.signal, progressCallback: ({ loaded, total }) => { AI.progress = total ? loaded / total : 0; AI.progText = `POBIERANIE ${Math.round(AI.progress * 100)}% (${aiMB(loaded)} / ${aiMB(total || AI_WA.mb * 1048576)})`; aiRender(); } });
+      }
+      AI.state = 'loading'; AI.progress = 1; AI.progText = 'ŁADOWANIE MODELU DO PAMIĘCI…'; aiRender();
+      await w.loadModel(model, { n_ctx: 2048, n_threads: 1 });
+      AI.inst = w;
+    }
+    lsSet(aiFlagKey(), '1'); AI.state = 'ready'; AI.progText = ''; AI.dlCtl = null; aiRender();
+    if (AI.opened) setTimeout(() => { try { aiEl.tx.focus({ preventScroll: true }); } catch (e) {} }, 50);
+  } catch (e) {
+    AI.dlCtl = null; AI.inst = null;
+    if (AI.userCancel) { AI.userCancel = false; AI.state = 'error'; AI.err = 'POBIERANIE PRZERWANE. Stuknij „Spróbuj ponownie”, aby pobrać model od nowa.'; }
+    else { AI.state = 'error'; AI.err = aiErrMsg(e); console.warn('AI start failed', e); }
+    aiRender();
+  }
+}
+async function aiUnload() {
+  const i = AI.inst; AI.inst = null; AI.state = lsGet(aiFlagKey(), '0') === '1' ? 'idle' : 'nomodel';
+  try { if (i) { if (AI.kind === 'webgpu') await i.unload(); else await i.exit(); } } catch (e) {}
+  aiRender();
+}
+async function aiDelete() {
+  if (!window.confirm('Usunąć pobrany model AI z tego telefonu? (zwolni ok. ' + aiModelInfo().mb + ' MB; będzie trzeba pobrać go ponownie)')) return;
+  if (AI.busy) aiStop();
+  try { await aiUnload(); } catch (e) {}
+  try {
+    const lib = await aiLoadLib();
+    if (AI.kind === 'webgpu') { await lib.deleteModelAllInfoInCache(aiWg().id, aiWgConfig()); }
+    else { const w = new lib.Wllama({ 'single-thread/wllama.wasm': aiAbs('lib/wllama/single-thread/wllama.wasm') }); await w.modelManager.clear(); await w.cacheManager.clear(); }
+  } catch (e) { console.warn(e); }
+  lsSet(aiFlagKey(), '0'); AI.state = 'nomodel'; aiRender(); toast('MODEL AI USUNIĘTY', 2500);
+}
+async function aiSwitchEngine() {
+  if (AI.busy) aiStop();
+  try { await aiUnload(); } catch (e) {}
+  AI.pref = AI.kind === 'webgpu' ? 'wasm' : (AI.pref === 'wasm' ? 'auto' : 'auto'); lsSet('rt_ai_engine', AI.pref);
+  AI.kind = null; AI.lib = null; AI.state = 'init'; aiRender(); await aiOpenInit();
+}
+
+/* ---------- chat ---------- */
+function aiStop() { AI.stopReq = true; try { if (AI.kind === 'webgpu') AI.inst.interruptGenerate(); else if (AI.ctl) AI.ctl.abort(); } catch (e) {} }
+async function aiSend() {
+  const txt = aiEl.tx.value.trim(); if (!txt || AI.busy || AI.state !== 'ready') return;
+  aiSnd.unlock();
+  aiEl.tx.value = ''; aiGrow();
+  const um = { r: 'u', t: txt }, am = { r: 'a', t: '' }; AI.msgs.push(um, am); aiRenderLog();
+  const el = am.el.querySelector('.tx'), cur = document.createElement('span'); cur.className = 'cur'; cur.textContent = '█';
+  const paint = t => { el.textContent = t; el.appendChild(cur); aiScroll(false); };
+  paint('');
+  const hist = AI.msgs.slice(0, -1).filter(m => m.t).slice(-9).map(m => ({ role: m.r === 'u' ? 'user' : 'assistant', content: m.t }));
+  const messages = [{ role: 'system', content: aiSystem() }, ...hist];
+  AI.busy = true; AI.stopReq = false; AI.state = 'busy'; aiRender();
+  let out = '', failed = null;
+  try {
+    if (AI.kind === 'webgpu') {
+      const it = await AI.inst.chat.completions.create({ messages, stream: true, temperature: .5, top_p: .9, max_tokens: 400, frequency_penalty: .3 });
+      for await (const ch of it) { const d = ch.choices && ch.choices[0] && ch.choices[0].delta && ch.choices[0].delta.content; if (d) { out += d; paint(out); if (out.trim()) aiSnd.start(); } if (AI.stopReq) break; }
+    } else {
+      AI.ctl = new AbortController();
+      await AI.inst.createChatCompletion(messages, { nPredict: 320, useCache: true, abortSignal: AI.ctl.signal, sampling: { temp: .5, top_p: .9, top_k: 40, penalty_repeat: 1.1 }, onNewToken: (t, p, cur2) => { out = cur2; paint(out); if (out.trim()) aiSnd.start(); } });
+    }
+  } catch (e) { if (!(AI.stopReq || (e && (e.name === 'WllamaAbortError' || e.name === 'AbortError')))) failed = e; }
+  aiSnd.stop();                                                                // sound fades out (~100 ms) the moment streaming ends, fails or is stopped
+  AI.ctl = null; AI.busy = false; AI.state = AI.inst ? 'ready' : 'nomodel';
+  cur.remove(); out = out.trim();
+  if (failed) { console.warn('AI generation failed', failed); out = (out ? out + '\n' : '') + '[BŁĄD: ' + aiErrMsg(failed).slice(0, 260) + ']'; }
+  else if (AI.stopReq) out = (out || '') + (out ? ' ' : '') + '[przerwano]';
+  else if (!out) out = '[brak odpowiedzi]';
+  am.t = out; el.textContent = out; aiSave(); aiRender(); aiScroll(true);
+}
+function aiClear() { if (AI.busy) aiStop(); AI.msgs = []; aiSave(); try { if (AI.kind === 'webgpu' && AI.inst) AI.inst.resetChat(); } catch (e) {} aiRenderLog(); }
+function aiGrow() { const t = aiEl.tx; t.style.height = 'auto'; t.style.height = Math.min(112, t.scrollHeight) + 'px'; }
+
+/* ---------- open / close, keyboard (visualViewport), pausing the camera analysis ---------- */
+async function aiOpenInit() {
+  const k = await aiDetect();
+  if (k === 'none') { AI.state = 'unsupported'; aiRender(); return; }
+  if (AI.state === 'init' || AI.state === 'idle') AI.state = 'nomodel';
+  aiRender();
+  if (lsGet(aiFlagKey(), '0') === '1' && (AI.state === 'nomodel')) aiStart(false);   // already downloaded: just load it (no download)
+}
+function chatOpened() {
+  AI.opened = true; clearTimeout(AI.relT); aiSnd.unlock(); aiRenderLog(); aiRender(); aiKb();
+  if (AI.state === 'init' || AI.state === 'nomodel' || AI.state === 'idle' || (AI.state === 'error' && !AI.kind)) aiOpenInit();
+}
+function chatClosed() {
+  AI.opened = false; aiSnd.stop(); if (AI.busy) aiStop(); try { aiEl.tx.blur(); } catch (e) {}
+  document.documentElement.style.setProperty('--kb', '0px'); aiEl.p.classList.remove('kb');
+  clearTimeout(AI.relT); AI.relT = setTimeout(() => { if (!AI.opened && !AI.busy && AI.inst) aiUnload(); }, 45000);   // free the model's memory shortly after leaving the chat
+}
+function aiKb() {
+  const vv = window.visualViewport; let kb = 0;
+  if (vv && AI.opened && !S.rot) kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+  document.documentElement.style.setProperty('--kb', kb + 'px'); aiEl.p.classList.toggle('kb', kb > 80);
+  if (kb > 80) { try { window.scrollTo(0, 0); } catch (e) {} aiScroll(true); }
+}
+if (window.visualViewport) { visualViewport.addEventListener('resize', aiKb); visualViewport.addEventListener('scroll', aiKb); }
+aiEl.tx.addEventListener('focus', () => { setTimeout(aiKb, 120); setTimeout(aiKb, 450); });
+aiEl.tx.addEventListener('blur', () => setTimeout(aiKb, 120));
+aiEl.tx.addEventListener('input', aiGrow);
+aiEl.tx.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); aiSend(); } e.stopPropagation(); });
+aiEl.send.onclick = () => { aiSnd.unlock(); AI.busy ? aiStop() : aiSend(); };
+aiEl.get.onclick = () => aiStart(true);
+aiEl.cancel.onclick = () => { AI.userCancel = true; try { AI.dlCtl && AI.dlCtl.abort(); } catch (e) {} aiRender(); };
+aiEl.snd.onclick = () => { AI.sound = !AI.sound; lsSet('rt_aisnd', AI.sound ? 1 : 0); if (!AI.sound) aiSnd.stop(); else aiSnd.unlock(); aiRender(); };
+aiEl.clr.onclick = aiClear;
+aiEl.del.onclick = aiDelete;
+aiEl.eng.onclick = aiSwitchEngine;
+$('#chX').onclick = () => closePanels();
+$('#bChat').onclick = () => { aiSnd.unlock(); openPanel('chat'); };
 
 /* ---------- photo & video ---------- */
 const fileStamp = () => { const d = new Date(); return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; };
@@ -3285,7 +3607,7 @@ window.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if ($('#dlg').classList.contains('show')) { if (e.key === 'Escape') dlgDone(null); return; }
   if (ncEl.classList.contains('show')) { if (e.key === 'Escape') ncDone({ id: 'cancel' }); return; }
-  if (e.target && e.target.tagName === 'INPUT') return;
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
   if (!S.started) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); start(); } else if (e.code === 'KeyH') cycleRot(); return; }
   if (e.key === 'Escape') { if ($('#media').classList.contains('show')) $('#mediaClose').click(); else if (S.panel) closePanels(); else { S.sel = null; hideCard(); } return; }
   switch (e.code) {
@@ -3319,12 +3641,13 @@ function frame(now) {
   S.newFrame = false; zoomStep(now, Math.min(dt, .1));
   // 2) detection kicks off in the background (never awaited here)
   if (S.busy && now - S.busyAt > 12000) S.busy = false;
-  if (S.ready && S.running && !S.busy && now >= S.nextInfer && video.readyState >= 2 && !document.hidden) infer(now);
+  const chatIdle = S.panel === 'chat' && !S.rec;                              // v6.5: the AI chat covers the camera → pause detection + HUD drawing (saves CPU/GPU/battery for the model)
+  if (!chatIdle && S.ready && S.running && !S.busy && now >= S.nextInfer && video.readyState >= 2 && !document.hidden) infer(now);
   matchTick(now);
   // 3) HUD overlay (30 fps cap on phones)
-  if (!IS_TOUCH || now - hudT >= (hudCost > 6 ? 30 : 0)) { hudT = now; const h0 = performance.now(); drawHud(now, hudDt); hudDt = 0; hudCost = hudCost * .9 + (performance.now() - h0) * .1; }
-  if (!IS_TOUCH || now - radT > 66) { radT = now; drawRadar(); }
-  ghostTick(now); if (GH.on && (!IS_TOUCH || now - grT > 66)) { grT = now; drawGhostRadar(now); }
+  if (chatIdle) { hudDt = 0; } else if (!IS_TOUCH || now - hudT >= (hudCost > 6 ? 30 : 0)) { hudT = now; const h0 = performance.now(); drawHud(now, hudDt); hudDt = 0; hudCost = hudCost * .9 + (performance.now() - h0) * .1; }
+  if (!chatIdle && (!IS_TOUCH || now - radT > 66)) { radT = now; drawRadar(); }
+  ghostTick(now); if (!chatIdle && GH.on && (!IS_TOUCH || now - grT > 66)) { grT = now; drawGhostRadar(now); }
   // 4) recording composite (only while recording)
   if (S.rec && now - S.rec.last > 33) { S.rec.last = now; try { drawComposite(S.rec.ctx, S.rec.cv.width, S.rec.cv.height, false); } catch (e) {} }
   rN++;
@@ -3378,7 +3701,7 @@ $('#boot').addEventListener('click', e => { /* tap anywhere does nothing: camera
 applyPalette(); syncToggles(); renderRet(); resize(); introScreen(); loadDb();
 requestAnimationFrame(frame);
 window.__S = S;
-window.__T = { GH, ghCatchStep, ghTarget, ghTap, ghCatch, ghEscape, ghFbText, GCATCH_R, ghBuildSprites, viewFov, ghLum, ghLumK, ghostMove, ghSpawn, ghRange, ghostSpawnPoint, ghostOccluders, drawGhostsHud, ghSetOn, ghRequestSensors, ghAlpha, ghostTick, ghUi, startRec, toggleRec, hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, nameFlow, matchProfile, ensureFace, faceAt, openPanel, closePanels, setZoom, setStream, startCamera, enrollFace, SRC, RET, setRetStyle, toggleRet, ncDone, ncShow, renderBle, ensureEmbed, NET, MSETS, refreshCached, refreshNetInfo, downloadModels, aiBlocked, updNet };
+window.__T = { AI, aiSnd, aiSystem, aiErrMsg, aiDetect, aiStart, aiSend, aiClear, AI_WG, AI_WA, GH, ghCatchStep, ghTarget, ghTap, ghCatch, ghEscape, ghFbText, GCATCH_R, ghBuildSprites, viewFov, ghLum, ghLumK, ghostMove, ghSpawn, ghRange, ghostSpawnPoint, ghostOccluders, drawGhostsHud, ghSetOn, ghRequestSensors, ghAlpha, ghostTick, ghUi, startRec, toggleRec, hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, nameFlow, matchProfile, ensureFace, faceAt, openPanel, closePanels, setZoom, setStream, startCamera, enrollFace, SRC, RET, setRetStyle, toggleRet, ncDone, ncShow, renderBle, ensureEmbed, NET, MSETS, refreshCached, refreshNetInfo, downloadModels, aiBlocked, updNet };
 if (new URLSearchParams(location.search).has('auto')) start();
 })();
 </script>
