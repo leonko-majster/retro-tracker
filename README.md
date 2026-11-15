@@ -58,3 +58,10 @@ Poprawka ucinania góry interfejsu na iPhonie (wyspa / pasek stanu w trybie PWA,
 - Przyczyna: na telefonach (tryb `compact`) późniejsze reguły CSS nadpisywały odstępy od paska stanu (`top:38px`, `padding:8px 12px`), a w trybie „Obróć ekran” i w poziomie marginesów bezpiecznych nie było w ogóle; suwak zoomu miał stałe `top`.
 - Teraz cały HUD używa zmiennych `--sat/--sar/--sab/--sal` (bezpieczne marginesy w układzie samego HUD-a, w tym po obróceniu o ±90°) – dotyczy paska górnego, radaru, dziennika, zoomu, banerów, kart, arkuszy, ekranu startowego i dolnego paska. Etykiety celów na obrazie też nie wchodzą pod pasek stanu.
 - Test: `v61safe.cjs` (emulacja marginesów iPhone Air 420×912 / 912×420 w każdym trybie).
+
+## v6.2-ghosts-audio
+- **Detektor duchów (TRYB ZABAWY – duchy są SYMULOWANE):** przycisk w Menu. Duchy (5–60 m, dryfują, pojawiają się i znikają) na osobnym „radarze duchów” i jako stylizowane widma na obrazie z kamery (chowają się za wykrytymi ludźmi/zwierzętami/dużymi przedmiotami). Osobny licznik „DUCHY: n”, nie mieszają się z licznikami ani z radarem szacowanych odległości. Brak rysowania ścian – duchy dryfują swobodnie.
+- **Lokalizacja i kompas:** `watchPosition` + `DeviceOrientationEvent.requestPermission()` tylko po stuknięciu; bez zgody – komunikat po polsku i pozycje przybliżone / radar stały. Dane zostają na urządzeniu.
+- **Nagrywanie z dźwiękiem:** mikrofon (`echoCancellation:false, noiseSuppression:false, autoGainControl:true`) pytany przy pierwszym nagraniu, otwarty tylko w trakcie nagrywania, przełącznik „Nagrywaj dźwięk” (domyślnie wł.), wskaźnik „REC + MIC”; bez zgody nagranie bez dźwięku + komunikat.
+- **Poziomo:** duży spust dokładnie na środku prawej krawędzi, przycisk nagrywania tuż pod nim (jak w aparacie iOS); zoom przesunięty obok.
+- Testy: `v62ghost.cjs`, `v62rec.cjs`.
