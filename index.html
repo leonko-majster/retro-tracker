@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="app-version" content="2026-11-15-v6.6-games">
+<meta name="app-version" content="2026-11-15-v6.7-ai-polish">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tracker">
@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>MAJSTERMAN // TARGETING SYSTEM</title>
+<title>MAJSTERMAN // DATA CENTER</title>
 <style>
 /* vietnamese */
 @font-face {
@@ -177,12 +177,16 @@ input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;bor
 .lay-land #gHelp{display:none}
 
 /* v6.5 CZAT AI */
-#settings h2{position:sticky;top:max(12px,var(--sat));z-index:2;flex:none}
+#settings h2{position:sticky;top:0;z-index:2;flex:none}
 #settings{scroll-padding-top:44px}
 #chat{overflow:hidden;gap:6px;bottom:var(--kb,0px);z-index:36;background:rgba(0,0,0,.965)}
 #chat.kb{padding-bottom:6px}
 #chat h2 .hb{display:flex;gap:4px}
 #chStat{font-size:16px;line-height:1.1;color:var(--dim);border:1px dashed var(--faint);padding:3px 6px;white-space:pre-line;flex:none;word-break:break-word}
+#chModels{flex:none;display:flex;gap:6px}
+#chModels button{flex:1 1 0;min-width:0;font-size:17px;line-height:1.05;padding:3px 2px;white-space:pre-line}
+#chModels button.on{border-color:var(--fg);background:rgba(var(--fg-rgb,51,255,102),.18);box-shadow:0 0 8px rgba(var(--fg-rgb,51,255,102),.5)}
+#chat.kb #chModels{display:none}
 #chDl{flex:none;display:flex;flex-direction:column;gap:6px;max-height:46%;overflow-y:auto}
 #chInfo{font-size:19px;line-height:1.12;color:var(--fg);border:1px solid var(--faint);padding:5px 8px;white-space:pre-line}
 #chGet{width:100%;font-size:23px;padding:8px 6px;border-color:var(--fg);background:rgba(var(--fg-rgb,51,255,102),.1)}
@@ -209,8 +213,8 @@ input{font-family:var(--font);font-size:22px;color:var(--fg);background:#000;bor
 
 .sheet h2{font-weight:normal;font-size:28px;letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--fg);color:#000;padding:0 8px;text-shadow:none}
 .sheet h2 button{border-color:#000;color:#000;background:transparent;padding:0 10px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.grid2 button{padding:10px 8px;font-size:21px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.grid2 button{padding:10px 8px;font-size:21px;white-space:normal;min-width:0;overflow-wrap:anywhere}
 .statbox{border:1px dashed var(--faint);padding:6px 8px;font-size:18px;color:var(--dim);text-shadow:none;line-height:1.2;white-space:pre-line}
 .statbox b{font-weight:normal;color:var(--fg)}
 .modal{position:absolute;inset:0;z-index:60;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:max(14px,var(--sat)) max(14px,var(--sar)) max(14px,var(--sab)) max(14px,var(--sal))}
@@ -445,6 +449,7 @@ body.gh #bCatch{display:flex}
   <div class="sheet" id="chat">
     <h2><span>CZAT AI</span><span class="hb"><button id="chClear">[ Wyczyść ]</button><button id="chX">[ Zamknij ]</button></span></h2>
     <div id="chStat"></div>
+    <div id="chModels"><button data-k="lite">LITE</button><button data-k="std">STANDARD</button></div>
     <div id="chDl">
       <div id="chInfo"></div>
       <button id="chGet">⇩ POBIERZ MODEL AI</button>
@@ -2095,7 +2100,7 @@ function renderStats() {
     `STRUMIEŃ WIDEO: ${video.videoWidth || 0}x${video.videoHeight || 0} · poziom ${S.res.level ? 'WYSOKI (zoom)' : 'bazowy'}${S.res.fail ? ' · wyższa rozdzielczość niedostępna' : ''} · wyświetlanie: pełna rozdzielczość (<video> + CSS)\n` +
     `WYKRYWANIE: ${S.backend ? S.backend.toUpperCase() + (S.mode === 'worker' ? ' (worker)' : '') : '—'} · ${S.nnFps ? S.nnFps.toFixed(1) : '—'}/s · ${S.infMs ? Math.round(S.infMs) : '—'} ms\n` +
     `BAZA: ${S.profiles.length} twarzy · ${S.animals.length} zwierząt · ${S.dbOk ? 'IndexedDB' : 'pamięć tymczasowa'} · trwałe: ${D.persisted}\n` +
-    `Wersja: v6.6-games · ŹRÓDŁO: ${srcLabel()}${S.tainted ? ' (BEZ CORS: analiza wyłączona)' : ''} · zoom ${(S.zc || 1).toFixed(1)}x (sprzęt ${(S.hwz || 1).toFixed(1)}x + cyfrowy ${(S.dz || 1).toFixed(1)}x)\n\nDIAGNOSTYKA\n` +
+    `Wersja: v6.7-ai-polish · ŹRÓDŁO: ${srcLabel()}${S.tainted ? ' (BEZ CORS: analiza wyłączona)' : ''} · zoom ${(S.zc || 1).toFixed(1)}x (sprzęt ${(S.hwz || 1).toFixed(1)}x + cyfrowy ${(S.dz || 1).toFixed(1)}x)\n\nDIAGNOSTYKA\n` +
     `SIEĆ: ${navigator.onLine === false ? 'OFFLINE' : 'online'} · SERWIS WORKER: ${NET.sw} · pamięć aplikacji: ${NET.shell || '—'}\n` +
     `MODELE OFFLINE: ${Object.entries(MSETS).map(([k, v]) => `${v.n} ${NET.cached[k] === null ? '…' : NET.cached[k] ? 'POBRANE' : 'brak'}`).join(' · ')} · zajęte ${NET.usage || '—'}\n` +
     `${aiShort() || 'AI: —'}${S.aiErr ? ' (' + S.aiErr + ')' : ''}\n` +
@@ -3165,22 +3170,29 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) catch
 $('#bGhSens').onclick = () => ghRequestSensors();
 if (GH.on) { ghSetOn(true, false); } else ghUi();
 /* =====================================================================
-   v6.5  CZAT AI  —  lokalny model językowy, zero serwerów czatu.
-   WebGPU (Safari 26 / Chrome): WebLLM + Qwen2.5-0.5B-Instruct q4f16 (~290 MB).
-   Bez WebGPU: wllama (llama.cpp → WebAssembly, CPU) + Qwen2.5-0.5B-Instruct Q4_0 GGUF (~430 MB).
+   v6.5/6.7  CZAT AI  —  lokalny model językowy, zero serwerów czatu.
+   WebGPU (Safari 26 / Chrome): WebLLM + Gemma-2-2B-it q4f16 (domyślnie, ~1,4 GB) albo LITE Qwen2.5-0.5B (~290 MB).
+   Bez WebGPU: wllama (llama.cpp → WebAssembly, CPU) + te same modele jako GGUF (Q4_K_M / Q4_0).
    Biblioteki leżą w lib/webllm i lib/wllama (hostowane tutaj). Wagi modelu pobierane JEDNORAZOWO z Hugging Face
    po wyraźnej zgodzie i zapisywane na stałe (Cache API / OPFS) — potem czat działa bez internetu.
    Rozmowy nie opuszczają telefonu.
    ===================================================================== */
-const AI_WG = { id: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC', name: 'Qwen2.5-0.5B-Instruct (q4f16)', mb: 290, repo: 'https://huggingface.co/mlc-ai/Qwen2.5-0.5B-Instruct-q4f16_1-MLC', lib: 'lib/webllm/Qwen2-0.5B-Instruct-q4f16_1_cs1k-webgpu.wasm' };
-const AI_WG32 = { id: 'Qwen2.5-0.5B-Instruct-q4f32_1-MLC', name: 'Qwen2.5-0.5B-Instruct (q4f32)', mb: 290, repo: 'https://huggingface.co/mlc-ai/Qwen2.5-0.5B-Instruct-q4f32_1-MLC', lib: 'lib/webllm/Qwen2-0.5B-Instruct-q4f32_1_cs1k-webgpu.wasm' };   // same weights, f32 shaders: for GPUs without shader-f16
-const AI_WA = { name: 'Qwen2.5-0.5B-Instruct (Q4_0)', mb: 430, url: 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_0.gguf' };
+const AI_BASE_LIB = 'lib/webllm/', AI_HF = 'https://huggingface.co/';
+const AI_MODELS = {                                                             // v6.7: model tiers. "std" is the default (the 0.5B model could not write Polish; Qwen2.5-1.5B/3B were measured too, see README)
+  lite: { key: 'lite', tag: 'LITE', name: 'Qwen2.5-0.5B-Instruct', note: 'mały i szybki, po polsku słaby', ctx: 2048, maxTok: 400, histChars: 2400,
+    wg: { id: 'Qwen2.5-0.5B-Instruct-q4f16_1-MLC', id32: 'Qwen2.5-0.5B-Instruct-q4f32_1-MLC', mb: 290, vram: 945, vram32: 1060, lib: AI_BASE_LIB + 'Qwen2-0.5B-Instruct-q4f16_1_cs1k-webgpu.wasm', lib32: AI_BASE_LIB + 'Qwen2-0.5B-Instruct-q4f32_1_cs1k-webgpu.wasm' },
+    wa: { mb: 429, url: AI_HF + 'Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_0.gguf' } },
+  std: { key: 'std', tag: 'STANDARD', name: 'Gemma-2-2B-it', note: 'zalecany — dobra polszczyzna', ctx: 4096, maxTok: 700, histChars: 5200, noSys: true,   // Gemma has no system role: the instructions go into the user turn
+    wg: { id: 'gemma-2-2b-it-q4f16_1-MLC', id32: 'gemma-2-2b-it-q4f32_1-MLC', mb: 1403, vram: 1895, vram32: 2509, lib: AI_BASE_LIB + 'gemma-2-2b-it-q4f16_1_cs1k-webgpu.wasm', lib32: AI_BASE_LIB + 'gemma-2-2b-it-q4f32_1_cs1k-webgpu.wasm' },
+    wa: { mb: 1629, url: AI_HF + 'bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf' } }
+};
+const AI_KEYS = ['lite', 'std'];
 const AI = {
-  pref: lsGet('rt_ai_engine', 'auto'), sound: lsGet('rt_aisnd', '1') === '1',
+  pref: lsGet('rt_ai_engine', 'auto'), model: AI_KEYS.includes(lsGet('rt_ai_model', '')) ? lsGet('rt_ai_model', '') : 'std', chosen: AI_KEYS.includes(lsGet('rt_ai_model', '')), migrated: '', sound: lsGet('rt_aisnd', '1') === '1',
   kind: null, f16: true, why: '', state: 'init', inst: null, lib: null, busy: false, ctl: null, stopReq: false, relT: 0, msgs: [], progress: 0, progText: '', err: '', dlCtl: null, opened: false
 };
 try { AI.msgs = JSON.parse(lsGet('rt_aichat', '[]')).filter(m => m && (m.r === 'u' || m.r === 'a') && typeof m.t === 'string').slice(-40); } catch (e) { AI.msgs = []; }
-const aiEl = { p: $('#chat'), stat: $('#chStat'), log: $('#chLog'), tx: $('#chTx'), send: $('#chSend'), get: $('#chGet'), cancel: $('#chCancel'), bar: $('#chBar'), barT: $('#chBarT'), info: $('#chInfo'), dl: $('#chDl'), snd: $('#chSnd'), eng: $('#chEng'), del: $('#chDel'), clr: $('#chClear') };
+const aiEl = { p: $('#chat'), stat: $('#chStat'), log: $('#chLog'), tx: $('#chTx'), send: $('#chSend'), get: $('#chGet'), cancel: $('#chCancel'), bar: $('#chBar'), barT: $('#chBarT'), info: $('#chInfo'), dl: $('#chDl'), snd: $('#chSnd'), eng: $('#chEng'), models: $('#chModels'), del: $('#chDel'), clr: $('#chClear') };
 const aiAbs = p => new URL(p, document.baseURI).href;
 const aiMB = b => Math.round(b / 1048576) + ' MB';
 
@@ -3233,22 +3245,52 @@ async function aiDetect() {
   if (wg) AI.kind = 'webgpu'; else if (!nowasm) AI.kind = 'wasm'; else AI.kind = 'none';
   return AI.kind;
 }
-const aiWg = () => AI.f16 ? AI_WG : AI_WG32;
-const aiModelInfo = () => AI.kind === 'webgpu' ? aiWg() : AI_WA;
-const aiFlagKey = () => 'rt_ai_ready_' + AI.kind + (AI.kind === 'webgpu' && !AI.f16 ? '32' : '');
+const aiM = k => AI_MODELS[k || AI.model];
+const aiWg = k => { const m = aiM(k).wg; return AI.f16 ? { id: m.id, lib: m.lib, vram: m.vram, mb: m.mb } : { id: m.id32, lib: m.lib32, vram: m.vram32, mb: m.mb }; };
+const aiWgRepo = k => AI_HF + 'mlc-ai/' + aiWg(k).id;
+const aiModelInfo = k => { const m = aiM(k), w = AI.kind === 'webgpu'; return { key: m.key, tag: m.tag, note: m.note, mb: w ? m.wg.mb : m.wa.mb, name: m.name + (w ? (AI.f16 ? ' (q4f16)' : ' (q4f32)') : (m.key === 'lite' ? ' (Q4_0)' : ' (Q4_K_M)')) }; };
+const aiFlagKey = k => { k = k || AI.model; return 'rt_ai_ready_' + AI.kind + (AI.kind === 'webgpu' && !AI.f16 ? '32' : '') + (k === 'lite' ? '' : '_' + k); };   // "lite" keeps the v6.5 key → old downloads are recognised
+const aiCached = k => lsGet(aiFlagKey(k), '0') === '1';
 
-/* ---------- context for the system prompt (cheap: counters, names, ghosts caught) ---------- */
-function aiSystem() {
-  let ctx = '';
+/* ---------- system prompt (v6.7) ----------
+   The v6.5 prompt was a long list of rules + app features + live stats, sent with EVERY question. A small model treats such text as something to
+   paraphrase: it opened replies with rule-like boilerplate ("musi zawsze być zgodny z prawem…"), echoed the feature list and mixed app facts into
+   unrelated answers (a pancake recipe turned into "Ania jest zimna…"). Now: a one-sentence persona with NO rules/prohibitions, and the app facts
+   + live counters are added ONLY when the question is about the app. */
+const AI_APP_RE = /aplikacj|tracker|radar|kadr|kamer|duch|duszk|ŁAP|łap|imi[eę]|zoom|przybli|zdj[eę]c|nagra|\bgr[yaęi]\b|gier|czat|offline|model\b|ile (osób|ludzi|zwierz|duch)|rozpozn|wykry|skan|menu|ustawieni/i;
+const AI_BASE_SYS = 'Jesteś pomocnym asystentem. Rozmawiasz po polsku — poprawną, naturalną polszczyzną. Odpowiadasz konkretnie i na temat, zwykłym tekstem (bez Markdown i emoji).';
+function aiState() {
+  let o = { H: 0, A: 0, names: [], ghosts: 0 };
   try {
-    const t = S.tracks.filter(x => x.confirmed), H = t.filter(x => x.g === 'H').length, A = t.filter(x => x.g === 'A').length;
-    const names = t.filter(x => x.g !== 'O' && x.person && (x.person.manual || x.person.state === 'known')).map(x => { const p = profOf(x); return p && p.name; }).filter(Boolean).slice(0, 5);
-    ctx = `\nAktualny stan aplikacji: w kadrze ${H} ${H === 1 ? 'człowiek' : 'ludzi'} i ${A} zwierząt` + (names.length ? `; rozpoznani z imienia: ${names.join(', ')}` : '') + `; złapane duchy (tryb zabawy): ${GH.caught || 0}.`;
+    const t = S.tracks.filter(x => x.confirmed);
+    o.H = t.filter(x => x.g === 'H').length; o.A = t.filter(x => x.g === 'A').length;
+    o.names = t.filter(x => x.g !== 'O' && x.person && (x.person.manual || x.person.state === 'known')).map(x => { const p = profOf(x); return p && p.name; }).filter(Boolean).slice(0, 5);
+    o.ghosts = GH.caught || 0;
   } catch (e) {}
-  return 'Jesteś asystentem aplikacji Retro Tracker: zielonego, retro radaru z kamerą działającego w całości na telefonie, bez internetu. ' +
-    'Odpowiadasz po polsku, krótko (1–4 zdania), prosto i uprzejmie. Gdy nie wiesz, mówisz to wprost i nie zmyślasz. ' +
-    'Funkcje aplikacji: wykrywanie ludzi i zwierząt, imiona (przycisk IMIĘ), radar z szacunkową odległością, zoom do 10x, zdjęcia i nagrywanie z dźwiękiem, tryb zabawy z symulowanymi duchami (łapanie przyciskiem ŁAP), praca offline, ten czat AI.' + ctx;
+  return o;
 }
+const aiPl = (n, a, b, c) => n === 1 ? a : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 > 20)) ? b : c;
+const aiAppQ = txt => AI_APP_RE.test(txt || '');
+function aiSystem(userText) {
+  if (!aiAppQ(userText)) return AI_BASE_SYS;
+  const st = aiState();
+  return AI_BASE_SYS + '\nRozmawiasz w aplikacji Retro Tracker (zielony retro radar z kamerą, działa offline na telefonie). Aplikacja wykrywa ludzi i zwierzęta, zapamiętuje imiona (przycisk IMIĘ), pokazuje radar z przybliżoną odległością, robi zdjęcia i nagrania, ma zoom do 10x, tryb zabawy z symulowanymi duchami (przycisk ŁAP), gry retro i ten czat.' +
+    `\nTeraz w kadrze: ${st.H} ${aiPl(st.H, 'osoba', 'osoby', 'osób')}, ${st.A} ${aiPl(st.A, 'zwierzę', 'zwierzęta', 'zwierząt')}` + (st.names.length ? `; znane z imienia: ${st.names.join(', ')}` : '') + `; złapane duchy: ${st.ghosts}.`;
+}
+/* guards: a reply that opens with rule-like boilerplate or copies the start of the system prompt is regenerated once without the app block */
+const AI_BOILER_RE = /^\s*[«"„'(\[]*\s*(zgoda\b|oczywiście,?\s+(jako|muszę|zawsze)|jako (asystent|model|sztuczn|ai\b)|(muszę|musi|musisz|należy|powinien|powinna|powinienem)\s+(zawsze|być|odpowiada|przestrzega|działa)|zawsze\s+(muszę|musi|należy|odpowiada|być)|odpowiadam(y)? (zawsze )?po polsku|odpowiadaj po polsku|zgodnie z (zasadami|instrukcj|zasad|prawem|wytycznymi|poleceniem)|(zasady|instrukcje|wytyczne)\s*:|system(owy)? prompt|jestem (pomocnym )?asystentem[^.!?]{0,40}(rozmawiam|odpowiadam))/i;
+const aiNorm = t => String(t || '').toLowerCase().replace(/[^a-ząćęłńóśźż0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+function aiBoiler(out, sys) {
+  if (AI_BOILER_RE.test(out || '')) return true;
+  const w = aiNorm(out).split(' ').slice(0, 6); if (w.length < 6) return false;
+  return !!sys && aiNorm(sys).includes(w.join(' '));                          // the first six words are a verbatim slice of the system prompt
+}
+function aiTrimSentence(t) {                                                    // cut a length-truncated reply back to its last complete sentence
+  const m = t.match(/^([\s\S]*[.!?…)»"”](?=\s|$))/); const cut = m ? m[1] : '';
+  return cut.length >= 12 ? cut.trim() : t.replace(/\s+\S*$/, '').trim() + '…';
+}
+const aiFormat = t => String(t || '').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '').replace(/^[ \t]*[*\-][ \t]+/gm, '• ').replace(/^[ \t]*#{1,6}[ \t]*/gm, '').replace(/\*+/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');   // chat bubbles are plain text: no Markdown stars/hashes, no emoji
+const aiClean = t => aiFormat(String(t || '')).replace(/<\|im_(start|end)\|>|<\|endoftext\|>|<end_of_turn>|<start_of_turn>/g, '').replace(/\uFFFD+$/, '').replace(/\s+$/, '');
 
 /* ---------- UI ---------- */
 function aiSave() { lsSet('rt_aichat', JSON.stringify(AI.msgs.slice(-40))); }
@@ -3270,6 +3312,7 @@ const aiStateTxt = () => ({
 function aiRender() {
   const mi = AI.kind ? aiModelInfo() : null;
   const eng = AI.kind === 'webgpu' ? `WebGPU · WebLLM · ${mi.name}` : AI.kind === 'wasm' ? `CPU/WASM · wllama · ${mi.name}` : '—';
+  aiRenderModels();
   aiEl.stat.textContent = `SILNIK: ${eng}\nSTAN: ${aiStateTxt()}` + (AI.kind === 'wasm' && AI.why && AI.pref !== 'wasm' ? `\n(WebGPU niedostępne: ${AI.why})` : '');
   const needDl = AI.state === 'nomodel' || AI.state === 'error' || AI.state === 'downloading' || AI.state === 'loading';
   aiEl.dl.style.display = AI.state === 'unsupported' || AI.state === 'nomodel' || AI.state === 'downloading' || AI.state === 'loading' || AI.state === 'error' ? '' : 'none';
@@ -3281,13 +3324,13 @@ function aiRender() {
   aiEl.barT.style.display = aiEl.bar.style.display; aiEl.barT.textContent = AI.progText;
   let info = '';
   if (AI.state === 'unsupported') info = 'Ta przeglądarka nie obsługuje WebGPU ani WebAssembly, więc lokalny czat AI nie może tu działać.';
-  else if (AI.state === 'nomodel') info = `Czat AI działa w całości na tym telefonie. Model (${mi ? mi.name : ''}, ok. ${mi ? mi.mb : '?'} MB) zostanie pobrany JEDEN raz z Hugging Face (potrzebny internet, najlepiej Wi‑Fi), zapisany w pamięci przeglądarki, a potem czat działa bez internetu. Rozmowy nigdzie nie są wysyłane.`;
+  else if (AI.state === 'nomodel') info = `Czat AI działa w całości na tym telefonie. Model ${mi ? mi.tag : ''} (${mi ? mi.name : ''}, ok. ${mi ? mi.mb : '?'} MB) zostanie pobrany JEDEN raz z Hugging Face (potrzebny internet, najlepiej Wi‑Fi), zapisany w pamięci przeglądarki, a potem czat działa bez internetu. Rozmowy nigdzie nie są wysyłane.` + (AI.model === 'std' && AI.legacyLite ? `\n\nMasz pobrany stary, słabszy model LITE — po pobraniu tego zostanie usunięty, żeby zwolnić ${AI_MODELS.lite[AI.kind === 'webgpu' ? 'wg' : 'wa'].mb} MB. Do czasu pobrania możesz go użyć przyciskiem LITE powyżej.` : '');
   else if (AI.state === 'error') info = AI.err;
   aiEl.info.textContent = info; aiEl.info.style.display = info ? '' : 'none';
   const ready = AI.state === 'ready' || AI.state === 'busy';
   aiEl.tx.disabled = !ready; aiEl.tx.placeholder = ready ? 'Napisz do AI…' : 'Model nie jest gotowy';
   aiEl.send.disabled = !ready; aiEl.send.textContent = AI.busy ? '■ Stop' : 'Wyślij'; aiEl.send.classList.toggle('on', AI.busy);
-  aiEl.del.style.display = (AI.kind && lsGet(aiFlagKey(), '0') === '1') ? '' : 'none';
+  aiEl.del.style.display = (AI.kind && aiCached()) ? '' : 'none'; aiEl.del.textContent = '✕ Usuń model ' + aiM().tag;
   aiEl.eng.style.display = AI.kind === 'webgpu' || (AI.kind === 'wasm' && AI.pref === 'wasm') ? '' : 'none';
   aiEl.eng.textContent = AI.kind === 'webgpu' ? '⇄ Tryb CPU' : '⇄ Użyj WebGPU';
   aiEl.snd.classList.toggle('on', AI.sound); aiEl.snd.classList.toggle('off', !AI.sound);
@@ -3307,36 +3350,37 @@ async function aiLoadLib() {
   AI.lib = AI.kind === 'webgpu' ? await import(aiAbs('lib/webllm/web-llm.js')) : await import(aiAbs('lib/wllama/index.js'));
   return AI.lib;
 }
-const aiWgConfig = () => ({ useIndexedDBCache: false, model_list: [{ model: aiWg().repo, model_id: aiWg().id, model_lib: aiAbs(aiWg().lib), vram_required_MB: 945, low_resource_required: true, overrides: { context_window_size: 2048 } }] });
+const aiWgConfig = k => { const m = aiM(k), w = aiWg(k); return { useIndexedDBCache: false, model_list: [{ model: aiWgRepo(k), model_id: w.id, model_lib: aiAbs(w.lib), vram_required_MB: w.vram, low_resource_required: true, overrides: { context_window_size: m.ctx } }] }; };
 async function aiStart(fromTap) {                                              // download (if needed) + load the model
   if (AI.state === 'downloading' || AI.state === 'loading' || AI.state === 'ready' || AI.state === 'busy') return;
   AI.err = ''; AI.progress = 0; AI.progText = '';
-  const cached = lsGet(aiFlagKey(), '0') === '1';
+  const cached = aiCached(), M = aiM(), W = aiWg(), WA = M.wa;
   AI.state = cached ? 'loading' : 'downloading'; aiRender();
   if (fromTap) { aiSnd.unlock(); try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {} }
   try {
     const lib = await aiLoadLib();
     if (AI.kind === 'webgpu') {
       const cfg = aiWgConfig();
-      if (!cached) { try { if (await lib.hasModelInCache(aiWg().id, cfg)) AI.state = 'loading'; } catch (e) {} }
-      AI.inst = await lib.CreateMLCEngine(aiWg().id, { appConfig: cfg, initProgressCallback: r => {
+      if (!cached) { try { if (await lib.hasModelInCache(W.id, cfg)) AI.state = 'loading'; } catch (e) {} }
+      AI.inst = await lib.CreateMLCEngine(W.id, { appConfig: cfg, initProgressCallback: r => {
         const txt = r.text || '', fetching = /Fetching|fetched|Fetch/i.test(txt);
         if (fetching) AI.state = 'downloading'; else if (AI.state === 'downloading' && r.progress >= .999) AI.state = 'loading';
-        AI.progress = r.progress || 0; AI.progText = (fetching ? `POBIERANIE ${Math.round((r.progress || 0) * 100)}% (~${Math.round((r.progress || 0) * aiWg().mb)} / ${aiWg().mb} MB)` : /cache/i.test(txt) ? `ŁADOWANIE Z PAMIĘCI ${Math.round((r.progress || 0) * 100)}%` : `PRZYGOTOWANIE GPU ${Math.round((r.progress || 0) * 100)}%`); aiRender();
+        AI.progress = r.progress || 0; AI.progText = (fetching ? `POBIERANIE ${Math.round((r.progress || 0) * 100)}% (~${Math.round((r.progress || 0) * W.mb)} / ${W.mb} MB)` : /cache/i.test(txt) ? `ŁADOWANIE Z PAMIĘCI ${Math.round((r.progress || 0) * 100)}%` : `PRZYGOTOWANIE GPU ${Math.round((r.progress || 0) * 100)}%`); aiRender();
       } });
     } else {
       const w = new lib.Wllama({ 'single-thread/wllama.wasm': aiAbs('lib/wllama/single-thread/wllama.wasm') }, { allowOffline: true, logger: { debug() {}, log() {}, warn() {}, error: (...a) => console.warn(...a) } });
       const mm = w.modelManager; let model = null;
-      try { model = (await mm.getModels()).find(m => m.url === AI_WA.url) || null; } catch (e) {}
+      try { model = (await mm.getModels()).find(m => m.url === WA.url) || null; } catch (e) {}
       if (!model) {
         AI.state = 'downloading'; AI.dlCtl = new AbortController(); aiRender();
-        model = await mm.downloadModel(AI_WA.url, { signal: AI.dlCtl.signal, progressCallback: ({ loaded, total }) => { AI.progress = total ? loaded / total : 0; AI.progText = `POBIERANIE ${Math.round(AI.progress * 100)}% (${aiMB(loaded)} / ${aiMB(total || AI_WA.mb * 1048576)})`; aiRender(); } });
+        model = await mm.downloadModel(WA.url, { signal: AI.dlCtl.signal, progressCallback: ({ loaded, total }) => { AI.progress = total ? loaded / total : 0; AI.progText = `POBIERANIE ${Math.round(AI.progress * 100)}% (${aiMB(loaded)} / ${aiMB(total || WA.mb * 1048576)})`; aiRender(); } });
       }
       AI.state = 'loading'; AI.progress = 1; AI.progText = 'ŁADOWANIE MODELU DO PAMIĘCI…'; aiRender();
-      await w.loadModel(model, { n_ctx: 2048, n_threads: 1 });
+      await w.loadModel(model, { n_ctx: M.ctx, n_threads: 1 });
       AI.inst = w;
     }
     lsSet(aiFlagKey(), '1'); AI.state = 'ready'; AI.progText = ''; AI.dlCtl = null; aiRender();
+    if (AI.model !== 'lite' && !AI.chosen && AI.legacyLite) { AI.legacyLite = false; aiPurge('lite').then(ok => { if (ok) toast('STARY MODEL LITE USUNIĘTY (zwolniono ~' + AI_MODELS.lite[AI.kind === 'webgpu' ? 'wg' : 'wa'].mb + ' MB)', 4000); }); }
     if (AI.opened) setTimeout(() => { try { aiEl.tx.focus({ preventScroll: true }); } catch (e) {} }, 50);
   } catch (e) {
     AI.dlCtl = null; AI.inst = null;
@@ -3350,16 +3394,43 @@ async function aiUnload() {
   try { if (i) { if (AI.kind === 'webgpu') await i.unload(); else await i.exit(); } } catch (e) {}
   aiRender();
 }
-async function aiDelete() {
-  if (!window.confirm('Usunąć pobrany model AI z tego telefonu? (zwolni ok. ' + aiModelInfo().mb + ' MB; będzie trzeba pobrać go ponownie)')) return;
-  if (AI.busy) aiStop();
-  try { await aiUnload(); } catch (e) {}
+async function aiPurge(key) {                                                  // remove ONE model's files from the browser cache (Cache API for WebLLM, OPFS for wllama)
   try {
     const lib = await aiLoadLib();
-    if (AI.kind === 'webgpu') { await lib.deleteModelAllInfoInCache(aiWg().id, aiWgConfig()); }
-    else { const w = new lib.Wllama({ 'single-thread/wllama.wasm': aiAbs('lib/wllama/single-thread/wllama.wasm') }); await w.modelManager.clear(); await w.cacheManager.clear(); }
-  } catch (e) { console.warn(e); }
-  lsSet(aiFlagKey(), '0'); AI.state = 'nomodel'; aiRender(); toast('MODEL AI USUNIĘTY', 2500);
+    if (AI.kind === 'webgpu') { await lib.deleteModelAllInfoInCache(aiWg(key).id, aiWgConfig(key)); }
+    else { const w = new lib.Wllama({ 'single-thread/wllama.wasm': aiAbs('lib/wllama/single-thread/wllama.wasm') }); const url = aiM(key).wa.url; for (const m of await w.modelManager.getModels()) if (m.url === url) await m.remove(); }
+  } catch (e) { console.warn('purge failed', e); return false; }
+  lsSet(aiFlagKey(key), '0'); return true;
+}
+async function aiDelete() {
+  const mi = aiModelInfo();
+  if (!window.confirm('Usunąć pobrany model ' + mi.tag + ' z tego telefonu? (zwolni ok. ' + mi.mb + ' MB; będzie trzeba pobrać go ponownie)')) return;
+  if (AI.busy) aiStop();
+  try { await aiUnload(); } catch (e) {}
+  await aiPurge(AI.model);
+  AI.state = 'nomodel'; aiRender(); toast('MODEL ' + mi.tag + ' USUNIĘTY', 2500);
+}
+function aiRenderModels() {
+  const box = aiEl.models; if (!box) return;
+  const kinds = AI.kind;
+  for (const b of box.children) {
+    const k = b.dataset.k, m = AI_MODELS[k];
+    const hidden = !kinds || (m.gpuOnly && kinds !== 'webgpu');
+    b.style.display = hidden ? 'none' : '';
+    if (hidden) continue;
+    const mb = kinds === 'webgpu' ? m.wg.mb : m.wa.mb;
+    b.textContent = `${m.tag}\n${mb >= 1000 ? (mb / 1024).toFixed(1).replace('.', ',') + ' GB' : mb + ' MB'}${aiCached(k) ? ' ✓' : ''}`;
+    b.classList.toggle('on', AI.model === k);
+  }
+  box.style.display = kinds ? '' : 'none';
+}
+async function aiSelect(k) {                                                    // choose a model tier (saved); loads it right away when it is already downloaded
+  if (!AI_MODELS[k] || k === AI.model) return;
+  if (AI.busy) return;
+  if (AI.state === 'downloading' || AI.state === 'loading') { toast('POCZEKAJ NA KONIEC POBIERANIA', 2200); return; }
+  try { await aiUnload(); } catch (e) {}
+  AI.model = k; AI.chosen = true; lsSet('rt_ai_model', k);
+  AI.state = 'nomodel'; aiRender(); await aiOpenInit();
 }
 async function aiSwitchEngine() {
   if (AI.busy) aiStop();
@@ -3370,6 +3441,38 @@ async function aiSwitchEngine() {
 
 /* ---------- chat ---------- */
 function aiStop() { AI.stopReq = true; try { if (AI.kind === 'webgpu') AI.inst.interruptGenerate(); else if (AI.ctl) AI.ctl.abort(); } catch (e) {} }
+const AI_MARK_RE = /\s*\[(przerwano|brak odpowiedzi|BŁĄD:[^\]]*|odpowiedź skrócona[^\]]*)\]\s*/g;
+function aiHistory(maxChars) {                                                  // recent turns, markers stripped, trimmed (oldest first) to fit the context window
+  const raw = AI.msgs.slice(0, -1).map(m => ({ role: m.r === 'u' ? 'user' : 'assistant', content: String(m.t || '').replace(AI_MARK_RE, ' ').trim() })).filter(m => m.content);
+  const all = []; for (const m of raw) { const l = all[all.length - 1]; if (l && l.role === m.role) l.content += '\n' + m.content; else all.push({ ...m }); }   // strict user/assistant alternation (Gemma's template requires it)
+  const out = []; let n = 0;
+  for (let i = all.length - 1; i >= 0 && out.length < 12; i--) { n += all[i].content.length; if (n > maxChars && out.length) break; out.unshift(all[i]); }
+  while (out.length && out[0].role !== 'user') out.shift();                      // a conversation must open with a user turn
+  return out;
+}
+function aiMessages(sys, hist, M) {                                            // models without a system role get the instructions in front of the latest user turn
+  if (!M.noSys) return [{ role: 'system', content: sys }, ...hist];
+  const h = hist.map(m => ({ ...m })), l = h[h.length - 1]; if (l && l.role === 'user') l.content = sys + '\n\n' + l.content; else h.push({ role: 'user', content: sys });
+  return h;
+}
+async function aiGenerate(messages, M, o) {                                     // one generation pass; returns { text, length }
+  let out = '', len = false;
+  const temp = o.temp, rp = o.rp;
+  if (AI.kind === 'webgpu') {
+    const it = await AI.inst.chat.completions.create({ messages, stream: true, temperature: temp, top_p: .9, repetition_penalty: rp, max_tokens: M.maxTok });
+    for await (const ch of it) {
+      const c = ch.choices && ch.choices[0], d = c && c.delta && c.delta.content;
+      if (d) { out += d; o.paint(aiClean(out)); if (out.trim()) aiSnd.start(); }
+      if (c && c.finish_reason === 'length') len = true;
+      if (AI.stopReq) break;
+    }
+  } else {
+    let n = 0; AI.ctl = new AbortController();
+    await AI.inst.createChatCompletion(messages, { nPredict: M.maxTok, useCache: true, abortSignal: AI.ctl.signal, sampling: { temp, top_p: .9, top_k: 40, penalty_repeat: rp }, onNewToken: (t, p, cur2) => { n++; out = cur2; o.paint(aiClean(out)); if (out.trim()) aiSnd.start(); } });
+    if (n >= M.maxTok) len = true;
+  }
+  return { text: aiClean(out), length: len };
+}
 async function aiSend() {
   const txt = aiEl.tx.value.trim(); if (!txt || AI.busy || AI.state !== 'ready') return;
   aiSnd.unlock();
@@ -3378,25 +3481,28 @@ async function aiSend() {
   const el = am.el.querySelector('.tx'), cur = document.createElement('span'); cur.className = 'cur'; cur.textContent = '█';
   const paint = t => { el.textContent = t; el.appendChild(cur); aiScroll(false); };
   paint('');
-  const hist = AI.msgs.slice(0, -1).filter(m => m.t).slice(-9).map(m => ({ role: m.r === 'u' ? 'user' : 'assistant', content: m.t }));
-  const messages = [{ role: 'system', content: aiSystem() }, ...hist];
+  const M = aiM(), hist = aiHistory(M.histChars);
   AI.busy = true; AI.stopReq = false; AI.state = 'busy'; aiRender();
-  let out = '', failed = null;
+  let out = '', failed = null, cut = false;
   try {
-    if (AI.kind === 'webgpu') {
-      const it = await AI.inst.chat.completions.create({ messages, stream: true, temperature: .5, top_p: .9, max_tokens: 400, frequency_penalty: .3 });
-      for await (const ch of it) { const d = ch.choices && ch.choices[0] && ch.choices[0].delta && ch.choices[0].delta.content; if (d) { out += d; paint(out); if (out.trim()) aiSnd.start(); } if (AI.stopReq) break; }
-    } else {
-      AI.ctl = new AbortController();
-      await AI.inst.createChatCompletion(messages, { nPredict: 320, useCache: true, abortSignal: AI.ctl.signal, sampling: { temp: .5, top_p: .9, top_k: 40, penalty_repeat: 1.1 }, onNewToken: (t, p, cur2) => { out = cur2; paint(out); if (out.trim()) aiSnd.start(); } });
+    let sys = aiSystem(txt);
+    let r = await aiGenerate(aiMessages(sys, hist, M), M, { temp: .4, rp: 1.1, paint });
+    AI.lastSys = sys;
+    if (!AI.stopReq && aiBoiler(r.text, sys)) {                                 // boilerplate / echoed prompt → one retry, plain persona, a bit more randomness
+      AI.retries = (AI.retries || 0) + 1; paint('');
+      sys = AI_BASE_SYS; r = await aiGenerate(aiMessages(sys, hist, M), M, { temp: .6, rp: 1.15, paint });
     }
+    out = r.text; cut = r.length;
   } catch (e) { if (!(AI.stopReq || (e && (e.name === 'WllamaAbortError' || e.name === 'AbortError')))) failed = e; }
   aiSnd.stop();                                                                // sound fades out (~100 ms) the moment streaming ends, fails or is stopped
   AI.ctl = null; AI.busy = false; AI.state = AI.inst ? 'ready' : 'nomodel';
-  cur.remove(); out = out.trim();
+  cur.remove(); out = aiClean(out).trim();
+  if (!out && !failed && !AI.stopReq) { out = ''; }
+  if (cut && out && !failed && !AI.stopReq) { out = aiTrimSentence(out) + '\n[odpowiedź skrócona do ostatniego pełnego zdania — napisz „dalej”, aby kontynuować]'; }
   if (failed) { console.warn('AI generation failed', failed); out = (out ? out + '\n' : '') + '[BŁĄD: ' + aiErrMsg(failed).slice(0, 260) + ']'; }
   else if (AI.stopReq) out = (out || '') + (out ? ' ' : '') + '[przerwano]';
   else if (!out) out = '[brak odpowiedzi]';
+  AI.lastCut = cut;
   am.t = out; el.textContent = out; aiSave(); aiRender(); aiScroll(true);
 }
 function aiClear() { if (AI.busy) aiStop(); AI.msgs = []; aiSave(); try { if (AI.kind === 'webgpu' && AI.inst) AI.inst.resetChat(); } catch (e) {} aiRenderLog(); }
@@ -3407,8 +3513,9 @@ async function aiOpenInit() {
   const k = await aiDetect();
   if (k === 'none') { AI.state = 'unsupported'; aiRender(); return; }
   if (AI.state === 'init' || AI.state === 'idle') AI.state = 'nomodel';
+  AI.legacyLite = !AI.chosen && aiCached('lite') && !aiCached('std');          // v6.5 users: the old 0.5B model is on the phone, the new default is not
   aiRender();
-  if (lsGet(aiFlagKey(), '0') === '1' && (AI.state === 'nomodel')) aiStart(false);   // already downloaded: just load it (no download)
+  if (aiCached() && (AI.state === 'nomodel')) aiStart(false);   // already downloaded: just load it (no download)
 }
 function chatOpened() {
   AI.opened = true; clearTimeout(AI.relT); aiSnd.unlock(); aiRenderLog(); aiRender(); aiKb();
@@ -3436,6 +3543,7 @@ aiEl.cancel.onclick = () => { AI.userCancel = true; try { AI.dlCtl && AI.dlCtl.a
 aiEl.snd.onclick = () => { AI.sound = !AI.sound; lsSet('rt_aisnd', AI.sound ? 1 : 0); if (!AI.sound) aiSnd.stop(); else aiSnd.unlock(); aiRender(); };
 aiEl.clr.onclick = aiClear;
 aiEl.del.onclick = aiDelete;
+for (const b of aiEl.models.children) b.onclick = () => aiSelect(b.dataset.k);
 aiEl.eng.onclick = aiSwitchEngine;
 $('#chX').onclick = () => closePanels();
 $('#bChat').onclick = () => { aiSnd.unlock(); openPanel('chat'); };
@@ -4050,7 +4158,7 @@ const BANNER =
 `;
 function introScreen() {
   const small = S.cw < 700 || S.ch < 420;
-  $('#bootText').textContent = (small ? 'MAJSTERMAN // TARGETING\n' : BANNER) +
+  $('#bootText').textContent = (small ? 'MAJSTERMAN // DATA CENTER\n' : BANNER) +
     '\nKamera namierza ludzi i odróżnia ich od zwierząt.\nDotknij osobę lub zwierzę, żeby wybrać cel i zapisać skan.\n' +
     'Wszystko działa lokalnie – obraz i twarze nigdzie nie są wysyłane.\n' +
     'Po dotknięciu przycisku przeglądarka zapyta o zgodę na kamerę.\n';
@@ -4083,7 +4191,7 @@ $('#boot').addEventListener('click', e => { /* tap anywhere does nothing: camera
 applyPalette(); syncToggles(); renderRet(); resize(); introScreen(); loadDb();
 requestAnimationFrame(frame);
 window.__S = S;
-window.__T = { GM, GAMES, gOpenGame, gToPicker, gRestart, gPause, gOver, AI, aiSnd, aiSystem, aiErrMsg, aiDetect, aiStart, aiSend, aiClear, AI_WG, AI_WA, GH, ghCatchStep, ghTarget, ghTap, ghCatch, ghEscape, ghFbText, GCATCH_R, ghBuildSprites, viewFov, ghLum, ghLumK, ghostMove, ghSpawn, ghRange, ghostSpawnPoint, ghostOccluders, drawGhostsHud, ghSetOn, ghRequestSensors, ghAlpha, ghostTick, ghUi, startRec, toggleRec, hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, nameFlow, matchProfile, ensureFace, faceAt, openPanel, closePanels, setZoom, setStream, startCamera, enrollFace, SRC, RET, setRetStyle, toggleRet, ncDone, ncShow, renderBle, ensureEmbed, NET, MSETS, refreshCached, refreshNetInfo, downloadModels, aiBlocked, updNet };
+window.__T = { GM, GAMES, gOpenGame, gToPicker, gRestart, gPause, gOver, AI, aiSnd, aiSystem, aiErrMsg, aiDetect, aiStart, aiSend, aiClear, AI_MODELS, AI_BASE_SYS, AI_APP_RE, aiBoiler, aiHistory, aiFormat, aiMessages, aiTrimSentence, aiSelect, aiPurge, aiM, aiFlagKey, GH, ghCatchStep, ghTarget, ghTap, ghCatch, ghEscape, ghFbText, GCATCH_R, ghBuildSprites, viewFov, ghLum, ghLumK, ghostMove, ghSpawn, ghRange, ghostSpawnPoint, ghostOccluders, drawGhostsHud, ghSetOn, ghRequestSensors, ghAlpha, ghostTick, ghUi, startRec, toggleRec, hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, nameFlow, matchProfile, ensureFace, faceAt, openPanel, closePanels, setZoom, setStream, startCamera, enrollFace, SRC, RET, setRetStyle, toggleRet, ncDone, ncShow, renderBle, ensureEmbed, NET, MSETS, refreshCached, refreshNetInfo, downloadModels, aiBlocked, updNet };
 if (new URLSearchParams(location.search).has('auto')) start();
 })();
 </script>

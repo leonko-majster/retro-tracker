@@ -1,7 +1,7 @@
 {
   "name": "Retro Tracker",
   "short_name": "Tracker",
-  "description": "MAJSTERMAN // TARGETING SYSTEM – retro kamera z wykrywaniem, radarem i rozpoznawaniem (lokalnie w przeglądarce).",
+  "description": "MAJSTERMAN // DATA CENTER – retro kamera z wykrywaniem, radarem i rozpoznawaniem (lokalnie w przeglądarce).",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
