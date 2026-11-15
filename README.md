@@ -65,3 +65,10 @@ Poprawka ucinania góry interfejsu na iPhonie (wyspa / pasek stanu w trybie PWA,
 - **Nagrywanie z dźwiękiem:** mikrofon (`echoCancellation:false, noiseSuppression:false, autoGainControl:true`) pytany przy pierwszym nagraniu, otwarty tylko w trakcie nagrywania, przełącznik „Nagrywaj dźwięk” (domyślnie wł.), wskaźnik „REC + MIC”; bez zgody nagranie bez dźwięku + komunikat.
 - **Poziomo:** duży spust dokładnie na środku prawej krawędzi, przycisk nagrywania tuż pod nim (jak w aparacie iOS); zoom przesunięty obok.
 - Testy: `v62ghost.cjs`, `v62rec.cjs`.
+
+## v6.3-ghosts-real
+Bardziej realistyczne (nadal SYMULOWANE – etykieta „TRYB ZABAWY — DUCHY SĄ SYMULOWANE” bez zmian) duchy.
+- **Wygląd na obrazie:** półprzezroczysta sylwetka człowieka (głowa, ramiona, tors blednący ku dołowi, bez nóg), miękka poświata, rozmycie zależne od odległości, smugi mgły dryfujące od krawędzi, ledwie widoczne zagłębienia twarzy zamiast „oczu”. Mieszanie `screen`, a krycie zależy od jasności sceny (próbka 8×8 z kamery): w jasnym świetle ledwo widać, w ciemności wyraźniej. Okresowe „materializowanie” z mgły (2,6 s) i rozpad na pasma i cząsteczki (ostatnie 2 s życia); aberracja chromatyczna i rozrywanie obrazu tylko podczas migotania. Skala ~1/odległość, stopy zakotwiczone w płaszczyźnie podłoża (horyzont w połowie kadru, telefon ~1,4 m, postać 1,7 m), wolne kołysanie i obrót głowy.
+- **Ruch (`ghostMove`):** prędkość 0,3–1,2 m/s, płynne łuki (wygładzona prędkość kątowa, limit przyspieszenia 0,6 m/s²), postoje, czasem podejście lub odwrót, rzadki „blink” (teleport 3–8 m z zanikiem), kołysanie zsynchronizowane z krokiem; patrzy w stronę kamery, gdy jest blisko; ucieka, gdy użytkownik szybko się zbliża; nigdy nie przenika przez kamerę; znika poza zasięgiem. Radar: pulsujący znacznik, ślad zgodny ze ścieżką, kierunek twarzy. EMF zależy od odległości, z szumem i skokami.
+- Wydajność: wstępnie renderowane sprite'y (bez `ctx.filter`), tanie obliczenia na klatkę.
+- Testy: `v63ghost.cjs` (30 kontroli), `v63perf.cjs`, `v63shot.cjs`.

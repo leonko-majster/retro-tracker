@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="app-version" content="2026-11-15-v6.2-ghosts-audio">
+<meta name="app-version" content="2026-11-15-v6.3-ghosts-real">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tracker">
@@ -1988,7 +1988,7 @@ function renderStats() {
     `STRUMIEŃ WIDEO: ${video.videoWidth || 0}x${video.videoHeight || 0} · poziom ${S.res.level ? 'WYSOKI (zoom)' : 'bazowy'}${S.res.fail ? ' · wyższa rozdzielczość niedostępna' : ''} · wyświetlanie: pełna rozdzielczość (<video> + CSS)\n` +
     `WYKRYWANIE: ${S.backend ? S.backend.toUpperCase() + (S.mode === 'worker' ? ' (worker)' : '') : '—'} · ${S.nnFps ? S.nnFps.toFixed(1) : '—'}/s · ${S.infMs ? Math.round(S.infMs) : '—'} ms\n` +
     `BAZA: ${S.profiles.length} twarzy · ${S.animals.length} zwierząt · ${S.dbOk ? 'IndexedDB' : 'pamięć tymczasowa'} · trwałe: ${D.persisted}\n` +
-    `Wersja: v6.2-ghosts-audio · ŹRÓDŁO: ${srcLabel()}${S.tainted ? ' (BEZ CORS: analiza wyłączona)' : ''} · zoom ${(S.zc || 1).toFixed(1)}x (sprzęt ${(S.hwz || 1).toFixed(1)}x + cyfrowy ${(S.dz || 1).toFixed(1)}x)\n\nDIAGNOSTYKA\n` +
+    `Wersja: v6.3-ghosts-real · ŹRÓDŁO: ${srcLabel()}${S.tainted ? ' (BEZ CORS: analiza wyłączona)' : ''} · zoom ${(S.zc || 1).toFixed(1)}x (sprzęt ${(S.hwz || 1).toFixed(1)}x + cyfrowy ${(S.dz || 1).toFixed(1)}x)\n\nDIAGNOSTYKA\n` +
     `SIEĆ: ${navigator.onLine === false ? 'OFFLINE' : 'online'} · SERWIS WORKER: ${NET.sw} · pamięć aplikacji: ${NET.shell || '—'}\n` +
     `MODELE OFFLINE: ${Object.entries(MSETS).map(([k, v]) => `${v.n} ${NET.cached[k] === null ? '…' : NET.cached[k] ? 'POBRANE' : 'brak'}`).join(' · ')} · zajęte ${NET.usage || '—'}\n` +
     `${aiShort() || 'AI: —'}${S.aiErr ? ' (' + S.aiErr + ')' : ''}\n` +
@@ -2538,7 +2538,7 @@ refreshCached(); initSW();
 const GH = {
   on: lsGet('rt_ghost', '0') === '1', ghosts: [], pos: { x: 0, y: 0 }, heading: 0, hasHead: false,
   geo: 'off', compass: 'off', acc: null, watchId: null, anchor: null, next: 0, last: 0, emf: 0, emfShow: 0, emfT: 0, tickT: 0,
-  staticT: 0, wasView: false, uid: 1, orient: false, fixes: 0, compassTimer: 0, seen: 0
+  staticT: 0, wasView: false, modes: {}, emfSpike: 0, emfRead: 0, uSpeed: 0, lum: .5, lumFixed: null, uid: 1, orient: false, fixes: 0, compassTimer: 0, seen: 0
 };
 let grT = 0;
 const GMAX = 5, GSPAWN_MIN = 5, GSPAWN_MAX = 60, GFAR = 95;
@@ -2551,6 +2551,7 @@ function ghostSpawnPoint(user, rnd = Math.random) {
 }
 function ghostOccluders(tracks, gdist, dw, dh) {                             // boxes (px in the view) that should hide a ghost at distance gdist
   const out = [];
+  if (GH.noOcc) return out;                                                  // test/screenshot hook
   for (const t of tracks) {
     if (!t.confirmed || (t.alpha !== undefined && t.alpha < .2)) continue;
     const area = t.dw * t.dh;
@@ -2627,77 +2628,156 @@ function ghSetOn(v, fromTap) {
   ghUi();
 }
 
-/* ---------- ghosts ---------- */
+/* ---------- ghosts: natural behaviour (v6.3) ---------- */
+const GV_MIN = .3, GV_MAX = 1.2, GTURN_MAX = .9, GACC = .6;
+const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
 function ghSpawn(now, instant) {
   const p = ghostSpawnPoint(GH.pos);
-  const sp = .3 + Math.random() * .6, a = Math.random() * Math.PI * 2;
-  GH.ghosts.push({ id: GH.uid++, x: p.x, y: p.y, vx: Math.sin(a) * sp, vy: Math.cos(a) * sp, sp, born: now - (instant ? Math.random() * 6000 : 0), life: 25000 + Math.random() * 45000,
-    seed: Math.random() * 100, glitch: 0, trail: [], tt: 0, dist: Math.hypot(p.x - GH.pos.x, p.y - GH.pos.y) });
+  const g = { id: GH.uid++, x: p.x, y: p.y, vx: 0, vy: 0, sp: GV_MIN + Math.random() * .6, born: now - (instant ? 2600 + Math.random() * 8000 : 0), life: 25000 + Math.random() * 45000,
+    seed: Math.random() * 100, glitch: 0, trail: [], tt: 0, dist: Math.hypot(p.x - GH.pos.x, p.y - GH.pos.y) };
+  ghInit(g, now); GH.ghosts.push(g);
 }
-const ghAlpha = (g, now) => { const age = now - g.born, left = g.born + g.life - now; return Math.max(0, Math.min(1, age / 1800, left / 2200)); };
+const ghAlpha = (g, now) => { const age = now - g.born, left = g.born + g.life - now; return Math.max(0, Math.min(1, age / 2600, left / 2000)); };
+function ghInit(g, now) {                                                    // tolerant of ghosts created elsewhere (tests)
+  if (g.hd !== undefined) return;
+  g.hd = Math.random() * Math.PI * 2; g.v = g.sp || .5; g.tr = 0; g.trT = now; g.trN = 0; g.mode = 'wander'; g.modeT = now + 3000 + Math.random() * 5000;
+  g.vw = GV_MIN + Math.random() * .55; g.face = g.hd; g.blinks = 0; g.bl = 1; g.blT = -1; g.bobPh = Math.random() * 6.28; g.modeSeen = {};
+}
+function ghSetMode(g, m, now, dur) { g.mode = m; g.modeT = now + dur; (g.modeSeen = g.modeSeen || {})[m] = (g.modeSeen[m] || 0) + 1; GH.modes[m] = (GH.modes[m] || 0) + 1; }
+function ghostMove(g, dt, now, ux, uy, uSpeed) {                             // one steering step: smooth curved paths, pauses, approach/retreat/flee
+  ghInit(g, now);
+  if (g.hold) { g.dist = Math.hypot(ux - g.x, uy - g.y); return; }            // test/screenshot hook: freeze the ghost in place
+  const dx = ux - g.x, dy = uy - g.y, dist = Math.hypot(dx, dy), toUser = Math.atan2(dx, dy);
+  g.dist = dist;
+  if (g.blT >= 0) {                                                          // rare "blink" teleport: fade out, jump, fade in
+    g.blT += dt;
+    if (g.blT < .35) g.bl = 1 - g.blT / .35;
+    else { if (!g.blJumped) { const a = Math.random() * 6.283, d = 3 + Math.random() * 5; g.x += Math.sin(a) * d; g.y += Math.cos(a) * d; g.blJumped = true; g.blinks++; g.teleported = true; GH.emfSpike = Math.max(GH.emfSpike, 3); g.trail.length = 0; } g.bl = Math.min(1, (g.blT - .35) / .35); if (g.blT > .7) { g.blT = -1; g.blJumped = false; g.bl = 1; } }
+  } else if (Math.random() < dt * .004) { g.blT = 0; g.blJumped = false; }
+  if (g.mode !== 'flee' && uSpeed > 1 && dist < 15) ghSetMode(g, 'flee', now, 5000);          // the user rushes at it -> it flees
+  if (now >= g.modeT) {
+    const r = Math.random();
+    if (g.mode === 'pause') ghSetMode(g, dist > 7 && r < .35 ? 'approach' : 'wander', now, 6000 + Math.random() * 7000);
+    else if (g.mode === 'approach') ghSetMode(g, r < .5 ? 'pause' : 'retreat', now, r < .5 ? 3000 + Math.random() * 4000 : 4000 + Math.random() * 3000);
+    else if (g.mode === 'retreat' || g.mode === 'flee') ghSetMode(g, r < .5 ? 'pause' : 'wander', now, 3000 + Math.random() * 5000);
+    else ghSetMode(g, r < .4 ? 'pause' : r < .62 && dist > 7 ? 'approach' : r < .75 ? 'retreat' : 'wander', now, r < .4 ? 2000 + Math.random() * 4000 : 5000 + Math.random() * 7000);
+  }
+  if (g.mode === 'approach' && dist < 4) ghSetMode(g, 'pause', now, 3000 + Math.random() * 4000);
+  // target speed + heading
+  let vt = 0, th = null;
+  if (g.mode === 'wander') vt = g.vw;
+  else if (g.mode === 'approach') { vt = .85; th = toUser; }
+  else if (g.mode === 'retreat') { vt = .7; th = toUser + Math.PI; }
+  else if (g.mode === 'flee') { vt = GV_MAX; th = toUser + Math.PI; }
+  if (th === null && dist < 4.5) th = toUser + Math.PI + (g.tr >= 0 ? .7 : -.7);                      // never drifts through the camera: bends away from the user
+  if (now >= g.trT) { g.trT = now + 1500 + Math.random() * 2500; g.trN = (Math.random() - .5) * 1.0; }         // slowly changing turn-rate target (smooth curvature)
+  g.tr += (g.trN - g.tr) * Math.min(1, dt * .7);
+  let turn = g.tr;
+  if (th !== null) turn = clampN(wrap180(th - g.hd) * 1.2, -GTURN_MAX, GTURN_MAX) * .85 + g.tr * .15;
+  turn = clampN(turn, -GTURN_MAX, GTURN_MAX);
+  g.hd = wrap180(g.hd + turn * (.35 + .65 * Math.min(1, g.v / .5)) * dt);                              // turn less while (almost) standing
+  g.turn = turn;
+  g.v += clampN(vt - g.v, -GACC * dt, GACC * dt);
+  g.x += Math.sin(g.hd) * g.v * dt; g.y += Math.cos(g.hd) * g.v * dt; g.vx = Math.sin(g.hd) * g.v; g.vy = Math.cos(g.hd) * g.v;
+  g.bobPh += (Math.PI * 2) * (.45 + g.v * 1.1) * dt;
+  const ft = dist < 12 ? toUser : g.hd; g.face = wrap180(g.face + clampN(wrap180(ft - g.face), -1.4 * dt, 1.4 * dt));   // slow head turn; looks at the camera when close
+  g.tt += dt; if (g.tt > .35) { g.tt = 0; g.trail.push([g.x, g.y]); if (g.trail.length > 12) g.trail.shift(); }
+  if (g.glitch > 0) g.glitch -= dt; else if (Math.random() < dt * .2) g.glitch = .22;
+}
 function ghostTick(now) {
   if (!GH.on) return;
   const dt = Math.min(.1, Math.max(0, (now - GH.last) / 1000)); GH.last = now;
   if (dt <= 0) return;
+  if (!GH.uFix) {                                                             // user speed over the last ~3 s (GPS jitter below the reported accuracy is ignored)
+    GH.uHist = GH.uHist || []; GH.uHist.push([now, GH.pos.x, GH.pos.y]); while (GH.uHist.length > 1 && now - GH.uHist[0][0] > 3000) GH.uHist.shift();
+    const h0 = GH.uHist[0], span = (now - h0[0]) / 1000; let disp = Math.hypot(GH.pos.x - h0[1], GH.pos.y - h0[2]); if (disp < 1.5 * (GH.acc || 0)) disp = 0;
+    GH.uSpeed = span > 1 ? disp / span : 0;
+  }
   for (const g of GH.ghosts) {
-    g.vx += (Math.random() - .5) * .6 * dt; g.vy += (Math.random() - .5) * .6 * dt;                // slow wander
-    const s = Math.hypot(g.vx, g.vy) || 1, tgt = g.sp; g.vx *= (1 + (tgt / s - 1) * .5 * dt); g.vy *= (1 + (tgt / s - 1) * .5 * dt);
-    g.x += g.vx * dt; g.y += g.vy * dt;
-    g.dist = Math.hypot(g.x - GH.pos.x, g.y - GH.pos.y);
-    g.tt += dt; if (g.tt > .35) { g.tt = 0; g.trail.push([g.x, g.y]); if (g.trail.length > 7) g.trail.shift(); }
-    if (g.glitch > 0) g.glitch -= dt; else if (Math.random() < dt * .25) g.glitch = .25;
+    g.teleported = false;
+    ghostMove(g, dt, now, GH.pos.x, GH.pos.y, GH.uSpeed || 0);
   }
   GH.ghosts = GH.ghosts.filter(g => now < g.born + g.life && g.dist < GFAR);
   if (now >= GH.next) {
     GH.next = now + 2000 + Math.random() * 4000;
     if (GH.ghosts.length < GMAX && (GH.ghosts.length < 3 || Math.random() < .6)) ghSpawn(now);
   }
-  // EMF reading: rises as the nearest visible ghost gets closer
+  // EMF: smooth base from distance + realistic noise and occasional spikes
   let best = null; for (const g of GH.ghosts) if (ghAlpha(g, now) > .25 && (!best || g.dist < best.dist)) best = g;
   GH.near = best ? best.dist : null;
   const raw = best ? Math.pow(Math.max(0, Math.min(1, 1 - (best.dist - 2) / 40)), 1.3) : 0;
   GH.emf += (raw - GH.emf) * Math.min(1, dt * 3);
+  if (GH.emf > .25 && Math.random() < dt * .3) GH.emfSpike = Math.max(GH.emfSpike, 1.5 + Math.random() * 5 * GH.emf);
+  GH.emfSpike *= Math.exp(-dt * 2.2);
+  GH.emfRead = Math.max(0, GH.emf * 18 + (GH.emf > .03 ? (Math.random() - .5) * (.5 + 5 * GH.emf * GH.emf) : 0) + GH.emfSpike);
   if (!S.mute && GH.emf > .2 && now - GH.tickT > 1300 - GH.emf * 1100) { GH.tickT = now; beep(500 + GH.emf * 900, .03, 'square', .02); }
   if (GH.staticT > 0) GH.staticT -= dt;
   GH.seen = GH.ghosts.length;
 }
 const ghRelBearing = g => wrap180(Math.atan2(g.x - GH.pos.x, g.y - GH.pos.y) - (GH.heading + (S.facing === 'user' ? Math.PI : 0)));
+const ghRange = g => clampN((GFAR - g.dist) / 15, 0, 1);
 
-/* ---------- pre-rendered sprites (6 tail phases x main/cyan/red) ---------- */
+/* ---------- pre-rendered sprites: humanoid apparition (3 blur levels), chroma copies, smoke wisps ---------- */
 let GSPR = null;
+const ghHash = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
+function ghCv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+function ghBlur(src, div) {                                                  // cheap blur: down-scale then smooth up-scale
+  const w = src.width, h = src.height, s = ghCv(Math.max(2, Math.round(w / div)), Math.max(2, Math.round(h / div))), sc = s.getContext('2d');
+  sc.imageSmoothingEnabled = true; sc.drawImage(src, 0, 0, s.width, s.height);
+  const o = ghCv(w, h), oc = o.getContext('2d'); oc.imageSmoothingEnabled = true; oc.drawImage(s, 0, 0, w, h); return o;
+}
+const GK = .8;
 function ghBuildSprites() {
-  const W = 128, H = 160; GSPR = { W, H, main: [], cy: [], rd: [] };
-  for (let f = 0; f < 6; f++) {
-    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d');
-    const ph = f / 6 * Math.PI * 2, top = 14, bot = H - 20, lx = 18, rx = W - 18;
-    c.beginPath(); c.moveTo(lx, bot);
-    c.lineTo(lx, 64); c.bezierCurveTo(lx, top - 4, rx, top - 4, rx, 64); c.lineTo(rx, bot);                   // dome
-    const n = 5, sw = (rx - lx) / n;                                                                          // wavy tail (right -> left)
-    for (let i = 0; i < n; i++) { const x1 = rx - i * sw, x2 = x1 - sw, amp = 11 + 3 * Math.sin(ph + i), dir = (i % 2 ? -1 : 1) * Math.sin(ph + i * .9);
-      c.quadraticCurveTo(x1 - sw / 2, bot + amp * (i % 2 ? -1 : 1) * (.6 + .4 * dir), x2, bot + 4 * Math.sin(ph * 1 + i * 1.7)); }
-    c.closePath();
-    const gr = c.createLinearGradient(0, top, 0, H); gr.addColorStop(0, 'rgba(205,255,240,.62)'); gr.addColorStop(.55, 'rgba(150,255,215,.30)'); gr.addColorStop(1, 'rgba(120,255,200,.07)');
-    c.fillStyle = gr; c.shadowColor = 'rgba(140,255,225,.95)'; c.shadowBlur = 14; c.fill();
-    c.shadowBlur = 8; c.lineWidth = 3; c.strokeStyle = 'rgba(225,255,248,.9)'; c.stroke(); c.shadowBlur = 0;
-    // eyes + mouth
-    c.fillStyle = 'rgba(0,18,12,.88)'; c.beginPath(); c.ellipse(48, 66, 9, 13, 0, 0, 7); c.ellipse(80, 66, 9, 13, 0, 0, 7); c.fill();
-    c.fillStyle = 'rgba(230,255,248,.95)'; c.beginPath(); c.arc(45, 61, 3, 0, 7); c.arc(77, 61, 3, 0, 7); c.fill();
-    c.fillStyle = 'rgba(0,18,12,.8)'; c.beginPath(); c.ellipse(64, 98, 7, 10, 0, 0, 7); c.fill();
-    // scanline dissolve texture
-    c.globalCompositeOperation = 'destination-out'; c.fillStyle = 'rgba(0,0,0,.38)'; for (let y = 0; y < H; y += 6) c.fillRect(0, y, W, 2);
-    c.globalCompositeOperation = 'source-over';
-    GSPR.main.push(cv);
-    for (const [key, col] of [['cy', 'rgb(70,230,255)'], ['rd', 'rgb(255,70,110)']]) {
-      const t = document.createElement('canvas'); t.width = W; t.height = H; const tc = t.getContext('2d'); tc.drawImage(cv, 0, 0);
-      tc.globalCompositeOperation = 'source-in'; tc.fillStyle = col; tc.fillRect(0, 0, W, H); GSPR[key].push(t);
-    }
+  const W = 128, H = 208, rgb = (S.rgb || '51,255,102').split(',').map(Number), mix = rgb.map(v => Math.round(v * .55 + 255 * .45)), tint = `rgb(${mix[0]},${mix[1]},${mix[2]})`;
+  GSPR = { W, H, fg: S.fg, lv: [], cy: null, rd: null, wisp: [], tint, tintRgb: mix.join(',') };
+  // silhouette: head, neck, sloping shoulders, torso that fades out toward the bottom (no legs)
+  const sil = ghCv(W, H), c = sil.getContext('2d');
+  c.save(); c.translate(64, 9); c.scale(GK, GK); c.translate(-64, 0);                // figure drawn at 80% so the blur/glow never reaches the sprite edge (no hard clipped borders)
+  c.fillStyle = '#fff'; c.beginPath(); c.ellipse(64, 38, 17, 22, 0, 0, 7); c.fill();
+  c.beginPath(); c.moveTo(56, 56); c.lineTo(72, 56); c.lineTo(74, 68);
+  c.bezierCurveTo(98, 72, 112, 82, 114, 106); c.lineTo(118, H / GK); c.lineTo(10, H / GK); c.lineTo(14, 106);
+  c.bezierCurveTo(16, 82, 30, 72, 54, 68); c.closePath(); c.fill();
+  c.restore();
+  c.globalCompositeOperation = 'destination-in';                             // fade out toward the bottom, soft at the head
+  const gr = c.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, 'rgba(255,255,255,.85)'); gr.addColorStop(.3, 'rgba(255,255,255,.78)'); gr.addColorStop(.5, 'rgba(255,255,255,.3)'); gr.addColorStop(.8, 'rgba(255,255,255,.05)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = gr; c.fillRect(0, 0, W, H);
+  // volumetric core: brighter middle, thinner edges
+  c.globalCompositeOperation = 'source-over'; c.globalAlpha = .35; const cg = c.createRadialGradient(64, 90, 6, 64, 90, 70); cg.addColorStop(0, 'rgba(255,255,255,.7)'); cg.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = cg; c.fillRect(0, 40, W, H); c.globalAlpha = 1;
+  // faint face hint: two dim hollows and a mouth smudge (not cartoon eyes)
+  c.globalCompositeOperation = 'destination-out';
+  for (const [x, y, rx, ry, a] of [[56, 34, 4.5, 6.5, .8], [72, 34, 4.5, 6.5, .8], [64, 49, 5, 3, .5], [64, 42, 2, 5, .12]]) { const g2 = c.createRadialGradient(x, y, 0, x, y, Math.max(rx, ry) * 1.6); g2.addColorStop(0, `rgba(0,0,0,${a})`); g2.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g2; c.beginPath(); c.ellipse(x, y, rx * 1.6, ry * 1.6, 0, 0, 7); c.fill(); }
+  c.globalCompositeOperation = 'source-over';
+  const glow = ghBlur(sil, 7);
+  const tintize = (cv, col) => { const t = ghCv(W, H), tc = t.getContext('2d'); tc.drawImage(cv, 0, 0); tc.globalCompositeOperation = 'source-in'; tc.fillStyle = col; tc.fillRect(0, 0, W, H); return t; };
+  for (const div of [2, 5, 9]) {                                             // 0 = near/sharp-ish, 1 = mid, 2 = far/defocused (+ soft glow behind)
+    const body = ghBlur(sil, div), o = ghCv(W, H), oc = o.getContext('2d');
+    oc.globalAlpha = .75; oc.drawImage(glow, -W * .1, -H * .06, W * 1.2, H * 1.14); oc.globalAlpha = 1; oc.drawImage(body, 0, 0);
+    GSPR.lv.push(tintize(o, tint));
+  }
+  GSPR.cy = tintize(GSPR.lv[1], 'rgb(70,230,255)'); GSPR.rd = tintize(GSPR.lv[1], 'rgb(255,70,110)');
+  // smoke wisps: 4 low-frequency noise frames
+  for (let f = 0; f < 4; f++) {
+    const w = ghCv(96, 96), wc = w.getContext('2d'); let sd = 7 + f * 13; const rn = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    wc.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 16; i++) { const x = rn() * 96, y = rn() * 96, r = 10 + rn() * 26, g3 = wc.createRadialGradient(x, y, 0, x, y, r); g3.addColorStop(0, `rgba(255,255,255,${.1 + rn() * .16})`); g3.addColorStop(1, 'rgba(255,255,255,0)'); wc.fillStyle = g3; wc.fillRect(x - r, y - r, r * 2, r * 2); }
+    const b = ghBlur(w, 3), bc = b.getContext('2d'); bc.globalCompositeOperation = 'destination-in';
+    const mg = bc.createRadialGradient(48, 48, 6, 48, 48, 48); mg.addColorStop(0, 'rgba(255,255,255,1)'); mg.addColorStop(1, 'rgba(255,255,255,0)'); bc.fillStyle = mg; bc.fillRect(0, 0, 96, 96);
+    GSPR.wisp.push(tintize(b, tint));
   }
 }
-const ghHash = (a, b) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
-/* draws every ghost that is inside the camera's field of view; people/animals/large objects in front of it hide it */
+/* scene luminance (0 dark .. 1 bright), sampled from the camera a few times per second -> ghosts are subtle in bright light, clearer in the dark */
+let lumCv = null, lumAt = 0;
+function ghLum(now) {
+  if (GH.lumFixed != null) { GH.lum = GH.lumFixed; return; }
+  if (now - lumAt < 400) return; lumAt = now;
+  try { if (!lumCv) { lumCv = ghCv(8, 8); lumCv.lc = lumCv.getContext('2d', { willReadFrequently: true }); } lumCv.lc.drawImage(video, 0, 0, 8, 8); const d = lumCv.lc.getImageData(0, 0, 8, 8).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += .299 * d[i] + .587 * d[i + 1] + .114 * d[i + 2]; GH.lum = s / (64 * 255); } catch (e) { GH.lum = .5; }
+}
+const ghLumK = () => clampN(1.15 - .75 * (GH.lum ?? .5), .4, 1.05);
+/* draws every ghost inside the camera's field of view; people/animals/large objects in front of it hide it */
 function drawGhostsHud(c, now, dw, dh, tracks = S.tracks, fovOverride) {
-  if (!GSPR) ghBuildSprites();
-  const fov = fovOverride || viewFov(), tf = Math.tan(fov / 2), t = now / 1000;
+  if (!GSPR || GSPR.fg !== S.fg) ghBuildSprites();
+  ghLum(now);
+  const fov = fovOverride || viewFov(), tf = Math.tan(fov / 2), t = now / 1000, f = (dw / 2) / tf, lumK = ghLumK();
   const view = [];
   for (const g of GH.ghosts) {
     const a = ghAlpha(g, now); if (a < .02) continue;
@@ -2708,37 +2788,66 @@ function drawGhostsHud(c, now, dw, dh, tracks = S.tracks, fovOverride) {
   if (inView && !GH.wasView) { GH.staticT = .3; if (!S.mute) beep(140, .22, 'sine', .05); }
   GH.wasView = inView;
   view.sort((p, q) => q.g.dist - p.g.dist);
+  const HORIZON = dh * .5, CAMH = 1.4, GH_H = 1.7;                           // phone at ~1.4 m, level: ground plane + horizon anchoring, 1.7 m figure
   c.save();
   for (const { g, a, rel } of view) {
-    const d = Math.max(1, g.dist);
-    const sz = Math.max(40, Math.min(dh * .55, dh * .9 / d)), sc = sz / GSPR.H, w = GSPR.W * sc;
-    const bob = Math.sin(t * 1.6 + g.seed) * sz * .045, sway = Math.sin(t * .9 + g.seed * 2) * sz * .03;
-    const x = dw * (.5 + Math.tan(rel) / (2 * tf)) + sway, y = dh * .5 + bob;
-    const flick = (ghHash(g.id, Math.floor(t * 14)) < .06 ? .15 : 1) * (.8 + .2 * Math.sin(t * 7 + g.seed));
-    const alpha = Math.min(1, a * Math.max(.25, 1 - d / 90) * flick), k = 1 - a;                   // k>0 while fading in/out -> dissolve
-    const f = Math.floor(t * 6 + g.seed) % 6, spr = GSPR.main[f];
+    const d = Math.max(1.8, g.dist);
+    const sz = Math.min(dh * 1.25, GH_H * f / d / GK), sc = sz / GSPR.H, w = GSPR.W * sc;
+    const groundY = HORIZON + CAMH * f / d, base = groundY - .15 * f / d;       // feet (faded) just above the ground point at this distance
+    const vf = Math.min(1, (g.v || 0) / GV_MAX), bob = Math.sin(g.bobPh || t * 2 + g.seed) * sz * (.008 + .018 * vf);
+    const sway = Math.sin(t * .5 + g.seed * 2) * sz * .012, lean = Math.sin(t * .31 + g.seed) * .018;
+    const x = dw * (.5 + Math.tan(rel) / (2 * tf)) + sway, yTop = base - sz + bob;
+    const m = Math.min(1, a), me = m * m * (3 - 2 * m);                          // smooth materialize/dematerialize amount
+    const flickNow = ghHash(g.id, Math.floor(t * 14)) < .06, flick = flickNow ? .2 : (.86 + .14 * Math.sin(t * 5 + g.seed));
+    const glitch = flickNow || g.glitch > 0;
+    const lv = d < 10 ? 0 : d < 28 ? 1 : 2;
+    const alpha = clampN(me * ghRange(g) * (g.bl ?? 1) * flick * lumK * Math.max(.3, 1 - d / 95) * .66, 0, 1);
+    g.sx = x; g.sy = yTop + sz / 2; g.sbase = base; g.ssz = sz; g.blv = lv; g.sw = w;
+    const wob = Math.sin(t * .9 + g.seed) * .03;
     c.save();
     const occ = ghostOccluders(tracks, g.dist, dw, dh);
     if (occ.length) { c.beginPath(); c.rect(-dw, -dh, dw * 3, dh * 3); for (const o of occ) c.rect(o[0], o[1], o[2], o[3]); c.clip('evenodd'); }
-    c.globalCompositeOperation = 'lighter'; sb(c, 0);
-    const bands = 10, bh = GSPR.H / bands, glitch = g.glitch > 0;
-    const drawBands = (img, ox, al) => {
+    c.globalCompositeOperation = 'screen'; sb(c, 0);
+    // head turn: the head slice shifts slightly depending on where the ghost looks relative to the camera
+    const hv = wrap180((g.face ?? 0) - Math.atan2(GH.pos.x - g.x, GH.pos.y - g.y)), hx = Math.sin(hv) * w * .06;
+    const drawBody = (img, al, ox, bands) => {
+      const split = 66, hh = split * sc, bodyH = (GSPR.H - split) * sc, X0 = x - w / 2 + ox;
       c.globalAlpha = al;
-      for (let b = 0; b < bands; b++) {
-        if (k > .02 && ghHash(b + g.seed, Math.floor(t * 10)) < k * 1.1) continue;
-        const jx = glitch ? (ghHash(b, Math.floor(t * 30) + g.id) - .5) * sz * .22 : 0;
-        c.drawImage(img, 0, b * bh, GSPR.W, bh, x - w / 2 + ox + jx, y - sz / 2 + b * bh * sc, w, bh * sc + .5);
+      c.save(); c.translate(x, yTop + sz); c.transform(1, 0, lean + wob * .3 - hx / (.85 * sz), 1, 0, 0); c.translate(-x, -(yTop + sz));
+      if (bands) {
+        const nb = 24, bh = GSPR.H / nb;
+        for (let b = 0; b < nb; b++) { if (bands.skip && ghHash(b + g.seed, Math.floor(t * 8)) < bands.skip) continue; const jx = bands.tear ? (ghHash(b, Math.floor(t * 30) + g.id) - .5) * sz * .16 : 0; c.drawImage(img, 0, b * bh, GSPR.W, bh, X0 + jx, yTop + b * bh * sc, w, bh * sc + .5); }
+      } else {
+        c.drawImage(img, 0, 0, GSPR.W, GSPR.H, X0, yTop, w, sz);                              // one piece: head turn is a gentle shear (no seam)
       }
+      c.restore();
     };
-    if (glitch || k > .02) { drawBands(GSPR.cy[f], -sz * .035, alpha * .5); drawBands(GSPR.rd[f], sz * .035, alpha * .35); }
-    if (k > .02 || glitch) drawBands(spr, 0, alpha);
-    else { c.globalAlpha = alpha; c.drawImage(spr, x - w / 2, y - sz / 2, w, sz); c.globalAlpha = alpha * .22; c.drawImage(GSPR.cy[f], x - w / 2 - sz * .02, y - sz / 2, w, sz); }
+    const left = g.born + g.life - now, dissolving = left < 2000, mist = 1 - me;
+    // condense from mist: blurred layer fades out while the (distance-appropriate) layer fades in
+    if (mist > .02 && !dissolving) { drawBody(GSPR.lv[2], alpha * (.25 + .75 * mist) * 1.2 > 1 ? 1 : alpha * (.25 + .75 * mist) * 1.2, 0, null); }
+    const body = GSPR.lv[mist > .4 ? Math.max(lv, 1) : lv];
+    if (glitch) {
+      drawBody(GSPR.cy, alpha * .55, -sz * .045, { tear: true }); drawBody(GSPR.rd, alpha * .4, sz * .045, { tear: true });
+      drawBody(body, alpha, 0, { tear: true });
+    } else if (dissolving) drawBody(body, alpha, 0, { skip: clampN(1 - left / 2000, 0, .9) * 1.05 });
+    else drawBody(body, alpha * (mist > .02 ? me : 1), 0, null);
+    // smoke wisps drifting off the edges
+    const wa = alpha * (.55 + mist * .8) * .55;
+    for (let k = 0; k < (d < 14 ? 2 : 1); k++) {
+      const wf = GSPR.wisp[(Math.floor(t * 1.2) + k + (g.id | 0)) & 3], ph = t * .12 + g.seed + k * 3.1, ws = sz * (.75 + .25 * k);
+      const wx = x + Math.sin(ph * 2.3) * w * .55, wy = yTop + sz * (.45 + .25 * k) - ((t * .05 + k * .5 + g.seed) % 1) * sz * .35;
+      c.globalAlpha = wa * (.6 + .4 * Math.sin(ph * 5)); c.drawImage(wf, wx - ws / 2, wy - ws / 2, ws, ws);
+    }
+    // dematerialize: dissolve into particles
+    if (dissolving) {
+      const p = clampN(1 - left / 2000, 0, 1); c.fillStyle = `rgb(${GSPR.tintRgb})`;
+      for (let i = 0; i < 28; i++) { const h1 = ghHash(i, g.id), h2 = ghHash(i + 40, g.id), h3 = ghHash(i + 80, g.id); c.globalAlpha = alpha * .6 * (1 - p) + .05 * (1 - p); const s2 = Math.max(1.5, sz * .012); c.fillRect(x + (h1 - .5) * w * .8 + Math.sin(t * 2 + i) * w * .05 * p, yTop + h2 * sz * .75 - p * sz * (.15 + .4 * h3), s2, s2); }
+    }
     c.restore();
-    g.sx = x; g.sy = y; g.ssz = sz;
   }
   c.restore();
   if (GH.staticT > 0) {                                                                              // short static burst
-    c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(190,255,235,.16)';
+    c.save(); c.globalCompositeOperation = 'screen'; c.fillStyle = `rgba(${GSPR.tintRgb},.16)`;
     for (let i = 0; i < 12; i++) c.fillRect(0, Math.random() * dh, dw, 1 + Math.random() * 3);
     c.restore();
   }
@@ -2761,16 +2870,18 @@ function drawGhostRadar(now) {
   const P = (x, y) => { const dx = x - GH.pos.x, dy = y - GH.pos.y, s = Math.sin(head), co = Math.cos(head); return [cx + (dx * co - dy * s) * k, cy - (dx * s + dy * co) * k]; };
   // camera field-of-view wedge
   try { const half = viewFov() / 2, a0 = -Math.PI / 2 - half, a1 = -Math.PI / 2 + half; c.globalAlpha = .45; c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, R, a0, a1); c.closePath(); c.fillStyle = 'rgba(170,255,230,.12)'; c.fill(); c.stroke(); } catch (e) {}
-  // ghosts: fading trail + glowing glyph
+  // ghosts: trail following the real (curved) path + softly pulsing glow
   for (const g of GH.ghosts) {
-    const al = ghAlpha(g, now); if (al < .03) continue;
-    c.strokeStyle = gc; c.lineWidth = 2;
-    for (let i = 0; i < g.trail.length; i++) { const p = P(g.trail[i][0], g.trail[i][1]); c.globalAlpha = al * (i + 1) / (g.trail.length + 1) * .5; c.beginPath(); c.arc(p[0], p[1], 2.5, 0, 7); c.fillStyle = gc; c.fill(); }
-    const p = P(g.x, g.y), fl = .65 + .35 * Math.sin(now / 90 + g.seed * 7);
-    c.globalAlpha = al * fl; c.shadowColor = gc; c.shadowBlur = 12; c.fillStyle = gc;
-    c.beginPath(); c.moveTo(p[0] - 8, p[1] + 8); c.lineTo(p[0] - 8, p[1] - 2); c.arc(p[0], p[1] - 2, 8, Math.PI, 0); c.lineTo(p[0] + 8, p[1] + 8);
-    c.lineTo(p[0] + 4, p[1] + 4); c.lineTo(p[0], p[1] + 8); c.lineTo(p[0] - 4, p[1] + 4); c.closePath(); c.fill(); c.shadowBlur = 0;
-    c.fillStyle = '#001a12'; c.globalAlpha = al; c.fillRect(p[0] - 4, p[1] - 4, 2.5, 4); c.fillRect(p[0] + 1.5, p[1] - 4, 2.5, 4);
+    const al = ghAlpha(g, now) * ghRange(g) * (g.bl ?? 1); if (al < .03) continue;
+    const pts = g.trail.map(q => P(q[0], q[1])); pts.push(P(g.x, g.y));
+    c.strokeStyle = gc; c.lineWidth = 2; c.lineCap = 'round';
+    for (let i = 1; i < pts.length; i++) { c.globalAlpha = al * (i / pts.length) * .6; c.beginPath(); c.moveTo(pts[i - 1][0], pts[i - 1][1]); c.lineTo(pts[i][0], pts[i][1]); c.stroke(); }
+    const p = pts[pts.length - 1], pu = .5 + .5 * Math.sin(now / 420 + g.seed * 5), r = 6 + 3.5 * pu;
+    const rg = c.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 2.2); rg.addColorStop(0, 'rgba(210,255,240,.9)'); rg.addColorStop(.35, 'rgba(150,255,215,.45)'); rg.addColorStop(1, 'rgba(120,255,200,0)');
+    c.globalAlpha = al * (.7 + .3 * pu); c.fillStyle = rg; c.beginPath(); c.arc(p[0], p[1], r * 2.2, 0, 7); c.fill();
+    c.globalAlpha = al; c.fillStyle = '#eafff6'; c.beginPath(); c.arc(p[0], p[1], 2.2, 0, 7); c.fill();
+    // facing tick (relative to the radar's rotation)
+    const fa = (g.face ?? 0) - head; c.strokeStyle = gc; c.lineWidth = 1.5; c.globalAlpha = al * .8; c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(p[0] + Math.sin(fa) * 9, p[1] - Math.cos(fa) * 9); c.stroke();
   }
   // user
   c.globalAlpha = 1; c.shadowBlur = 0; c.fillStyle = S.fg; c.beginPath(); c.moveTo(cx, cy - 7); c.lineTo(cx + 5, cy + 5); c.lineTo(cx - 5, cy + 5); c.closePath(); c.fill();
@@ -2780,8 +2891,8 @@ function drawGhostRadar(now) {
   c.fillText('N', cx + Math.sin(na) * (R + 2), cy - Math.cos(na) * (R + 2) + 6);
   // EMF + status strip
   c.textAlign = 'left'; c.font = '24px VT323, monospace'; c.fillStyle = gc;
-  const emfmG = GH.emf * 18 + (GH.emf > .05 ? Math.random() * .4 : 0), shown = GH.near != null && GH.near < 45;
-  if (shown) { const bars = Math.round(GH.emf * 6); c.fillText(`EMF ${emfmG.toFixed(1)} ${'▮'.repeat(bars)}${'▯'.repeat(6 - bars)}`, 4, W + 18); }
+  const emfmG = Math.min(99, GH.emfRead || 0), shown = GH.near != null && GH.near < 45;
+  if (shown) { const bars = Math.min(6, Math.round(Math.min(1, emfmG / 18) * 6)); c.fillText(`EMF ${emfmG.toFixed(1)} ${'▮'.repeat(bars)}${'▯'.repeat(6 - bars)}`, 4, W + 18); }
   else { c.globalAlpha = .6; c.fillText('EMF ---', 4, W + 18); c.globalAlpha = 1; }
   c.globalAlpha = .75; c.font = '20px VT323, monospace';
   c.fillText(GH.geo === 'ok' ? `GPS ±${Math.round(GH.acc || 0)}m${GH.hasHead ? '' : ' · BEZ KOMPASU'}` : grNames[GH.geo] || '', 4, W + 38);
@@ -3110,7 +3221,7 @@ $('#boot').addEventListener('click', e => { /* tap anywhere does nothing: camera
 applyPalette(); syncToggles(); renderRet(); resize(); introScreen(); loadDb();
 requestAnimationFrame(frame);
 window.__S = S;
-window.__T = { GH, ghostSpawnPoint, ghostOccluders, drawGhostsHud, ghSetOn, ghRequestSensors, ghAlpha, ghostTick, ghUi, startRec, toggleRec, hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, nameFlow, matchProfile, ensureFace, faceAt, openPanel, closePanels, setZoom, setStream, startCamera, enrollFace, SRC, RET, setRetStyle, toggleRet, ncDone, ncShow, renderBle, ensureEmbed, NET, MSETS, refreshCached, refreshNetInfo, downloadModels, aiBlocked, updNet };
+window.__T = { GH, viewFov, ghLum, ghLumK, ghostMove, ghSpawn, ghRange, ghostSpawnPoint, ghostOccluders, drawGhostsHud, ghSetOn, ghRequestSensors, ghAlpha, ghostTick, ghUi, startRec, toggleRec, hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, nameFlow, matchProfile, ensureFace, faceAt, openPanel, closePanels, setZoom, setStream, startCamera, enrollFace, SRC, RET, setRetStyle, toggleRet, ncDone, ncShow, renderBle, ensureEmbed, NET, MSETS, refreshCached, refreshNetInfo, downloadModels, aiBlocked, updNet };
 if (new URLSearchParams(location.search).has('auto')) start();
 })();
 </script>
