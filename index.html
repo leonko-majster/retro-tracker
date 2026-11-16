@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
-<meta name="app-version" content="2026-11-16-v6.8.2-ios-oom">
+<meta name="app-version" content="2026-11-16-v6.8.3-engine-recover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Data Center">
@@ -2102,7 +2102,7 @@ function renderStats() {
     `STRUMIEŃ WIDEO: ${video.videoWidth || 0}x${video.videoHeight || 0} · poziom ${S.res.level ? 'WYSOKI (zoom)' : 'bazowy'}${S.res.fail ? ' · wyższa rozdzielczość niedostępna' : ''} · wyświetlanie: pełna rozdzielczość (<video> + CSS)\n` +
     `WYKRYWANIE: ${S.backend ? S.backend.toUpperCase() + (S.mode === 'worker' ? ' (worker)' : '') : '—'} · ${S.nnFps ? S.nnFps.toFixed(1) : '—'}/s · ${S.infMs ? Math.round(S.infMs) : '—'} ms\n` +
     `BAZA: ${S.profiles.length} twarzy · ${S.animals.length} zwierząt · ${S.dbOk ? 'IndexedDB' : 'pamięć tymczasowa'} · trwałe: ${D.persisted}\n` +
-    `Wersja: v6.8.2-ios-oom · ŹRÓDŁO: ${srcLabel()}${S.tainted ? ' (BEZ CORS: analiza wyłączona)' : ''} · zoom ${(S.zc || 1).toFixed(1)}x (sprzęt ${(S.hwz || 1).toFixed(1)}x + cyfrowy ${(S.dz || 1).toFixed(1)}x)\n\nDIAGNOSTYKA\n` +
+    `Wersja: v6.8.3-engine-recover · ŹRÓDŁO: ${srcLabel()}${S.tainted ? ' (BEZ CORS: analiza wyłączona)' : ''} · zoom ${(S.zc || 1).toFixed(1)}x (sprzęt ${(S.hwz || 1).toFixed(1)}x + cyfrowy ${(S.dz || 1).toFixed(1)}x)\n\nDIAGNOSTYKA\n` +
     `SIEĆ: ${navigator.onLine === false ? 'OFFLINE' : 'online'} · SERWIS WORKER: ${NET.sw} · pamięć aplikacji: ${NET.shell || '—'}\n` +
     `MODELE OFFLINE: ${Object.entries(MSETS).map(([k, v]) => `${v.n} ${NET.cached[k] === null ? '…' : NET.cached[k] ? 'POBRANE' : 'brak'}`).join(' · ')} · zajęte ${NET.usage || '—'}\n` +
     `${aiShort() || 'AI: —'}${S.aiErr ? ' (' + S.aiErr + ')' : ''}\n` +
@@ -3194,7 +3194,7 @@ const AI_MODELS = {                                                             
 const AI_KEYS = ['lite', 'mid', 'std'];
 const AI = {
   pref: lsGet('rt_ai_engine', 'auto'), model: AI_KEYS.includes(lsGet('rt_ai_model', '')) ? lsGet('rt_ai_model', '') : 'std', chosen: AI_KEYS.includes(lsGet('rt_ai_model', '')), migrated: '', sound: lsGet('rt_aisnd', '1') === '1',
-  kind: null, f16: true, why: '', state: 'init', inst: null, lib: null, busy: false, ctl: null, stopReq: false, relT: 0, msgs: [], progress: 0, progText: '', err: '', dlCtl: null, opened: false
+  kind: null, f16: true, why: '', state: 'init', inst: null, lib: null, busy: false, ctl: null, stopReq: false, relT: 0, relGen: 0, msgs: [], progress: 0, progText: '', err: '', dlCtl: null, opened: false, dead: false, dev: null, recovering: false
 };
 try { AI.msgs = JSON.parse(lsGet('rt_aichat', '[]')).filter(m => m && (m.r === 'u' || m.r === 'a') && typeof m.t === 'string').slice(-40); } catch (e) { AI.msgs = []; }
 const aiEl = { p: $('#chat'), stat: $('#chStat'), log: $('#chLog'), tx: $('#chTx'), send: $('#chSend'), get: $('#chGet'), cancel: $('#chCancel'), bar: $('#chBar'), barT: $('#chBarT'), info: $('#chInfo'), dl: $('#chDl'), snd: $('#chSnd'), eng: $('#chEng'), models: $('#chModels'), del: $('#chDel'), clr: $('#chClear'), hint: $('#chHint') };
@@ -3258,6 +3258,7 @@ const aiSnd = {
 
 /* ---------- engine detection ---------- */
 async function aiDetect() {
+  aiInstallGpuHook();
   if (AI.kind) return AI.kind;
   const nowasm = typeof WebAssembly !== 'object';
   let wg = false, why = '';
@@ -3321,7 +3322,10 @@ const AI_HELP = {
   zoom: st => 'Zoom jest na suwaku, do 10x, płynny (logarytmiczny). Podwójne stuknięcie w obraz wraca do 1x. Przy większym zbliżeniu aplikacja korzysta z wyższej rozdzielczości, żeby obraz był ostrzejszy. To połączenie zoomu sprzętowego (jeśli telefon go ma) i cyfrowego.',
   names: st => 'Żeby zapisać imię, wybierz osobę albo zwierzę (albo namierz celownikiem) i stuknij IMIĘ (klawisz N). Potwierdzasz „TO JEST: Imię?” albo wpisujesz imię. Rozpoznawanie działa lokalnie, na telefonie. Automatyczne podpisywanie imion jest w menu, domyślnie wyłączone — możesz je włączyć. W słabym świetle albo z profilu model może się pomylić.',
   record: st => 'Zdjęcie robisz przyciskiem aparatu, film — przyciskiem nagrywania. W poziomie te przyciski są po prawej stronie, na środku krawędzi. Nagrywanie może mieć dźwięk z mikrofonu: w menu jest przełącznik „Nagrywaj dźwięk”. Na wskaźniku widać wtedy REC + MIC.',
-  radar: st => 'Radar pokazuje przybliżony kierunek i odległość celów z kamery. Kierunek wynika z położenia w kadrze i typowego kąta widzenia obiektywu, a odległość z wysokości ramki (człowiek ≈ 1,7 m, zwierzęta wg typowych rozmiarów). To SZACUNEK — błąd może sięgać kilkudziesięciu procent. Nie myli się z radarem duchów w trybie zabawy.'
+  radar: st => 'Radar pokazuje przybliżony kierunek i odległość celów z kamery. Kierunek wynika z położenia w kadrze i typowego kąta widzenia obiektywu, a odległość z wysokości ramki (człowiek ≈ 1,7 m, zwierzęta wg typowych rozmiarów). To SZACUNEK — błąd może sięgać kilkudziesięciu procent. Nie myli się z radarem duchów w trybie zabawy.',
+  settings: st => 'Sam nie zmieniam ustawień i nie steruję aplikacją — nie mam do tego dostępu. Mogę ci za to wyjaśnić, jak coś zrobić.' +
+    '\n\nW menu są między innymi: detektor duchów, gry retro, automatyczne imiona, dźwięk nagrań i źródło obrazu. Na ekranie: zdjęcia, nagrania, zoom do 10x, radar i przycisk ŁAP. Imię zapiszesz przyciskiem IMIĘ.' +
+    '\n\nAplikacja potrafi:\n\n• Wykrywać ludzi i zwierzęta na kamerze i pokazywać ich na radarze z przybliżoną odległością.\n• Zapamiętywać imiona: wybierz cel i stuknij IMIĘ (albo klawisz N).\n• Robić zdjęcia i nagrania z dźwiękiem (przyciski na ekranie; w poziomie po prawej).\n• Płynny zoom do 10x (suwak; podwójne stuknięcie wraca do 1x).\n• Tryb zabawy: detektor duchów — namierz ducha i przytrzymaj ŁAP.\n• Gry retro w menu: Snake, Pong, Breakout, Tetris, Space Invaders i Asteroids.\n• Ten czat działa na telefonie, bez internetu (po jednorazowym pobraniu modelu).\n\n' + aiLive(st) + '\nO co chcesz zapytać? Na przykład o duchy, gry, zoom, imiona albo nagrywanie.'
 };
 const AI_INTENT_RE = [
   ['ghosts', /duch|duszk|łapa|lapaniu|\błap\b|detektor/i],
@@ -3330,7 +3334,8 @@ const AI_INTENT_RE = [
   ['names', /imi[eę]|nazyw|rozpozna[ćc] (twarz|imi|osob)|zapamięt|przycisk imi|auto-imion/i],
   ['record', /nagra[ćc]|nagrani|mikrofon|zdj[eę]c|foto|fotograf|robić zdj/i],
   ['radar', /radar|odległ|jak daleko/i],
-  ['caps', /co (ty )?(potrafisz|możesz|umiesz)|czego (potrafisz|możesz)|przykład\w* (rzeczy|tego,?\s+co)|rzeczy[,\s]+kt[oó]re (możesz|potrafisz)|do czego (służysz|jesteś)|czym (jesteś|się zajmujesz)|kim jesteś|co (ty )?robisz|jak(ie)? (mi )?(możesz )?pom[oó]c|czy (możesz|potrafisz|umiesz)( mi)? pom[oó]c|pom[oó]ż mi|co potrafi (ta )?aplikacj|jakie (masz )?(funkcj|możliwo)|jak (działa|uży[ćc]|się używa) (ta |tej )?aplikacj/i]
+  ['settings', /zmienia[ćc]|ustawien|(możesz|umiesz|potrafisz).{0,60}(aplikacj|ustawien|opcj|przełącz)|rzeczy w (tej )?aplikacj/i],
+  ['caps', /co (ty )?(potrafisz|możesz|umiesz)|czego (potrafisz|możesz)|przykład\w* (rzeczy|tego,?\s+co)|rzeczy[,\s]+kt[oó]re (możesz|potrafisz)|do czego (służysz|jesteś)|czym (jesteś|się zajmujesz)|kim jesteś|co (ty )?robisz|jak(ie)? (mi )?(możesz )?pom[oó]c|czy (możesz|potrafisz|umiesz)( mi)? pom[oó]c|pom[oó]ż mi|co potrafi (ta )?aplikacj|jakie (masz )?(funkcj|możliwo)|jak (działa|uży[ćc]|się używa) (ta |tej )?aplikacj|w czym (mi )?(możesz|umiesz|potrafisz)|w czym .{0,30}pom[oó]c|(możesz|umiesz|potrafisz) mi pom[oó]c|\bpom[oó]c\b|\bpomocy\b|\bpomoc\b/i]
 ];
 function aiIntent(txt) {
   const s = String(txt || ''); if (!s.trim()) return null;
@@ -3440,11 +3445,59 @@ function aiRender() {
 }
 function aiErrMsg(e) {
   const m = String((e && e.message) || e || '');
-  if (/out of memory|oom|allocation failed|alloc|memory access|RangeError|Array buffer allocation/i.test(m)) return 'ZA MAŁO PAMIĘCI: zamknij inne karty i aplikacje (albo zrestartuj przeglądarkę) i spróbuj ponownie. Jeśli to się powtarza, spróbuj trybu CPU.';
+  const ios = aiIsIOS();
+  if (/out of memory|oom|allocation failed|alloc|memory access|RangeError|Array buffer allocation/i.test(m)) return 'ZA MAŁO PAMIĘCI: zamknij inne karty i aplikacje (albo zrestartuj przeglądarkę) i spróbuj ponownie.' + (ios ? ' Jeśli to się powtarza, wybierz LITE.' : ' Jeśli to się powtarza, spróbuj trybu CPU.');
   if (/quota|storage|QuotaExceeded|disk/i.test(m)) return 'BRAK MIEJSCA NA DYSKU: zwolnij miejsce w telefonie (model potrzebuje ok. ' + (aiModelInfo().mb + 100) + ' MB) i spróbuj ponownie.';
   if (/network|fetch|failed to|load failed|offline|abort|ERR_|timeout|download/i.test(m)) return 'POBIERANIE PRZERWANE (sieć). Sprawdź internet i stuknij „Spróbuj ponownie” — już pobrane części zostaną wykorzystane tam, gdzie to możliwe.';
-  if (/webgpu|gpu|adapter|device|shader|wgsl/i.test(m)) return 'WebGPU nie zadziałało na tym urządzeniu (' + m.slice(0, 90) + '). Spróbuj trybu CPU (przycisk „Tryb CPU”).';
-  return 'Nie udało się uruchomić modelu: ' + m.slice(0, 120) + (AI.kind === 'webgpu' ? ' — spróbuj trybu CPU (przycisk „⇄ Tryb CPU”).' : '');
+  if (/disposed|device lost|lost the device|been destroyed/i.test(m)) return ios ? 'Safari zwolniło model z pamięci (często przy klawiaturze albo braku pamięci). Wczytam go ponownie z pamięci telefonu. Jeśli to się powtarza, wybierz LITE.' : 'Model został zwolniony z pamięci. Wczytam go ponownie, albo spróbuj trybu CPU (przycisk „⇄ Tryb CPU”).';
+  if (/webgpu|gpu|adapter|device|shader|wgsl/i.test(m)) return ios ? 'WebGPU nie zadziałało na tym urządzeniu (' + m.slice(0, 90) + '). Zamknij inne karty i spróbuj ponownie, albo wybierz LITE.' : 'WebGPU nie zadziałało na tym urządzeniu (' + m.slice(0, 90) + '). Spróbuj trybu CPU (przycisk „Tryb CPU”).';
+  return 'Nie udało się uruchomić modelu: ' + m.slice(0, 120) + (ios ? '. Spróbuj ponownie, albo wybierz LITE.' : (AI.kind === 'webgpu' ? ' — spróbuj trybu CPU (przycisk „⇄ Tryb CPU”).' : ''));
+}
+const aiEngineAlive = () => !!(AI.inst && !AI.dead && (AI.state === 'ready' || AI.state === 'busy'));
+const aiIsDeadErr = e => /disposed|Object has already been disposed|device lost|lost the device|been destroyed|InvalidStateError|operation is not allowed on a destroyed|external_command_encoder/i.test(String((e && e.message) || e || ''));
+function aiInstallGpuHook() {
+  if (AI.gpuHooked || !navigator.gpu || typeof navigator.gpu.requestAdapter !== 'function') return;
+  AI.gpuHooked = true;
+  const gpu = navigator.gpu, ra = gpu.requestAdapter.bind(gpu);
+  gpu.requestAdapter = async function () {
+    const ad = await ra.apply(this, arguments);
+    if (!ad || typeof ad.requestDevice !== 'function') return ad;
+    const rd = ad.requestDevice.bind(ad);
+    ad.requestDevice = async function () {
+      const dev = await rd.apply(this, arguments);
+      if (dev) aiWatchDevice(dev);
+      return dev;
+    };
+    return ad;
+  };
+}
+function aiWatchDevice(dev) {
+  if (!dev || !dev.lost) return;
+  AI.dev = dev; AI.dead = false;
+  Promise.resolve(dev.lost).then(info => {
+    if (AI.dev !== dev) return;
+    aiMarkLost((info && (info.message || info.reason)) || 'lost');
+  }).catch(() => {});
+}
+function aiMarkLost(reason) {
+  AI.dead = true; AI.lostReason = String(reason || 'lost');
+  if (AI.state === 'ready') { AI.state = 'idle'; aiRender(); }
+  if (AI.opened && !AI.busy && aiCached() && !AI.crash) aiRecover(false);
+}
+async function aiRecover(fromTap) {
+  if (AI.recovering) return false;
+  if (AI.crash && !fromTap) return false;                                       // crash-loop guard: no automatic load-from-cache after a tab-killing load
+  if (!aiCached()) return false;
+  if (aiIsIOS() && AI.model === 'std' && !fromTap) return false;
+  AI.recovering = true; AI.err = '';
+  if (AI.state !== 'loading' && AI.state !== 'downloading') { AI.state = 'loading'; AI.progText = 'PRZYWRACANIE MODELU Z PAMIĘCI…'; aiRender(); }
+  try {
+    if (typeof AI.reloadFn === 'function') await AI.reloadFn();                 // test hook: swap in a fresh stub engine
+    else { try { await aiUnload(); } catch (e) {} await aiStart(!!fromTap); }
+    AI.dead = !AI.inst; return aiEngineAlive();
+  } catch (e) {
+    AI.dead = true; AI.err = aiErrMsg(e); if (AI.state !== 'error') AI.state = 'error'; return false;
+  } finally { AI.recovering = false; aiRender(); }
 }
 
 /* ---------- engine: load / download ---------- */
@@ -3460,6 +3513,8 @@ const aiWgConfig = k => {
   return { useIndexedDBCache: false, model_list: [{ model: aiWgRepo(k), model_id: w.id, model_lib: aiAbs(w.lib), vram_required_MB: w.vram, low_resource_required: true, overrides: ov }] };
 };
 async function aiStart(fromTap) {                                              // download (if needed) + load the model
+  aiInstallGpuHook();
+  if ((AI.state === 'ready' || AI.state === 'busy') && (AI.dead || !AI.inst)) { AI.state = 'idle'; }
   if (AI.state === 'downloading' || AI.state === 'loading' || AI.state === 'ready' || AI.state === 'busy') return;
   if (aiNeedsGpu() && AI.kind !== 'webgpu') {                                 // last line of defence: never pull PLUS/STANDARD into the WASM heap on iOS
     if (AI.gpuOk) { AI.pref = 'auto'; lsSet('rt_ai_engine', 'auto'); AI.kind = null; AI.lib = null; await aiDetect(); }
@@ -3492,7 +3547,7 @@ async function aiStart(fromTap) {                                              /
       await w.loadModel(model, { n_ctx: M.ctx, n_threads: 1 });
       AI.inst = w;
     }
-    lsSet(aiFlagKey(), '1'); AI.state = 'ready'; AI.progText = ''; AI.dlCtl = null; AI.crash = null; aiCrashClear(); aiRender();
+    lsSet(aiFlagKey(), '1'); AI.state = 'ready'; AI.dead = false; AI.progText = ''; AI.dlCtl = null; AI.crash = null; aiCrashClear(); aiRender();
     if (AI.model === 'std' && !AI.chosen && AI.legacyLite && !aiIsIOS()) { AI.legacyLite = false; aiPurge('lite').then(ok => { if (ok) toast('STARY MODEL LITE USUNIĘTY (zwolniono ~' + AI_MODELS.lite[AI.kind === 'webgpu' ? 'wg' : 'wa'].mb + ' MB)', 4000); }); }
     if (AI.opened) setTimeout(() => { try { aiEl.tx.focus({ preventScroll: true }); } catch (e) {} }, 50);
   } catch (e) {
@@ -3503,7 +3558,8 @@ async function aiStart(fromTap) {                                              /
   }
 }
 async function aiUnload() {
-  const i = AI.inst; AI.inst = null; AI.state = lsGet(aiFlagKey(), '0') === '1' ? 'idle' : 'nomodel';
+  const i = AI.inst; AI.inst = null; AI.dev = null; AI.dead = false;
+  AI.state = lsGet(aiFlagKey(), '0') === '1' ? 'idle' : 'nomodel';
   try { if (i) { if (AI.kind === 'webgpu') await i.unload(); else await i.exit(); } } catch (e) {}
   aiRender();
 }
@@ -3594,7 +3650,13 @@ async function aiGenerate(messages, M, o) {                                     
   return { text: aiClean(out), length: len };
 }
 async function aiSend() {
-  const txt = aiEl.tx.value.trim(); if (!txt || AI.busy || AI.state !== 'ready') return;
+  const txt = aiEl.tx.value.trim(); if (!txt || AI.busy) return;
+  if (!aiEngineAlive()) {                                                       // keyboard / device.lost can leave state=GOTOWY with a disposed engine
+    if (!(aiCached() && await aiRecover(true))) {
+      toast(AI.err || (aiIsIOS() ? 'Model nie jest gotowy. Stuknij „Spróbuj ponownie”, żeby wczytać go z pamięci.' : 'Model nie jest gotowy.'), 4500);
+      return;
+    }
+  }
   aiSnd.unlock();
   aiEl.tx.value = ''; aiGrow();
   const um = { r: 'u', t: txt }, am = { r: 'a', t: '' }; AI.msgs.push(um, am); aiRenderLog();
@@ -3606,33 +3668,51 @@ async function aiSend() {
   if (M.key === 'lite' && !intent) hist = [...AI_SHOTS, ...hist];
   AI.busy = true; AI.stopReq = false; AI.state = 'busy'; AI.lastIntent = intent || ''; aiRender();
   let out = '', failed = null, cut = false;
+  const runGen = async (sys, opt) => {
+    try { return await aiGenerate(aiMessages(sys, hist, M), M, opt); }
+    catch (e) {
+      if (AI.stopReq || (e && (e.name === 'WllamaAbortError' || e.name === 'AbortError'))) throw e;
+      if (!aiIsDeadErr(e)) throw e;
+      AI.dead = true;
+      paint('Wczytuję model ponownie…');
+      if (!(await aiRecover(true))) throw e;
+      paint('');
+      return await aiGenerate(aiMessages(sys, hist, M), M, opt);
+    }
+  };
   try {
     if (intent) {                                                               // app-help intents: curated Polish text, no model (LITE used to refuse these)
       out = aiHelp(intent); AI.lastSys = ''; AI.lastCurated = true; paint(out);
     } else {
       AI.lastCurated = false;
       let sys = aiSystem(txt);
-      let r = await aiGenerate(aiMessages(sys, hist, M), M, { temp: .4, rp: 1.1, paint });
+      let r = await runGen(sys, { temp: .4, rp: 1.1, paint });
       AI.lastSys = sys;
       if (!AI.stopReq && aiBoiler(r.text, sys)) {                               // boilerplate / echoed prompt → one retry, plain persona, a bit more randomness
         AI.retries = (AI.retries || 0) + 1; paint('');
-        sys = AI_BASE_SYS; r = await aiGenerate(aiMessages(sys, hist, M), M, { temp: .6, rp: 1.15, paint });
+        sys = AI_BASE_SYS; r = await runGen(sys, { temp: .6, rp: 1.15, paint });
       }
       if (!AI.stopReq && aiRefuse(r.text)) {                                    // "nie mogę robić anythinggo" etc. → one stricter retry, then a helpful fallback
         AI.retries = (AI.retries || 0) + 1; paint('');
-        r = await aiGenerate(aiMessages(AI_RETRY_SYS, hist, M), M, { temp: .55, rp: 1.12, paint });
+        r = await runGen(AI_RETRY_SYS, { temp: .55, rp: 1.12, paint });
         if (aiRefuse(r.text)) { r = { text: AI_FALLBACK, length: false }; paint(r.text); AI.lastCurated = true; }
       }
       out = r.text; cut = r.length;
     }
   } catch (e) { if (!(AI.stopReq || (e && (e.name === 'WllamaAbortError' || e.name === 'AbortError')))) failed = e; }
   aiSnd.stop();                                                                // sound fades out (~100 ms) the moment streaming ends, fails or is stopped
-  AI.ctl = null; AI.busy = false; AI.state = AI.inst ? 'ready' : 'nomodel';
-  cur.remove(); out = aiClean(out).trim();
+  AI.ctl = null; AI.busy = false; AI.state = (AI.inst && !AI.dead) ? 'ready' : (aiCached() ? 'idle' : 'nomodel');
+  try { cur.remove(); } catch (e) {}
+  out = aiClean(out).trim();
   if (!out && !failed && !AI.stopReq) { out = ''; }
   if (cut && out && !failed && !AI.stopReq && !AI.lastCurated) { out = aiTrimSentence(out) + '\n[odpowiedź skrócona do ostatniego pełnego zdania — napisz „dalej”, aby kontynuować]'; }
-  if (failed) { console.warn('AI generation failed', failed); out = (out ? out + '\n' : '') + '[BŁĄD: ' + aiErrMsg(failed).slice(0, 260) + ']'; }
-  else if (AI.stopReq) out = (out || '') + (out ? ' ' : '') + '[przerwano]';
+  if (failed) {                                                                 // never persist '[BŁĄD:…]' in history (it used to sit under a stale GOTOWY header)
+    console.warn('AI generation failed', failed);
+    AI.msgs = AI.msgs.filter(m => m !== am);
+    toast(aiErrMsg(failed), 5500);
+    aiSave(); aiRenderLog(); aiRender(); aiScroll(true); return;
+  }
+  if (AI.stopReq) out = (out || '') + (out ? ' ' : '') + '[przerwano]';
   else if (!out) out = '[brak odpowiedzi]';
   AI.lastCut = cut;
   am.t = out; el.textContent = out; aiSave(); aiRender(); aiScroll(true);
@@ -3656,14 +3736,22 @@ async function aiOpenInit() {
   if (aiCached() && (AI.state === 'nomodel')) aiStart(false);   // already downloaded: just load it (no download)
 }
 function chatOpened() {
-  AI.opened = true; clearTimeout(AI.relT); aiSnd.unlock(); aiRenderLog(); aiRender(); aiKb();
-  if (AI.state === 'init' || AI.state === 'nomodel' || AI.state === 'idle' || (AI.state === 'error' && !AI.kind)) aiOpenInit();
+  AI.opened = true; clearTimeout(AI.relT); AI.relGen = (AI.relGen || 0) + 1; aiSnd.unlock(); aiRenderLog(); aiRender(); aiKb();
+  if (AI.dead || (AI.state === 'ready' && !AI.inst)) AI.state = 'idle';
+  if (AI.state === 'idle' && aiCached() && !AI.crash) { aiRecover(false); return; }
+  if (AI.state === 'init' || AI.state === 'nomodel' || (AI.state === 'error' && !AI.kind)) aiOpenInit();
 }
 function chatClosed() {
   AI.opened = false; aiSnd.stop(); if (AI.busy) aiStop(); try { aiEl.tx.blur(); } catch (e) {}
   document.documentElement.style.setProperty('--kb', '0px'); aiEl.p.classList.remove('kb');
-  clearTimeout(AI.relT); AI.relT = setTimeout(() => { if (!AI.opened && !AI.busy && AI.inst) aiUnload(); }, 45000);   // free the model's memory shortly after leaving the chat
+  clearTimeout(AI.relT);
+  const gen = ++AI.relGen;
+  AI.relT = setTimeout(() => { if (AI.relGen === gen && !AI.opened && !AI.busy && AI.inst) aiUnload(); }, 45000);   // free the model's memory shortly after leaving the chat
 }
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (AI.opened && !AI.busy && (AI.dead || AI.state === 'idle') && aiCached() && !AI.crash) aiRecover(false);
+});
 function aiKb() {
   const vv = window.visualViewport; let kb = 0;
   if (vv && AI.opened && !S.rot) kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
@@ -4330,7 +4418,7 @@ $('#boot').addEventListener('click', e => { /* tap anywhere does nothing: camera
 applyPalette(); syncToggles(); renderRet(); resize(); introScreen(); loadDb();
 requestAnimationFrame(frame);
 window.__S = S;
-window.__T = { GM, GAMES, gOpenGame, gToPicker, gRestart, gPause, gOver, AI, aiSnd, aiSystem, aiErrMsg, aiDetect, aiStart, aiSend, aiClear, AI_MODELS, AI_BASE_SYS, AI_RETRY_SYS, AI_APP_RE, AI_HELP, AI_SHOTS, AI_FALLBACK, aiIntent, aiHelp, aiRefuse, aiLive, aiBoiler, aiHistory, aiFormat, aiMessages, aiTrimSentence, aiSelect, aiPurge, aiM, aiFlagKey, aiIsIOS, aiDefaultModel, aiNeedsGpu, aiCrashRead, aiCrashMark, aiCrashClear, aiSwitchEngine, aiWgConfig, GH, ghCatchStep, ghTarget, ghTap, ghCatch, ghEscape, ghFbText, GCATCH_R, ghBuildSprites, viewFov, ghLum, ghLumK, ghostMove, ghSpawn, ghRange, ghostSpawnPoint, ghostOccluders, drawGhostsHud, ghSetOn, ghRequestSensors, ghAlpha, ghostTick, ghUi, startRec, toggleRec, hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, nameFlow, matchProfile, ensureFace, faceAt, openPanel, closePanels, setZoom, setStream, startCamera, enrollFace, SRC, RET, setRetStyle, toggleRet, ncDone, ncShow, renderBle, ensureEmbed, NET, MSETS, refreshCached, refreshNetInfo, downloadModels, aiBlocked, updNet };
+window.__T = { GM, GAMES, gOpenGame, gToPicker, gRestart, gPause, gOver, AI, aiSnd, aiSystem, aiErrMsg, aiDetect, aiStart, aiSend, aiClear, aiEngineAlive, aiIsDeadErr, aiRecover, aiMarkLost, aiInstallGpuHook, aiWatchDevice, aiUnload, AI_MODELS, AI_BASE_SYS, AI_RETRY_SYS, AI_APP_RE, AI_HELP, AI_SHOTS, AI_FALLBACK, aiIntent, aiHelp, aiRefuse, aiLive, aiBoiler, aiHistory, aiFormat, aiMessages, aiTrimSentence, aiSelect, aiPurge, aiM, aiFlagKey, aiIsIOS, aiDefaultModel, aiNeedsGpu, aiCrashRead, aiCrashMark, aiCrashClear, aiSwitchEngine, aiWgConfig, GH, ghCatchStep, ghTarget, ghTap, ghCatch, ghEscape, ghFbText, GCATCH_R, ghBuildSprites, viewFov, ghLum, ghLumK, ghostMove, ghSpawn, ghRange, ghostSpawnPoint, ghostOccluders, drawGhostsHud, ghSetOn, ghRequestSensors, ghAlpha, ghostTick, ghUi, startRec, toggleRec, hitTest, onTap, localToClient, clientToLocal, snapshot, startRec, stopRec, nameFlow, matchProfile, ensureFace, faceAt, openPanel, closePanels, setZoom, setStream, startCamera, enrollFace, SRC, RET, setRetStyle, toggleRet, ncDone, ncShow, renderBle, ensureEmbed, NET, MSETS, refreshCached, refreshNetInfo, downloadModels, aiBlocked, updNet };
 if (new URLSearchParams(location.search).has('auto')) start();
 })();
 </script>
